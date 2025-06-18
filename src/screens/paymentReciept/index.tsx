@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import Svg from '../lib/svg';
-import { logoSimple } from '../../assets/svgAssets';
-import { StyleGuide } from '../../StyleGuide';
+
+
+import Svg from '../../lib/svg';
+import { logoSimple } from '../../../assets/svgAssets';
+import { StyleGuide } from '../../../StyleGuide';
+import { getResponsiveFontSize } from '../../lib/responsiveStyles';
 import PaymentReceiptCard from './components/paymentReceiptCard';
-import { getResponsiveFontSize } from '../lib/responsiveStyles';
 
 
 

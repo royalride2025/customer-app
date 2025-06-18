@@ -15,9 +15,9 @@ import Map from '../screens/map';
 import CarProfile from '../screens/profile/carProfile';
 import DrawerNavigator from './drawerNavigator';
 import Transactions from '../screens/trasaction';
-import PaymentMethods from '../screens/map/components/paymentCard';
-import PaymentReceipt from '../paymentReciept';
+
 import CustomerClientChat from '../screens/customerChat';
+import PaymentReceipt from '../screens/paymentReciept';
 
 
 // Define the types for the navigator

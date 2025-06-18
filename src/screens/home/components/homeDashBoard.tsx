@@ -21,6 +21,7 @@ import {
   tripIcon,
   workIcon,
 } from '../../../../assets/svgAssets';
+import { getResponsiveFontSize, getResponsiveSize, isSmallScreen } from '../../../lib/responsiveStyles';
 
 // Define the location item interface
 export interface LocationItem {
@@ -93,7 +94,7 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
           <View style={styles.savedBadge}>
             <Text style={styles.savedText}>CO.{'\n'}Saved</Text>
           </View>
-          <Svg xml={greenLeave} rest={{ height: 45, width: 24 }} />
+          <Svg xml={greenLeave} rest={{ height: 45, width: 22 }} />
         </View>
       </View>
 
@@ -159,16 +160,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: getResponsiveSize(10),
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: getResponsiveSize(42),
+    height: getResponsiveSize(42),
+    borderRadius: getResponsiveSize(21),
     backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
@@ -178,43 +179,48 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   greetingText: {
-    fontSize: 14,
+    fontSize:getResponsiveFontSize(12),
     color: StyleGuide.color.grey,
     fontFamily: StyleGuide.fontFamily.semiBold,
-    lineHeight: 18,
+    lineHeight: getResponsiveFontSize(16)
   },
   userName: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(16),
     fontFamily: StyleGuide.fontFamily.semiBold,
     color: StyleGuide.fontFamily.black,
-    lineHeight: 18,
+    lineHeight:getResponsiveFontSize(16),
   },
   coinsContainer: {
     alignItems: 'flex-end',
     flexDirection: 'row',
   },
   coinsAmount: {
-    fontSize: 21,
+    fontSize: getResponsiveFontSize(18),
     color: StyleGuide.color.grey,
-    fontFamily: StyleGuide.fontFamily.bold,
-    lineHeight: 26,
+    fontFamily: StyleGuide.fontFamily.semiBold,
+    lineHeight: getResponsiveSize(20)
   },
   coinsLabel: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(14),
     color: StyleGuide.color.grey,
     fontFamily: StyleGuide.fontFamily.medium,
-    lineHeight: 18,
+    lineHeight: getResponsiveSize(18),
   },
   savedBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginTop: 4,
-    borderLeftWidth: 3,
-    marginLeft: 8,
+    // paddingHorizontal: 8,
+    // paddingVertical: 4,
+    // marginTop: 4,
+    // borderLeftWidth: 3,
+    // marginLeft: 8,
+    paddingHorizontal: getResponsiveSize(6),
+    paddingVertical: getResponsiveSize(2),
+    marginTop: getResponsiveSize(2),
+    borderLeftWidth: getResponsiveSize(3),
+    marginLeft: getResponsiveSize(6),
     borderLeftColor: StyleGuide.color.grey,
   },
   savedText: {
-    fontSize: 18,
+    fontSize: getResponsiveSize(15),
     color: StyleGuide.color.grey,
     fontFamily: StyleGuide.fontFamily.semiBold,
     lineHeight: 18,
@@ -226,7 +232,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     paddingHorizontal: 20,
     paddingVertical: 5,
-    marginVertical: 12,
+    marginVertical: 14,
   },
   searchInput: {
     flex: 1,
@@ -235,37 +241,40 @@ const styles = StyleSheet.create({
     fontFamily: StyleGuide.fontFamily.medium,
   },
   servicesTitle: {
-    fontSize: 16,
+    fontSize:getResponsiveFontSize(14),
     fontFamily: StyleGuide.fontFamily.bold,
+    color:StyleGuide.color.black,
     marginBottom: 12,
   },
   servicesContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: getResponsiveSize(28),
+    marginTop:getResponsiveSize(14)
   },
   serviceButtonSecondary: {
     backgroundColor: StyleGuide.color.white,
-    paddingVertical: 16,
-    paddingHorizontal: 10,
+    paddingVertical: getResponsiveSize(14),
+    paddingHorizontal: getResponsiveSize(8),
     borderRadius: 12,
     alignItems: 'center',
     flex: 1,
-    marginHorizontal: 5,
+    marginHorizontal:  getResponsiveSize(4),
+    marginBottom: isSmallScreen ? getResponsiveSize(8) : 0,
     elevation: 0.4,
   },
   serviceText: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(12),
     fontFamily: StyleGuide.fontFamily.bold,
     textAlign: 'center',
     color: StyleGuide.color.blackishGrey,
     marginTop: 5,
   },
   savedTitle: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(14),
     fontFamily: StyleGuide.fontFamily.semiBold,
     color: StyleGuide.color.blackishGrey,
-    marginBottom: 12,
+    marginBottom: getResponsiveSize(12),
     textAlign: 'center',
   },
   locationsContainer: {
@@ -274,21 +283,32 @@ const styles = StyleSheet.create({
   locationItem: {
     alignItems: 'flex-start',
     backgroundColor: StyleGuide.color.white,
-    padding: 15,
+    padding: getResponsiveSize(13),
     justifyContent: 'space-between',
     borderRadius: 12,
-    marginRight: 18,
+    marginRight: getResponsiveSize(16),
     elevation: 0.4,
-    marginBottom: 10,
+    marginBottom: getResponsiveSize(8),
   },
+  // locationItem: {
+  //   alignItems: 'flex-start',
+  //   backgroundColor: StyleGuide.color.white,
+  //   padding: getResponsiveSize(15),
+  //   justifyContent: 'space-between',
+  //   borderRadius: getResponsiveSize(12),
+  //   marginRight: getResponsiveSize(18),
+  //   elevation: 0.4,
+  //   marginBottom: getResponsiveSize(10),
+  //   minWidth: getResponsiveSize(120),
+  // },
   locationIcon: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(13),
     fontFamily: StyleGuide.fontFamily.semiBold,
-    marginTop: 3,
+    marginTop: getResponsiveSize(3),
     color: StyleGuide.color.blackishGrey,
   },
   locationName: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(12),
     fontFamily: StyleGuide.fontFamily.semiBold,
     color: StyleGuide.color.grey,
   },

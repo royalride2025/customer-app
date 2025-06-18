@@ -9,10 +9,10 @@ import {
     Pressable,
 } from 'react-native';
 import { screenWidth } from '../../utils/dimenstions';
-import Svg from '../../lib/svg';
-import { Cash, deletIcon, editIcon, homeBlackIcon, locationBlackIcon } from '../../../assets/svgAssets';
+import Svg from '../../../lib/svg';
+import { Cash, deletIcon, editIcon, homeBlackIcon, locationBlackIcon } from '../../../../assets/svgAssets';
 import { useNavigation } from '@react-navigation/native';
-import { StyleGuide } from '../../../StyleGuide';
+import { StyleGuide } from '../../../../StyleGuide';
 
 import {
     SCREEN_WIDTH,
@@ -22,7 +22,7 @@ import {
     isSmallScreen,
     isMediumScreen,
     isLargeScreen,
-} from '../../lib/responsiveStyles';
+} from '../../../lib/responsiveStyles';
 interface RideInfoCardProps {
     driverName?: string;
     driverRating?: number;
@@ -38,8 +38,8 @@ interface RideInfoCardProps {
     style?: object;
 }
 
-const car = require('../../../assets/images/car1.png');
-const profile = require('../../../assets/images/profile.png');
+const car = require('../../../../assets/images/car1.png');
+const profile = require('../../../../assets/images/profile.png');
 
 const PaymentReceiptCard: React.FC<RideInfoCardProps> = ({
     driverName = "RR Cullinan",
