@@ -10,6 +10,7 @@ import {
 import { StyleGuide } from '../../../../StyleGuide';
 import Svg from '../../../lib/svg';
 import { apple, facebook, google } from '../../../../assets/svgAssets';
+import { t } from 'i18next';
 // import { Ionicons } from '@expo/vector-icons';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -20,7 +21,7 @@ const SocialLogin = ({ onSocialLogin }) => {
 
             <View style={styles.dividerContainer}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
+                <Text style={styles.dividerText}>{t('or')}</Text>
                 <View style={styles.dividerLine} />
             </View>
 

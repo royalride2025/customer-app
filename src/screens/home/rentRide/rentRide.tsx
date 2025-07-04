@@ -15,26 +15,30 @@ import DatePicker from 'react-native-date-picker';
 import { StyleGuide } from '../../../../StyleGuide';
 import AppButton from '../../../lib/component/AppButton';
 import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
+import useTranslationStyles from '../../../../locales/useTranslationStyles';
+import { useAppSelector } from '../../../redux/reduxHooks';
+import { RootState } from '../../../redux/store';
+import { t } from 'i18next';
 
 
 const car=require('../../../../assets/images/car.png')
 const vehicles = [
   {
     id: 'lexus',
-    name: 'Lexus 600',
-    model: '(Black) CF 2826',
+    name: t('lexus_600'),  
+    model: t('model_black_cf_2826'),
     image: car,
   },
   {
     id: 'defender',
-    name: 'LR Defender',
-    model: '(Black) CF 5648',
+    name: t('defender'),  
+    model: t('model_black_cf_5648'), 
     image: car,
   },
   {
     id: 'cullinan',
-    name: 'RR Cullinan',
-    model: '(Black) CF 58719',
+    name: t('cullinan'),  
+    model: t('model_black_cf_58719'),
     image: car,
   },
 ];
@@ -45,10 +49,10 @@ const RentARide = () => {
  
 
   useScreenHeader({
-    title: 'Rent Ride',
-    
+    title: t('header.rent_ride'),
   });
-  
+  const { flexDirection } = useTranslationStyles();
+  const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
 
   const colorScheme = Appearance.getColorScheme();
   const textColor = colorScheme === 'dark' ? '#FFF' : '#000'; 
@@ -58,7 +62,7 @@ const RentARide = () => {
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select time and day</Text>
+          <Text style={[styles.sectionTitle,{textAlign:isRTL?'right':'left'}]}>{t('select_time_and_day')}</Text>
           <View style={styles.pickerBox}>
             <DatePicker
             theme='auto'
@@ -76,7 +80,7 @@ const RentARide = () => {
 
         {/* Duration Picker */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select hours</Text>
+          <Text style={[styles.sectionTitle,{textAlign:isRTL?'right':'left'}]}>{t('select_hours')}</Text>
           <View style={styles.pickerBox}>
             <DatePicker
             theme='auto'
@@ -95,7 +99,7 @@ const RentARide = () => {
 
         {/* Vehicle Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Your Ride</Text>
+          <Text style={[styles.sectionTitle,{textAlign:isRTL?'right':'left'}]}>{t('select_your_ride')}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -112,10 +116,9 @@ const RentARide = () => {
               >
                 <View style={styles.vehicleImageContainer}>
                     <Image source={vehicle?.image} style={{height:50,width:50}} resizeMode='contain'/>
-                  {/* <Text style={styles.vehicleImage}>{vehicle.image}</Text> */}
                 </View>
-                <Text style={[styles.vehicleName,selectedVehicle === vehicle.name && styles.selectedVehicleText,]}>{vehicle.name}</Text>
-                <Text style={styles.vehicleModel}>{vehicle.model}</Text>
+                <Text style={[styles.vehicleName,selectedVehicle === vehicle.name && styles.selectedVehicleText,,{textAlign:isRTL?'right':'left'}]}>{vehicle.name}</Text>
+                <Text style={[styles.vehicleModel,{textAlign:isRTL?'right':'left'}]}>{vehicle.model}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -135,7 +138,7 @@ const RentARide = () => {
       </ScrollView>
 
       {/* Next Button */}
-      <AppButton title='Next'/>
+      <AppButton title={t("next")}/>
     </SafeAreaView>
   );
 };

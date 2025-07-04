@@ -19,6 +19,10 @@ import Transactions from '../screens/trasaction';
 import CustomerClientChat from '../screens/customerChat';
 import PaymentReceipt from '../screens/paymentReciept';
 
+import { Text } from 'react-native';
+import { t } from 'i18next';
+import { StyleGuide } from '../../StyleGuide';
+
 
 // Define the types for the navigator
 export type RootStackParamList = {
@@ -43,6 +47,7 @@ export type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
+ 
   return (
     <Stack.Navigator initialRouteName="Introduction">
       <Stack.Screen options={{ headerShown: false }} name="Introduction" component={Introduction} />
@@ -59,8 +64,28 @@ const AppNavigator = () => {
 
       <Stack.Screen  name="rentRide" component={RentRide} />
       <Stack.Screen  name="bookRide" component={BookRide} />
-      <Stack.Screen  name="forgetPassword" component={ForgetPassword} />
-      <Stack.Screen  name="otp" component={Otp} />
+      <Stack.Screen   name="forgetPassword" component={ForgetPassword}  options={{
+          headerTitle: () => (
+            <Text style={{
+               color:StyleGuide.color.black,
+              fontSize: 18,
+              fontFamily: StyleGuide.fontFamily.bold,
+            }}>
+              {t("forgotPassword")}
+            </Text>
+          ),
+        }} />
+      <Stack.Screen  name="otp" component={Otp} options={{
+          headerTitle: () => (
+            <Text style={{
+               color:StyleGuide.color.black,
+              fontSize: 18,
+              fontFamily: StyleGuide.fontFamily.bold,
+            }}>
+             {t('otpVerification')}
+            </Text>
+          ),
+        }}/>
       <Stack.Screen  name="carProfile" component={CarProfile} />
       <Stack.Screen options={{ headerShown: false }} name="map" component={Map} />
     </Stack.Navigator>

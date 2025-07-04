@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -22,6 +22,9 @@ import {
   workIcon,
 } from '../../../../assets/svgAssets';
 import { getResponsiveFontSize, getResponsiveSize, isSmallScreen } from '../../../lib/responsiveStyles';
+import useTranslationStyles from '../../../../locales/useTranslationStyles';
+import { t } from 'i18next';
+import i18n from '../../../../i18n';
 
 // Define the location item interface
 export interface LocationItem {
@@ -40,29 +43,10 @@ interface HomeDashboardProps {
   onRentPress?: () => void;
   onBookPress?: () => void;
   onProfilePress?: () => void;
+  isRTL:any
 }
 
-// Dummy location data
-export const locationData: LocationItem[] = [
-  {
-    title: 'Work',
-    description: 'Near office',
-    address: '23 Heliopolis St.',
-    icon: workIcon,
-  },
-  {
-    title: 'Home',
-    description: 'Family house',
-    address: '92 Garden Ave.',
-    icon: homeIcon,
-  },
-  {
-    title: 'Work',
-    description: 'Client site',
-    address: '58 Tech Park Rd.',
-    icon: locationIcon,
-  },
-];
+
 
 const HomeDashBoard: React.FC<HomeDashboardProps> = ({
   userName = 'User',
@@ -71,22 +55,45 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
   onTripPress,
   onRentPress,
   onBookPress,
-  onProfilePress
+  onProfilePress,
+  isRTL
 }) => {
+  const { flexDirection, marginRightOrLeft ,textAlignment} = useTranslationStyles();
+  const locationData = useMemo(() => [
+    {
+      title: t('locations.work'),  
+      description: t('locations.nearOffice'),  
+      address: t('locations.address'),
+      icon: workIcon,
+    },
+    {
+      title: t('locations.home'), 
+      description: t('locations.familyHouse'),  
+      address: t('locations.address'),
+      icon: homeIcon,
+    },
+    {
+      title: t('locations.work'), 
+      description: t('locations.clientSite'),
+      address: t('locations.address'),
+      icon: locationIcon,
+    },
+  ], [isRTL, t]);
   return (
     <View>
       {/* User Greeting */}
-      <View style={styles.greetingContainer}>
-        <View style={styles.userInfo}>
-          <TouchableOpacity onPress={onProfilePress} style={styles.avatar}>
+      <View style={[styles.greetingContainer,flexDirection]}>
+        <View style={[styles.userInfo,flexDirection]}>
+          <TouchableOpacity onPress={onProfilePress} style={[styles.avatar,marginRightOrLeft]}>
             <Text style={styles.avatarText}>👤</Text>
           </TouchableOpacity>
           <View>
-            <Text style={styles.greetingText}>{greeting}</Text>
-            <Text style={styles.userName}>{userName}.</Text>
+            <Text style={[styles.greetingText,textAlignment]}>{t('greeting')}</Text>
+            <Text style={[styles.userName,textAlignment]}>{t('userName')}</Text>
           </View>
         </View>
-        <View style={styles.coinsContainer}>
+        <View style={[styles.coinsContainer]}>
+         
           <View>
             <Text style={styles.coinsAmount}>6.1</Text>
             <Text style={styles.coinsLabel}>kg</Text>
@@ -99,51 +106,54 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Svg xml={searchIcon} rest={{ height: 45, width: 24, marginRight: 10 }} />
+      <View style={[styles.searchContainer,flexDirection]}>
+        <Svg xml={searchIcon} rest={{ height: 45, width: 24 ,marginLeft: isRTL?10:0,marginRight: isRTL?0:10,}} />
         <TextInput
-          style={styles.searchInput}
-          placeholder="Where to?"
+          style={[styles.searchInput, {
+            writingDirection: isRTL ? 'rtl' : 'ltr',
+            textAlign: isRTL ? 'right' : 'left',
+          },]}
+          placeholder={t('userName')}
           placeholderTextColor={StyleGuide.color.grey}
         />
       </View>
 
       {/* Services */}
-      <Text style={styles.servicesTitle}>Our Services</Text>
-      <View style={styles.servicesContainer}>
+      <Text style={[styles.servicesTitle,textAlignment]}>{t('services.title')}</Text>
+      <View style={[styles.servicesContainer,flexDirection]}>
         <TouchableOpacity
-          style={[styles.serviceButtonSecondary, { marginHorizontal: 0, marginRight: 5 }]}
+          style={[styles.serviceButtonSecondary, { marginHorizontal: 0, marginRight:isRTL? 0:5 }]}
           onPress={onTripPress}
         >
           <Svg xml={tripIcon} rest={{ height: 40, width: 35 }} />
-          <Text style={styles.serviceText}>Make a Trip</Text>
+          <Text style={styles.serviceText}>{t('services.trip')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.serviceButtonSecondary} onPress={onRentPress}>
           <Svg xml={rentRideIcon} rest={{ height: 40, width: 35 }} />
-          <Text style={styles.serviceText}>Rent a Ride</Text>
+          <Text style={styles.serviceText}>{t('services.rent')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.serviceButtonSecondary} onPress={onBookPress}>
           <Svg xml={bookRideicon} rest={{ height: 40, width: 28 }} />
-          <Text style={styles.serviceText}>Book a Ride</Text>
+          <Text style={styles.serviceText}>{t('services.book')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Saved Locations */}
-      <Text style={styles.savedTitle}>Saved and recent locations</Text>
+      <Text style={styles.savedTitle}>{t('savedLocations')}</Text>
       <View style={styles.locationsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView style={{ writingDirection: isRTL ? 'rtl' : 'ltr' }}  horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={flexDirection}>
           {locationData.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.locationItem}
+              style={[styles.locationItem,{alignItems:isRTL?'flex-end':'flex-start'}]}
               onPress={() => onLocationPress?.(item)}
             >
               <Svg xml={item.icon} rest={{ height: 25, width: 25 }} />
               <View>
-                <Text style={styles.locationIcon}>{item.title}</Text>
-                <Text style={styles.locationName}>{item.address}</Text>
+                <Text style={[styles.locationIcon,textAlignment]}>{item.title}</Text>
+                <Text style={[styles.locationName,textAlignment]}>{item.address}</Text>
               </View>
             </TouchableOpacity>
           ))}

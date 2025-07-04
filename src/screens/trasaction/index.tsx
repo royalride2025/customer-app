@@ -10,13 +10,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useScreenHeader } from '../../lib/hooks/useScreenHeader';
 import { StyleGuide } from '../../../StyleGuide';
 import TransactionCard from './components/transactionCard';
+import { t } from 'i18next';
 
 interface Transaction {
   id: string;
   date: string;
   time: string;
-  paymentMethod: 'Cash' | 'Card';
-  serviceType: 'PREMIUM' | 'VVIP';
+  paymentMethod:string;
+  serviceType: string;
   paidAmount: string;
   tripCost: string;
   waitingFees: string;
@@ -35,10 +36,10 @@ const Transactions: React.FC = () => {
           id: '1',
           date: 'JAN 15, 2025',
           time: '10:30 AM',
-          paymentMethod: 'Card',
-          serviceType: 'VVIP',
-          paidAmount: '250 QR',
-          tripCost: '230 QR',
+          paymentMethod: t("cash"),
+          serviceType: t("vvip"),
+          paidAmount: `250 ${t("currency")}`,
+          tripCost: `230 ${t("currency")}`,
           waitingFees: '20 QR',
           address: '123 New Address, City, Country',
           currentLocation: 'Zone 25 House 15 Street 900 South Doha',
@@ -52,10 +53,10 @@ const Transactions: React.FC = () => {
           id: '2',
           date: 'JAN 18, 2025',
           time: '02:15 PM',
-          paymentMethod: 'Card',
-          serviceType: 'PREMIUM',
-          paidAmount: '300 QR',
-          tripCost: '290 QR',
+          paymentMethod: t("cash"),
+          serviceType: t("premium"),
+          paidAmount: `250 ${t("currency")}`,
+          tripCost: `230 ${t("currency")}`,
           waitingFees: '10 QR',
           address: '789 Old Address, City, Country',
           currentLocation: 'Zone 65 House 30 Street 700 East Doha',
@@ -69,7 +70,7 @@ const Transactions: React.FC = () => {
       
 
   useScreenHeader({
-    title: 'Transactions',
+    title: t('header.transactions'),
   });
 
   // Render each transaction item using TransactionCard
@@ -83,7 +84,7 @@ const Transactions: React.FC = () => {
       vehicleModel="Mercedes-Benz S-Class"
       vehicleColor="Pearl White"
       licensePlate="LUX 001"
-      driverName="Omar Khalil"
+      driverName={t("rideInfo.driverFullName")}
       driverRating={4.8}
       currentLocation={item.currentLocation}
       officeLocation={item.office}

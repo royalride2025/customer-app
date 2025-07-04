@@ -7,12 +7,16 @@ import {
   TouchableOpacity,
   StatusBar,
   Image,
-  SafeAreaView,
 } from 'react-native';
 import RideInfoCard from '../map/components/rideInfoCard';
 import ActivityCard from './components/activityCard';
 import { StyleGuide } from '../../../StyleGuide';
 import { useScreenHeader } from '../../lib/hooks/useScreenHeader';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { t } from 'i18next';
+import { useAppSelector } from '../../redux/reduxHooks';
+import { RootState } from '../../redux/store';
+import useTranslationStyles from '../../../locales/useTranslationStyles';
 
 interface Trip {
   id: string;
@@ -38,19 +42,20 @@ const Activities: React.FC = () => {
     title: 'My Activities',
     
   });
-  
+  const { flexDirection } = useTranslationStyles();
+    const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
     
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer,flexDirection]}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
           onPress={() => setActiveTab('upcoming')}
         >
           <Text style={[styles.tabText, activeTab === 'upcoming' && styles.activeTabText]}>
-            Upcoming
+          {t('upcoming')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -58,13 +63,13 @@ const Activities: React.FC = () => {
           onPress={() => setActiveTab('history')}
         >
           <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
-            History
+          {t('history')}
           </Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Upcoming Trips</Text>
+        <Text style={[styles.sectionTitle,{textAlign:isRTL?'right':'left'}]}>{t('upcomingTrips')}</Text>
         <ActivityCard
                 date="January 13, 2025"
                 time="7:45 PM"
@@ -125,7 +130,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginVertical: 20,
     backgroundColor: '#F4F4F5',
     borderRadius: 15,
     padding: 4,

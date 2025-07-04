@@ -14,6 +14,7 @@ import { logoSimple } from '../../../assets/svgAssets';
 import { StyleGuide } from '../../../StyleGuide';
 import { getResponsiveFontSize } from '../../lib/responsiveStyles';
 import PaymentReceiptCard from './components/paymentReceiptCard';
+import { t } from 'i18next';
 
 
 
@@ -24,7 +25,7 @@ const PaymentReceipt: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         {/* Header */}
-        <Text style={styles.header}>Payment Receipt</Text>
+        <Text style={styles.header}>{t('payment_receipt')}</Text>
 
         {/* Payment Card */}
         <View style={styles.paymentCard}>
@@ -33,12 +34,16 @@ const PaymentReceipt: React.FC = () => {
             <Svg xml={logoSimple} rest={{height:60,width:90}}/>
           </View>
 
-          <Text style={styles.paymentTitle}>Please Pay 100 QR</Text>
-          <Text style={styles.paymentTitle}>To Mohammed</Text>
+          <Text style={styles.paymentTitle}>
+          {t('please_pay')} 1000
+      </Text>
+      <Text style={styles.paymentTitle}>
+      {`${t('toname')} ${t('rideInfo.driverFullName')}`}
+      </Text>
         </View>
 
         {/* Trip Details Section */}
-        <Text style={styles.sectionTitle}>Trip Details</Text>
+        <Text style={styles.sectionTitle}>{t('trip_details')}</Text>
         <PaymentReceiptCard
                 date="January 12, 2025"
                 time="11:00 AM"

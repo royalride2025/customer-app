@@ -18,6 +18,9 @@ import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
 import Svg from '../../../lib/svg';
 import { premiumIcon, standardIcon, vipIcon } from '../../../../assets/svgAssets';
 import { useNavigation } from '@react-navigation/native';
+import { useAppSelector } from '../../../redux/reduxHooks';
+import { RootState } from '../../../redux/store';
+import { t } from 'i18next';
 
 const services = [
     {
@@ -54,12 +57,14 @@ const BookRide = () => {
   };
   const colorScheme = Appearance.getColorScheme();
   const textColor = colorScheme === 'dark' ? '#FFF' : '#000'; 
+  const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select reservation time</Text>
+          <Text style={[styles.sectionTitle,{textAlign:isRTL?'right':'left'}]}>{t('select_reservation_time')}</Text>
           <View style={styles.pickerBox}>
             <DatePicker
             theme='auto'
@@ -111,7 +116,7 @@ const BookRide = () => {
       </ScrollView>
 
       {/* Next Button */}
-      <AppButton onPress={handleNextButton} title='Next'/>
+      <AppButton onPress={handleNextButton} title={t('next')}/>
     </SafeAreaView>
   );
 };

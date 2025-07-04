@@ -5,14 +5,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   StatusBar,
+  SafeAreaView
 } from 'react-native';
 import { StyleGuide } from '../../../StyleGuide';
 import Svg from '../../lib/svg';
 import { download, logoSimple, rightArrowBlack, rightIcon } from '../../../assets/svgAssets';
 import { useScreenHeader } from '../../lib/hooks/useScreenHeader';
 import { useNavigation } from '@react-navigation/native';
+import useTranslationStyles from '../../../locales/useTranslationStyles';
+import { useAppSelector } from '../../redux/reduxHooks';
+import { RootState } from '../../redux/store';
+import { t } from 'i18next';
 // import { Ionicons } from '@expo/vector-icons';
 
 interface Transaction {
@@ -24,7 +28,7 @@ interface Transaction {
 
 const Wallet: React.FC = () => {
   const transactions: Transaction[] = [
-    { id: '1', date: 'DEC 20, 2024', time: '03:00 AM', amount: '10,000 QR' },
+    { id: '1', date: 'DEC 20, 2024', time: '03:00 AM', amount: `10,000 ${t("currency")}` },
     { id: '2', date: 'DEC 20, 2024', time: '03:00 AM', amount: '10,000 QR' },
     { id: '3', date: 'DEC 20, 2024', time: '03:00 AM', amount: '10,000 QR' },
     { id: '4', date: 'DEC 20, 2024', time: '03:00 AM', amount: '10,000 QR' },
@@ -48,6 +52,9 @@ useScreenHeader({
     title:'Wallet'
 })
 const navigation=useNavigation()
+const { flexDirection, marginRightOrLeft ,textAlignment} = useTranslationStyles();
+const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -57,10 +64,10 @@ const navigation=useNavigation()
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Wallet Card */}
         <View style={styles.walletCard}>
-          <Text style={styles.balanceLabel}>Current Balance</Text>
-          <Text style={styles.balanceAmount}>2,50,000 QR</Text>
+          <Text style={[styles.balanceLabel,{textAlign:isRTL?'right':'left'}]}>{t('wallet.currentBalance')}</Text>
+          <Text style={[styles.balanceAmount,{textAlign:isRTL?'right':'left',writingDirection: isRTL ? 'rtl' : 'ltr',}]}>{isRTL ?'QR 25,000': '25,000 QR' }</Text>
           
-          <View style={styles.cardBottom}>
+          <View style={[styles.cardBottom,flexDirection]}>
             <Text style={styles.cardNumber}>**** **** **** **</Text>
             <View style={styles.logoContainer}>
               <Svg xml={logoSimple} rest={{height:40,width:40}}/>
@@ -70,31 +77,31 @@ const navigation=useNavigation()
 
         {/* Add Credits Button */}
         <TouchableOpacity style={styles.addCreditsButton} onPress={handleAddCredits}>
-          <Text style={styles.addCreditsText}>+ Add Credits</Text>
+          <Text style={styles.addCreditsText}>{t('wallet.addCredits')}</Text>
         </TouchableOpacity>
 
         {/* Transactions Section */}
         <View style={styles.transactionsSection}>
-            <TouchableOpacity onPress={()=>navigation.navigate('transaction')} style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
-            <Text style={styles.sectionTitle}>Transactions</Text>
-            <Svg xml={rightArrowBlack} rest={{height:18,width:18}}/>
+            <TouchableOpacity onPress={()=>navigation.navigate('transaction')} style={[styles.subContainer,{flexDirection:isRTL?'row-reverse':'row'}]}>
+            <Text style={styles.sectionTitle}>{t('wallet.transactions')}</Text>
+            <Svg xml={rightArrowBlack} rest={{height:18,width:18,transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }}/>
             </TouchableOpacity>
          
 
           <View style={styles.divider} />
-          <TouchableOpacity style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
+          <TouchableOpacity style={[styles.subContainer,{flexDirection:isRTL?'row-reverse':'row'}]}>
           
-          <Text style={styles.invoicesTitle}>Invoices</Text>
-          <Svg xml={rightArrowBlack} rest={{height:18,width:18}}/>
+          <Text style={styles.invoicesTitle}>{t('wallet.invoices')}</Text>
+          <Svg xml={rightArrowBlack} rest={{height:18,width:18,transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }}/>
            
           </TouchableOpacity>
           {transactions.map((transaction) => (
-            <TouchableOpacity onPress={()=>navigation.navigate('paymentReceipt')} key={transaction.id} style={styles.transactionItem}>
-              <View style={styles.transactionInfo}>
-                <Text style={styles.transactionDate}>
+            <TouchableOpacity onPress={()=>navigation.navigate('paymentReceipt')} key={transaction.id} style={[styles.transactionItem, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View >
+                <Text style={[styles.transactionDate,textAlignment]}>
                   {transaction.date} | {transaction.time}
                 </Text>
-                <Text style={styles.transactionAmount}>{transaction.amount}</Text>
+                <Text style={[styles.transactionAmount,textAlignment]}>{transaction.amount}</Text>
               </View>
               <TouchableOpacity 
                 style={styles.downloadButton}
@@ -142,7 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
     borderRadius: 16,
     padding: 24,
-    marginTop: 16,
+    marginTop: 10,
     marginBottom: 20,
   },
   balanceLabel: {
@@ -214,9 +221,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 16,
-    backgroundColor:StyleGuide.color.white,marginBottom:10,
+    backgroundColor:StyleGuide.color.white,
+    marginBottom:10,
     paddingHorizontal:10,
-    borderRadius:20
+    borderRadius:20,
+    // backgroundColor:'red',
   },
   transactionInfo: {
     flex: 1,
@@ -235,6 +244,7 @@ const styles = StyleSheet.create({
   downloadButton: {
     padding: 8,
   },
+  subContainer:{justifyContent:'space-between',alignItems:'center',marginBottom:5}
 });
 
 export default Wallet;

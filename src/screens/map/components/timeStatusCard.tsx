@@ -1,6 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle, Image, Dimensions } from 'react-native';
 import { StyleGuide } from '../../../../StyleGuide';
+import useTranslationStyles from '../../../../locales/useTranslationStyles';
+import { RootState } from '../../../redux/store';
+import { useAppSelector } from '../../../redux/reduxHooks';
 
 // Get screen width for responsive design
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -54,22 +57,24 @@ const TimeStatusCard: React.FC<StatusCardProps> = ({
     iconBackgroundColor = "#d4a574",
     shadowColor = "#000",
 }) => {
+    const { flexDirection } = useTranslationStyles();
+    const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
     return (
         <View
             style={[
                 styles.container,
                 { backgroundColor, shadowColor },
-                containerStyle
+                containerStyle,
             ]}
         >
-            <View style={[styles.leftSection, leftSectionStyle]}>
+            <View style={[styles.leftSection, leftSectionStyle,flexDirection]}>
                 <Image resizeMode='contain' source={logo} style={styles.logo} />
                 <Text style={[styles.waitingLabel, waitingLabelStyle]}>
                     {waitingLabel}
                 </Text>
             </View>
 
-            <View style={[styles.rightSection, rightSectionStyle]}>
+            <View style={[styles.rightSection, rightSectionStyle,flexDirection]}>
                 <Text style={[styles.title, titleStyle]}>
                     {title}
                 </Text>

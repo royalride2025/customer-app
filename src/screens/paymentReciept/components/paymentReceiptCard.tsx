@@ -23,6 +23,10 @@ import {
     isMediumScreen,
     isLargeScreen,
 } from '../../../lib/responsiveStyles';
+import { useAppSelector } from '../../../redux/reduxHooks';
+import { RootState } from '../../../redux/store';
+import useTranslationStyles from '../../../../locales/useTranslationStyles';
+import { t } from 'i18next';
 interface RideInfoCardProps {
     driverName?: string;
     driverRating?: number;
@@ -58,6 +62,8 @@ const PaymentReceiptCard: React.FC<RideInfoCardProps> = ({
     const [isExpanded, setIsExpanded] = useState(false);
     const [animation] = useState(new Animated.Value(0));
     const styles = createStyles(isExpanded);
+    const { flexDirection, flipImage ,textAlignment} = useTranslationStyles();
+    const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
     const toggleExpanded = () => {
         const toValue = isExpanded ? 0 : 1;
 
@@ -94,7 +100,7 @@ const PaymentReceiptCard: React.FC<RideInfoCardProps> = ({
     return (
         <View style={[styles.container, style]}>
             {/* Header Section */}
-            <View style={styles.dateTimeContainer}>
+            <View style={[styles.dateTimeContainer,flexDirection]}>
                 <Text style={styles.dateTimeText}>
                     December 2, 2024 
                     <Text style={styles.separator}> | </Text>
@@ -102,41 +108,40 @@ const PaymentReceiptCard: React.FC<RideInfoCardProps> = ({
                 </Text>
             </View>
 
-            <View style={styles.header}>
+            <View style={[styles.header,flexDirection]}>
                 <Pressable 
                     onPress={() => navigation.navigate('carProfile')} 
                     style={styles.carSection}
                 >
                     <Image
                         source={car}
-                        style={styles.carImage}
+                        style={[styles.carImage,flipImage]}
                         resizeMode="contain"
                     />
                     <Image
                         source={profile}
-                        style={styles.driverImage}
+                        style={[styles.driverImage, isRTL ? { left: 5,bottom:-3 } : { right: getResponsiveSize(-8), bottom: 5 }]}
                     />
                 </Pressable>
 
                 <View style={styles.driverInfo}>
-                    <View style={styles.driverNameContainer}>
-                        <Text style={styles.driverName} numberOfLines={1}>
-                            {driverName}
+                    <View style={[styles.driverNameContainer,flexDirection]}>
+                        <Text  style={[styles.driverName, { textAlign: isRTL ? 'right' : 'left' }]}>
+                            {t('rideInfo.driverName')}
                         </Text>
-                        <Text style={styles.rating}>
-                            {driverRating} 
-                            <Text style={styles.starIcon}> ⭐</Text>
+                        <Text style={styles.rating}>{driverRating} <Text style={{ fontSize: 10, marginBottom: 2 }}>⭐</Text>
                         </Text>
                     </View>
                    
-                    <Text style={styles.carDetails} numberOfLines={1}>
-                        ({carColor}) {licensePlate}
+                    <Text style={[styles.carDetails, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+                    {t('rideInfo.carModel', { carModel })} ({carColor}) {t('rideInfo.licensePlate', { licensePlate })}
+
                     </Text>
 
-                    <View style={styles.driverDetailsContainer}>
-                        <View style={styles.driverNameRatingContainer}>
-                            <Text style={styles.driverImageName} numberOfLines={1}>
-                                Yousuf Abd
+                    <View style={[styles.driverDetailsContainer,flexDirection]}>
+                        <View style={[styles.driverNameRatingContainer,flexDirection]}>
+                            <Text style={[styles.driverImageName, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+                            {t('rideInfo.driverFullName')}
                             </Text>
                             <Text style={styles.driverRating}>
                                 4.5
@@ -147,15 +152,23 @@ const PaymentReceiptCard: React.FC<RideInfoCardProps> = ({
                 </View>
             </View>
 
-            <View style={styles.paymentContainer}>
-                <View style={styles.cashContainer}>
+            <View style={[styles.paymentContainer,flexDirection,isRTL?{paddingRight: getResponsiveSize(20)}:{paddingLeft: getResponsiveSize(20)}]}>
+                <View style={[styles.cashContainer,flexDirection]}>
                     <Svg xml={Cash} rest={{ height: getResponsiveSize(16), width: getResponsiveSize(16) }} />
-                    <Text style={styles.cashText}>Cash</Text>
+                    <Text style={[isRTL ? { marginRight: 10 } : { marginLeft: 10 }, styles.cashText]}>{t('rideInfo.cash')}</Text>
+
                 </View>
                 
-                <TouchableOpacity style={styles.showDetailsButton} onPress={toggleExpanded}>
+                <TouchableOpacity style={[styles.showDetailsButton, {
+                    flexDirection: isRTL ? 'row-reverse' : 'row', 
+                    alignSelf: isRTL ? 'flex-start' : 'flex-end',
+                    borderTopLeftRadius: isRTL ? 0 : getResponsiveSize(20),
+                    borderTopRightRadius: isRTL ? getResponsiveSize(20) : 0, 
+                    borderBottomLeftRadius: isRTL&&isExpanded  ? 0: getResponsiveSize(8) , 
+                    borderBottomRightRadius: isRTL ? 0 : getResponsiveSize(8),
+                },]} onPress={toggleExpanded}>
                     <Text style={styles.showDetailsText}>
-                        {isExpanded ? 'Hide Details' : 'Show Details'}
+                        {isExpanded ? t('rideInfo.hideDetails') : t('rideInfo.showDetails')}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -171,33 +184,30 @@ const PaymentReceiptCard: React.FC<RideInfoCardProps> = ({
                         }
                     ]}
                 >
-                    <View style={styles.expandableContent}>
-                        <View style={styles.locationItem}>
-                            <View style={styles.locationIcon}>
+                    <View style={[styles.expandableContent]}>
+                        <View style={[styles.locationItem,flexDirection]}>
+                            <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
                                 <Svg xml={locationBlackIcon} rest={{ height: getResponsiveSize(18), width: getResponsiveSize(18) }} />
                             </View>
-                            <View style={styles.locationTextContainer}>
-                                <Text style={styles.locationLabel}>Current Location</Text>
-                                <Text numberOfLines={2} style={styles.locationAddress}>
-                                    {currentLocation}
-                                </Text>
+                            <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                                <Text style={styles.locationLabel}>{t('rideInfo.currentLocation')}</Text>
+                                <Text numberOfLines={2} style={[styles.locationAddress, { width: '90%', textAlign: isRTL ? 'right' : 'left' }]}>{currentLocation}</Text>
                             </View>
                         </View>
 
-                        <View style={styles.locationDivider} />
+                        <View style={[styles.locationDivider, isRTL ? { marginRight: 14 } : { marginLeft: 14 }, { alignSelf: 'flex-end' }]} />
 
-                        <View style={[styles.locationItem, { marginTop: getResponsiveSize(10) }]}>
-                            <View style={styles.locationIcon}>
-                                <Svg xml={homeBlackIcon} rest={{ height: getResponsiveSize(18), width: getResponsiveSize(18) }} />
+
+                        <View style={[styles.locationItem, { marginTop: getResponsiveSize(12) }, flexDirection]}>
+                            <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
+                                <Svg xml={homeBlackIcon} rest={{ height: 18, width: 18 }} />
                             </View>
-                            <View style={styles.locationTextContainer}>
-                                <Text style={styles.locationLabel}>Office</Text>
-                                <Text numberOfLines={2} style={styles.locationAddress}>
-                                    {officeLocation}
-                                </Text>
+                            <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                                <Text style={styles.locationLabel}>{t('rideInfo.officeLocation')}</Text>
+                                <Text numberOfLines={2} style={styles.locationAddress}>{officeLocation}</Text>
                             </View>
                             <View style={styles.distanceContainer}>
-                                <Text style={styles.distance}>{distance}</Text>
+                                <Text style={styles.distance}> {distance}</Text>
                                 <Text style={styles.estimatedTime}>{estimatedTime}</Text>
                             </View>
                         </View>
@@ -302,8 +312,6 @@ const createStyles =(isExpanded=false)=> StyleSheet.create({
         height: getResponsiveSize(35),
         borderRadius: getResponsiveSize(20),
         position: 'absolute',
-        right: getResponsiveSize(-8),
-        bottom: getResponsiveSize(5),
         zIndex: 1,
     },
     driverImageName: {
@@ -327,7 +335,7 @@ const createStyles =(isExpanded=false)=> StyleSheet.create({
     paymentContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingLeft: getResponsiveSize(20),
+        
         alignItems: 'center',
         marginTop: getResponsiveSize(25),
     },
@@ -385,7 +393,7 @@ const createStyles =(isExpanded=false)=> StyleSheet.create({
         backgroundColor: StyleGuide.color.white,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: getResponsiveSize(12),
+        // marginRight: getResponsiveSize(12),
         flexShrink: 0,
     },
     locationTextContainer: {
@@ -410,7 +418,7 @@ const createStyles =(isExpanded=false)=> StyleSheet.create({
         width: getResponsiveSize(2),
         height: getResponsiveSize(35),
         backgroundColor: 'rgba(255, 255, 255, 0.3)',
-        marginLeft: getResponsiveSize(14),
+        // marginLeft: getResponsiveSize(14),
         marginVertical: getResponsiveSize(-20),
     },
     distanceContainer: {

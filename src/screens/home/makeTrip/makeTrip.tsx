@@ -15,36 +15,42 @@ import { currentLocationicon, locationBlackIcon, locationIcon, locationIconOuter
 import AppButton from '../../../lib/component/AppButton';
 import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
 import { useNavigation } from '@react-navigation/native';
+import useTranslationStyles from '../../../../locales/useTranslationStyles';
+import { useAppSelector } from '../../../redux/reduxHooks';
+import { RootState } from '../../../redux/store';
+import { t } from 'i18next';
 
 const MakeTripc = () => {
     const [fromLocation, setFromLocation] = useState('');
     const [toLocation, setToLocation] = useState('');
     const [isGettingLocation, setIsGettingLocation] = useState(false);
+    const { flexDirection, textAlignment } = useTranslationStyles();
+    const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
 
-    const GOOGLE_PLACES_API_KEY = 'AIzaSyDKnHa_iplWVK5q4VjxWvfp8ZlDMDtdkWY'; 
-const navigation=useNavigation()
+    const GOOGLE_PLACES_API_KEY = 'AIzaSyDKnHa_iplWVK5q4VjxWvfp8ZlDMDtdkWY';
+    const navigation = useNavigation()
     const savedAddresses = [
         {
             id: 1,
-            name: 'Office',
+            name: t('office'),
             address: 'Zone 55 House 10 Street 873 South Muaither Doha',
             distance: '2.7 km',
         },
         {
             id: 2,
-            name: 'Home',
+            name: t('home'),
             address: 'Zone 55 House 35 Street 873 South Muaither Doha',
             distance: '2.7 km',
         },
         {
             id: 3,
-            name: 'Wardrobe',
+            name: t('wardrobe'),
             address: 'Zone 55 House 89 Street 801 South Muaither Doha',
             distance: '2.7 km',
         },
         {
             id: 4,
-            name: 'Shop',
+            name: t('shop'),
             address: 'Zone 55 House 08 Street 740 South Muaither Doha',
             distance: '2.7 km',
         },
@@ -62,61 +68,66 @@ const navigation=useNavigation()
         }, 1500);
     };
     useScreenHeader({
-        title: 'Plan Your Ride',
-        
-      });
-      const handleNextButton = () => {
+        title: t('header.plan_your_ride'),
+
+    });
+    const handleNextButton = () => {
         navigation.navigate('map', { from: 'plan' });  // Navigate to the 'Map' screen and pass parameters
-      };
+    };
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
-         
+
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.locationContainer}>
-                    <View style={[styles.locationInputWrapper, { borderTopLeftRadius: 5, marginBottom: 15, borderBottomLeftRadius: 1 }]}>
+                    <View style={[styles.locationInputWrapper, flexDirection, { borderTopLeftRadius: 5, marginBottom: 15, borderBottomLeftRadius: 1 }]}>
                         <Svg xml={locationBlackIcon} rest={{ height: 20, width: 20 }} />
                         <View style={styles.autocompleteContainer}>
-                        <GooglePlacesAutocomplete
-        predefinedPlaces={[]}
-        placeholder="From"
-        onPress={(data) => setFromLocation(data.description)} // Set the selected location to 'fromLocation'
-        query={{
-          key: 'AIzaSyAKwc_liBJuKwkEuftyfFN-rJWpsWOQJjw', // Replace with your actual API key
-          language: 'en',
-          components: 'country:qa', // Restricting search to Qatar only
-        }}
-        fetchDetails={true}
-        debounce={300}
-        onFail={(error) => {
-          console.error('❌ Places API Error:', error);
-          console.error('Error type:', typeof error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
-        }}
-        onNotFound={() => {
-          console.warn('⚠️ No places found for the search query');
-        }}
-        setAddressText={(text) => setToLocation(text)} // Update the 'toLocation' on text input
-        enablePoweredByContainer={false}
-        textInputProps={{
-            placeholderTextColor: '#8e8e8e',
-          onChange: (e) => setFromLocation(e?.nativeEvent?.text), // Update 'fromLocation' on change
-          value: fromLocation, // Bind the input value to 'fromLocation'
-        }}
-        styles={{
-          textInputContainer: {
-            paddingHorizontal: 10,
-          },
-          textInput: {
-            height: 46,
-            fontSize: 16,
-            color: '#000',
-          },
-          listView: {
-            backgroundColor: 'red',
-          },
-        }}
-      />
+                            <GooglePlacesAutocomplete
+                                predefinedPlaces={[]}
+                                placeholder={t('home')}
+                                onPress={(data) => setFromLocation(data.description)}
+                                query={{
+                                    key: 'AIzaSyAKwc_liBJuKwkEuftyfFN-rJWpsWOQJjw',
+                                    language:isRTL?'ar': 'en',
+                                    components: 'country:qa',
+                                }}
+                                fetchDetails={true}
+                                debounce={300}
+                                onFail={(error) => {
+                                    console.error('❌ Places API Error:', error);
+                                    console.error('Error type:', typeof error);
+                                    console.error('Error details:', JSON.stringify(error, null, 2));
+                                }}
+                                onNotFound={() => {
+                                    console.warn('⚠️ No places found for the search query');
+                                }}
+                                setAddressText={(text) => setToLocation(text)}
+                                enablePoweredByContainer={false}
+                                textInputProps={{
+                                    placeholderTextColor: '#8e8e8e',
+                                    onChange: (e) => setFromLocation(e?.nativeEvent?.text),
+                                    value: fromLocation,
+                                }}
+                                styles={{
+                                    textInputContainer: {
+                                        paddingHorizontal: 10,
+
+
+                                    },
+                                    textInput: {
+                                        height: 46,
+                                        fontSize: 16,
+                                        color: StyleGuide.color.black,
+                                        textAlign: isRTL ? 'right' : 'left'
+
+                                    },
+                                    listView: {
+                                        backgroundColor: 'red',
+                                    },
+
+                                }}
+                            />
 
                         </View>
                         <TouchableOpacity
@@ -129,7 +140,7 @@ const navigation=useNavigation()
                     </View>
 
 
-                    <View style={[styles.locationInputWrapper, { borderTopLeftRadius: 1, borderBottomLeftRadius: 5 }]}>
+                    <View style={[styles.locationInputWrapper, flexDirection, { borderTopLeftRadius: 1, borderBottomLeftRadius: 5 }]}>
                         <Svg xml={locationBlackIcon} rest={{ height: 20, width: 20 }} />
                         <View style={styles.autocompleteContainer}>
                             <GooglePlacesAutocomplete
@@ -147,12 +158,13 @@ const navigation=useNavigation()
                                         height: 44,
                                         fontSize: 16,
                                         color: StyleGuide.color.black,
+                                        textAlign: isRTL ? 'right' : 'left'
                                     },
                                     listView: {
                                         backgroundColor: StyleGuide.color.white,
                                     },
                                 }}
-                                placeholder="To"
+                                placeholder={t('to')} 
                                 onPress={(data) => setFromLocation(data.description)}
                                 query={{
                                     key: 'AIzaSyDKnHa_iplWVK5q4VjxWvfp8ZlDMDtdkWY',
@@ -179,10 +191,10 @@ const navigation=useNavigation()
                 </View>
 
                 <View style={styles.savedAddressesContainer}>
-                    <View style={styles.savedAddressesHeader}>
-                        <Text style={styles.savedAddressesTitle}>Saved addresses</Text>
+                    <View style={[styles.savedAddressesHeader, flexDirection]}>
+                        <Text style={styles.savedAddressesTitle}>{t('saved_addresses')}</Text>
                         <TouchableOpacity>
-                            <Text style={styles.addButton}>+ Add</Text>
+                            <Text style={styles.addButton}>{t('add')}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -192,13 +204,13 @@ const navigation=useNavigation()
                             style={styles.addressItem}
                             onPress={() => handleAddressSelect(address)}
                         >
-                            <View style={styles.addressContent}>
+                            <View style={[styles.addressContent, flexDirection]}>
                                 <Svg xml={locationIcon} rest={{ height: 20, width: 20, marginTop: 7, }} />
-                                <View style={styles.addressDetails}>
-                                    <Text style={styles.addressName}>{address.name}</Text>
-                                    <Text style={styles.addressText}>{address.address}</Text>
+                                <View style={[styles.addressDetails, isRTL ? { marginRight: 13 } : { marginLeft: 13, }]}>
+                                    <Text style={[styles.addressName, textAlignment]}>{address.name}</Text>
+                                    <Text style={[styles.addressText, textAlignment]}>{address.address}</Text>
                                 </View>
-                                <Text style={styles.addressDistance}>{address.distance}</Text>
+                                <Text style={[styles.addressDistance, textAlignment]}>{address.distance}</Text>
                             </View>
                         </TouchableOpacity>
                     ))}
@@ -206,7 +218,7 @@ const navigation=useNavigation()
             </ScrollView>
 
             <View style={styles.buttonContainer}>
-                <AppButton onPress={handleNextButton} title={'Next'} />
+                <AppButton onPress={handleNextButton} title={t('next')} />
             </View>
         </SafeAreaView>
     );
@@ -295,7 +307,7 @@ const styles = StyleSheet.create({
     },
     addressDetails: {
         flex: 1,
-        marginLeft: 13,
+
     },
     addressName: {
         fontSize: 16,

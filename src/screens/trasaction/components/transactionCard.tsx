@@ -14,6 +14,10 @@ import { screenWidth } from '../../../utils/dimenstions';
 import Svg from '../../../lib/svg';
 import { Cash, deletIcon, editIcon, homeBlackIcon, locationBlackIcon } from '../../../../assets/svgAssets';
 import { useNavigation } from '@react-navigation/native';
+import useTranslationStyles from '../../../../locales/useTranslationStyles';
+import { useAppSelector } from '../../../redux/reduxHooks';
+import { RootState } from '../../../redux/store';
+import { t } from 'i18next';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_HORIZONTAL_MARGIN = 20;
@@ -40,10 +44,6 @@ const profile = require('../../../../assets/images/profile.png');
 
 const TransactionCard: React.FC<RideInfoCardProps> = ({
     driverName = "RR Cullinan",
-    driverRating = 5.5,
-    carModel = "Rolls Royce Cullinan",
-    carColor = "White",
-    licensePlate = "CF 21536",
     driverImage = "https://via.placeholder.com/60x60/8B4513/FFFFFF?text=YA",
     currentLocation = "Zone 55 House 25 Street 873",
     officeLocation = "Zone 55 House 25 Street 873",
@@ -55,7 +55,8 @@ const TransactionCard: React.FC<RideInfoCardProps> = ({
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [animation] = useState(new Animated.Value(0));
-
+    const { flexDirection, flipImage ,textAlignment} = useTranslationStyles();
+    const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
     const toggleExpanded = () => {
         const toValue = isExpanded ? 0 : 1;
 
@@ -97,70 +98,77 @@ const TransactionCard: React.FC<RideInfoCardProps> = ({
     return (
         <View style={[styles.container, style]}>
             {/* Header Section */}
-            <View style={styles.headerRow}>
+            <View style={[styles.headerRow,flexDirection]}>
                 <View style={styles.dateTimeContainer}>
-                    <Text style={styles.dateText} numberOfLines={1}>
+                    <Text style={[styles.dateText, textAlignment]} numberOfLines={1}>
                         December 2, 2024 <Text style={styles.separator}>|</Text> 3:00 PM
                     </Text>
                 </View>
                 <View style={styles.paymentContainer}>
                     <Svg xml={Cash} rest={{ height: 16, width: 20 }} />
-                    <Text style={styles.paymentText} numberOfLines={1}>Cash</Text>
+                    <Text style={styles.paymentText} numberOfLines={1}>{t("rideInfo.cash")}</Text>
                 </View>
             </View>
 
             {/* Main Content */}
-            <View style={styles.header}>
+            <View style={[styles.header,flexDirection]}>
                 <Pressable onPress={() => navigation.navigate('carProfile')} style={styles.carSection}>
                     <Image
                         source={car}
-                        style={[styles.carImage, { width: carImageWidth, height: carImageHeight }]}
+                        style={[styles.carImage,flipImage, { width: carImageWidth, height: carImageHeight }]}
                         resizeMode="contain"
                     />
                     <Image
                         source={profile}
-                        style={styles.driverImage}
+                        style={[styles.driverImage,isRTL ? { left: 0,bottom:0 } : { right: -8,bottom:0 }]}
                     />
                 </Pressable>
 
                 <View style={styles.driverInfo}>
-                    <View style={styles.driverNameRow}>
-                        <Text style={styles.driverName} numberOfLines={1}>
+                    <View style={[styles.driverNameRow,flexDirection]}>
+                        <Text style={[styles.driverName,textAlignment,isRTL?{marginStart:5}:{marginEnd:5}]} numberOfLines={1}>
                             {driverName}
                         </Text>
-                        <Text style={styles.serviceType} numberOfLines={1}>
+                        <Text style={[styles.serviceType,textAlignment]} numberOfLines={1}>
                             {serviceType}
                         </Text>
                     </View>
-                    <Text numberOfLines={2} style={styles.carDetails}>
+                    <Text numberOfLines={2} style={[styles.carDetails,textAlignment]}>
                         Zone 55 House 25 Street 873 Zone 55 House 25
                     </Text>
                 </View>
             </View>
 
             {/* Cost Breakdown */}
-            <View style={styles.costBreakdown}>
+            <View style={[styles.costBreakdown,flexDirection]}>
                 <View style={styles.costItem}>
-                    <Text style={styles.costLabel} numberOfLines={1}>Paid amount</Text>
+                    <Text style={styles.costLabel} numberOfLines={1}>{t('paid_amount')}</Text>
                     <Text style={styles.costValue} numberOfLines={1}>15000 QR</Text>
                 </View>
                 <View style={styles.divider} />
                 <View style={styles.costItem}>
-                    <Text style={styles.costLabel} numberOfLines={1}>Trip Cost</Text>
+                    <Text style={styles.costLabel} numberOfLines={1}>{t('trip_cost')}</Text>
                     <Text style={styles.costValue} numberOfLines={1}>15000 QR</Text>
                 </View>
                 <View style={styles.divider} />
                 <View style={styles.costItem}>
-                    <Text style={styles.costLabel} numberOfLines={1}>Waiting Fees</Text>
+                    <Text style={styles.costLabel} numberOfLines={1}>{t('waiting_fee')}</Text>
                     <Text style={styles.costValue} numberOfLines={1}>15 QR</Text>
                 </View>
             </View>
 
             {/* Show Details Button */}
             <View >
-                <TouchableOpacity style={styles.showDetailsButton} onPress={toggleExpanded}>
+                <TouchableOpacity style={[styles.showDetailsButton, {
+                    flexDirection: isRTL ? 'row-reverse' : 'row', // Reverse flex direction for RTL
+                    alignSelf: isRTL ? 'flex-start' : 'flex-end', // Adjust alignment for RTL
+                    borderTopLeftRadius: isRTL ? 0 : 20, // Reverse the corner radius for RTL
+                    borderTopRightRadius: isRTL ? 20 : 0, // Reverse the corner radius for RTL
+                    borderBottomLeftRadius: isRTL&&isExpanded ? 0 : 8, // Reverse the corner radius for RTL
+                    borderBottomRightRadius: isRTL ? 0 : 8, // Reverse the corner radius for RTL
+                },]} onPress={toggleExpanded}>
                     <Text style={styles.showDetailsText} numberOfLines={1}>
-                        {isExpanded ? 'Hide Details' : 'Show Details'}
+                    {isExpanded ? t('rideInfo.hideDetails') : t('rideInfo.showDetails')}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -176,33 +184,33 @@ const TransactionCard: React.FC<RideInfoCardProps> = ({
                 ]}
             >
                 <View style={styles.expandableContent}>
-                    <View style={styles.locationItem}>
-                        <View style={styles.locationIcon}>
+                    <View style={[styles.locationItem, flexDirection]}>
+                        <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
                             <Svg xml={locationBlackIcon} rest={{ height: 16, width: 16 }} />
                         </View>
-                        <View style={styles.locationTextContainer}>
-                            <Text style={styles.locationLabel} numberOfLines={1}>Current Location</Text>
-                            <Text numberOfLines={2} style={styles.locationAddress}>
+                        <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                            <Text style={styles.locationLabel} numberOfLines={1}>{t('rideInfo.currentLocation')}</Text>
+                            <Text numberOfLines={2} style={[styles.locationAddress, { width: '90%', textAlign: isRTL ? 'right' : 'left' }]}>
                                 {currentLocation}
                             </Text>
                         </View>
                     </View>
 
-                    <View style={styles.locationDivider} />
+                    <View style={[styles.locationDivider, isRTL ? { marginRight: 24 } : { marginLeft: 14 }, { alignSelf: 'flex-end' }]} />
 
-                    <View style={[styles.locationItem, styles.destinationItem]}>
-                        <View style={styles.locationIcon}>
+                    <View style={[styles.locationItem, styles.destinationItem,flexDirection]}>
+                        <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
                             <Svg xml={homeBlackIcon} rest={{ height: 16, width: 16 }} />
                         </View>
-                        <View style={styles.locationTextContainer}>
-                            <Text style={styles.locationLabel} numberOfLines={1}>Office</Text>
-                            <Text numberOfLines={2} style={styles.locationAddress}>
+                        <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                            <Text style={styles.locationLabel} numberOfLines={1}>{t('rideInfo.officeLocation')}</Text>
+                            <Text numberOfLines={2} style={[styles.locationAddress,textAlignment]}>
                                 {officeLocation}
                             </Text>
                         </View>
                         <View style={styles.distanceContainer}>
-                            <Text style={styles.distance} numberOfLines={1}>{distance}</Text>
-                            <Text style={styles.estimatedTime} numberOfLines={1}>{estimatedTime}</Text>
+                            <Text style={[styles.distance,!textAlignment]} numberOfLines={1}>{distance}</Text>
+                            <Text style={[styles.estimatedTime,!textAlignment]} numberOfLines={1}>{estimatedTime}</Text>
                         </View>
                     </View>
                 </View>
@@ -289,7 +297,7 @@ const styles = StyleSheet.create({
         fontFamily: StyleGuide.fontFamily.bold,
         // flex: 1,
          maxWidth:screenWidth*0.33,
-        marginRight:5,
+        
     },
     serviceType: {
         fontSize: SCREEN_WIDTH < 400 ? 10 : 12,
@@ -308,8 +316,6 @@ const styles = StyleSheet.create({
         height: SCREEN_WIDTH < 400 ? 35 : 40,
         borderRadius: SCREEN_WIDTH < 400 ? 17.5 : 20,
         position: 'absolute',
-        right: -8,
-        bottom: 0,
         zIndex: 1,
     },
     costBreakdown: {

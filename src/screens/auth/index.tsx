@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ScrollView,
   Image,
   TextInput,
+  Pressable,
 } from 'react-native';
 import PhoneInput from './components/phoneInput';
 import SocialLogin from './components/socialComponent';
@@ -17,10 +18,18 @@ import CountryCodeModal from './components/countryCode';
 import AppButton from '../../lib/component/AppButton';
 import styles from './auth.styles';
 import Svg from '../../lib/svg';
-import { check } from '../../../assets/svgAssets';
-import { RouteProp, useNavigation } from '@react-navigation/native';
+import { arrowDown, check } from '../../../assets/svgAssets';
+import { RouteProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import Signup from './signup';
+import { I18nManager } from 'react-native';
 import { RootStackParamList } from '../../navigation/stackNavigation';
+import { useTranslation } from 'react-i18next';
+import { useDispatch } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '../../redux/reduxHooks';
+import { setLanguage } from '../../redux/languageSlice';
+import { RootState } from '../../redux/store';
+import LanguageModal from './components/languageModale';
+import useTranslationStyles from '../../../locales/useTranslationStyles';
 
 // Type for Country
 interface Country {
@@ -44,14 +53,16 @@ const Login = () => {
     id: 'QA',
   });
   const [isCountryModalVisible, setIsCountryModalVisible] = useState<boolean>(false);
-
+  const [languageModalVisible, setLanguageModalVisible] = useState<boolean>(false);
   const navigation = useNavigation();
   type SignUpScreenRouteProp = RouteProp<RootStackParamList, 'login'>;
 
-  type SignUpScreenProps = {
-    route: SignUpScreenRouteProp;
-  };
-  
+  const { t, i18n } = useTranslation();
+  const language = useAppSelector((state: RootState) => state.language.language);
+  const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+  const { flexDirection, marginRightOrLeft } = useTranslationStyles();
+  const dispatch = useAppDispatch();
+
   const handleCountrySelect = (country: Country) => {
     setSelectedCountry(country);
     setIsCountryModalVisible(false);
@@ -64,9 +75,11 @@ const Login = () => {
   const handleSignup = () => {
     navigation.navigate('signUp');
   };
+
   const handleForgetPassword = () => {
     navigation.navigate('forgetPassword');
   };
+
   const handleSocialLogin = (platform: string) => {
     Alert.alert(platform, `Continue with ${platform}`);
   };
@@ -79,6 +92,37 @@ const Login = () => {
     setIsCountryModalVisible(false);
   };
 
+  const handleLanguageSelect = (language: string) => {
+    i18n
+      .changeLanguage(language)
+      .then(() => {
+        dispatch(setLanguage(language)); // Update Redux state
+      })
+      .catch((err) => console.log(err));
+
+    setLanguageModalVisible(false);
+  };
+
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     // This runs every time the screen comes into focus
+  //     const currentRTL = I18nManager.isRTL;
+  //     console.log('Screen focused - Language:', language, 'isRTL:', isRTL, 'I18nManager.isRTL:', currentRTL);
+      
+  //     // Ensure layout consistency when screen is focused
+  //     if (currentRTL !== isRTL) {
+  //       console.log('Layout inconsistency detected, forcing update');
+  //       I18nManager.forceRTL(isRTL);
+  //     }
+  //   }, [language, isRTL])
+  // );
+
+
+  // Listen to changes in the language and RTL settings
+  useEffect(() => {
+    console.log('Language or RTL changed:', language, isRTL);
+  }, [language, isRTL]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
@@ -87,7 +131,25 @@ const Login = () => {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header with Logo */}
+
+        <TouchableOpacity
+          onPress={() => setLanguageModalVisible(true)} // Open language modal
+          style={{
+            backgroundColor: '#f0f0f0',
+            padding: 10,
+            borderRadius: 5,
+            alignItems: 'center',
+            marginBottom: 20,
+            position: 'absolute',
+            top: 30,
+            right: 15,
+            flexDirection: 'row',
+          }}
+        >
+          <Text style={{ fontSize: 18, color: '#333' }}>{t('language')}</Text>
+          <Svg xml={arrowDown} rest={{ height: 15, width: 15, style: { marginLeft: 5 } }} />
+        </TouchableOpacity>
+
         <View style={styles.header}>
           <Image
             source={logo}
@@ -97,53 +159,65 @@ const Login = () => {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>Welcome to ROYAL RIDE</Text>
+        <Text style={styles.title}>{t("welcome_message")}</Text>
 
-        {/* Phone Input Component */}
         <PhoneInput
           selectedCountry={selectedCountry}
           phoneNumber={phoneNumber}
           onPhoneNumberChange={setPhoneNumber}
           onCountryPress={openCountryModal}
+          isRTL={isRTL}
         />
         <View style={styles.inputPasswordContainer}>
           <TextInput
-            style={styles.phoneInput}
-            placeholder="Password"
+            style={[
+              styles.phoneInput,
+              {
+                writingDirection: isRTL ? 'rtl' : 'ltr',
+                textAlign: isRTL ? 'right' : 'left',
+              },
+            ]}
+            placeholder={t("password")}
             placeholderTextColor="#999"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={true}
-            maxLength={15}
           />
         </View>
-        
 
-        <View style={styles.forgotPasswordContainer}>
-          <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={styles.remembermeContainermain}>
-            <View style={styles.remembermeContainer}>
+        <View style={[styles.forgotPasswordContainer, flexDirection]}>
+          <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={[styles.remembermeContainermain, flexDirection]}>
+            <View style={[styles.remembermeContainer,marginRightOrLeft]}>
               {rememberMe && <Svg xml={check} rest={{ height: 18, width: 18 }} />}
             </View>
-            
-            <Text style={styles.remembermeText}>Remember Me</Text>
-           
+
+            <Text style={[styles.remembermeText, marginRightOrLeft]}>
+              {t('remember_me')}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleForgetPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            <Text style={styles.forgotPasswordText}>{t('forgot_password')}</Text>
           </TouchableOpacity>
         </View>
 
-        <AppButton title="Login" onPress={handleLogin} />
+        <AppButton title={t('login')} onPress={handleLogin} />
 
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Don't have an account? </Text>
+        <View style={[styles.loginContainer, flexDirection]}>
+          <Text style={styles.loginText}>{t('dont_have_account')}</Text>
           <TouchableOpacity onPress={handleSignup}>
-            <Text style={styles.loginLink}>Sign up?</Text>
+            <Text style={styles.loginLink}>{t('signup')}</Text>
           </TouchableOpacity>
         </View>
 
         <SocialLogin onSocialLogin={handleSocialLogin} />
       </ScrollView>
+
+      <LanguageModal
+        visible={languageModalVisible}
+        onClose={() => setLanguageModalVisible(false)}
+        onLanguageSelect={handleLanguageSelect} // Pass the handler to the modal
+        currentLanguage={language}
+      />
 
       <CountryCodeModal
         visible={isCountryModalVisible}

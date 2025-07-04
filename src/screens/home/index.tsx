@@ -9,14 +9,16 @@ import { StyleGuide } from '../../../StyleGuide';
 import { screenHeight } from '../../utils/dimenstions';
 import HomeDashBoard from './components/homeDashBoard';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { useAppSelector } from '../../redux/reduxHooks';
+import { RootState } from '../../redux/store';
 const logo=require('../../../assets/images/logo.png')
 
 const Home = () => {
-  const { width, height } = Dimensions.get('window');
   const [currentLocation, setCurrentLocation] = useState(null);
   const [region, setRegion] = useState(null);
-  const [modalVisible, setModalVisible] = useState(true); // Modal starts as visible
 const navigation=useNavigation()
+const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+
   useEffect(() => {
     // Directly set hardcoded location instead of requesting permissions
     const hardcodedRegion = {
@@ -224,6 +226,7 @@ const navigation=useNavigation()
   onBookPress={() => navigation.navigate('bookRide')}
   onProfilePress={openDrawer}
   onLocationPress={(item) => console.log("Location clicked:", item)}
+  isRTL={isRTL}
 />
       {/* <View style={styles.header}>
         <Image

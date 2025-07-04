@@ -19,9 +19,11 @@ import { StyleGuide } from '../../../StyleGuide';
 import AppButton from '../../lib/component/AppButton';
 import styles from './auth.styles';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+import { useAppSelector } from '../../redux/reduxHooks';
+import { RootState } from '../../redux/store';
+import useTranslationStyles from '../../../locales/useTranslationStyles';
 
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const logo=require('../../../assets/images/logo.png')
 
 const Signup = () => {
@@ -34,7 +36,10 @@ const Signup = () => {
   });
   const [isCountryModalVisible, setIsCountryModalVisible] = useState(false);
 const navigation=useNavigation()
-
+const { t, i18n } = useTranslation();
+  const language = useAppSelector((state: RootState) => state.language.language)
+  const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+  const { flexDirection, marginRightOrLeft } = useTranslationStyles();
  
   const handleCountrySelect = (country:any) => {
     setSelectedCountry(country);
@@ -84,33 +89,35 @@ const navigation=useNavigation()
         />
         </View>
 
-        <Text style={styles.title}>Create account</Text>
+        <Text style={styles.title}>{t("createAccount")}</Text>
 
         <PhoneInput
           selectedCountry={selectedCountry}
           phoneNumber={phoneNumber}
           onPhoneNumberChange={setPhoneNumber}
           onCountryPress={openCountryModal}
+          // flexDirection={flexDirection}
+          isRTL={isRTL}
         />
 
         <AppButton
-        title='Sign up'
+        title={t('signup')}
          onPress={()=>{}}
         />
 
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Have an account? </Text>
+        <View style={[styles.loginContainer,flexDirection]}>
+          <Text style={styles.loginText}>{t("haveAccount")} </Text>
           <TouchableOpacity onPress={handleLogin}>
-            <Text style={styles.loginLink}>Log in?</Text>
+            <Text style={styles.loginLink}>{t("login")}</Text>
           </TouchableOpacity>
         </View>
 
         <SocialLogin onSocialLogin={handleSocialLogin} />
 
         <View style={styles.termsContainer}>
-          <Text style={styles.termsText}>By registering you agree to <Text style={styles.termsLink}>our</Text> </Text>
+          <Text style={styles.termsText}>{t("byRegisteringAgree")} <Text style={styles.termsLink}>{t("our")}</Text> </Text>
           <TouchableOpacity>
-            <Text style={styles.termsLink}>our terms and privacy policy</Text>
+            <Text style={styles.termsLink}>{t("ourTermsPrivacyPolicy")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

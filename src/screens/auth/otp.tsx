@@ -11,6 +11,7 @@ import { screenWidth } from '../../utils/dimenstions';
 import styles from './auth.styles';
 import AppButton from '../../lib/component/AppButton';
 import { useScreenHeader } from '../../lib/hooks/useScreenHeader';
+import { t } from 'i18next';
 
 
 
@@ -42,9 +43,9 @@ const Otp = () => {
         />
         </View>
 
-        <Text style={[styles.title,{marginBottom: 10,}]}>Verify Otp</Text>
+        <Text style={[styles.title,{marginBottom: 10,}]}>{t('verifyOtp')}</Text>
 
-        <Text style={styles.instructions}>Enter the 4-digit code sent to your mobile number to verify your account.</Text>
+        <Text style={styles.instructions}>{t('enterOtpInstructions')}</Text>
       <View style={{ width: screenWidth * 0.72, alignSelf: 'center',marginTop :screenWidth * 0.03}}>
         <CodeField
           ref={ref}
@@ -68,7 +69,7 @@ const Otp = () => {
       </View>
       <AppButton
 style={{marginTop:screenWidth*0.15}}
-        title='Submit'
+        title={t('submit')}
          onPress={handleOtpSubmit}
         />
     </SafeAreaView>

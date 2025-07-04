@@ -4,6 +4,9 @@ import { StyleGuide } from '../../../../../StyleGuide';
 import Svg from '../../../../lib/svg';
 import { check, checkIcon, cross } from '../../../../../assets/svgAssets';
 import { screenWidth } from '../../../../utils/dimenstions';
+import { useAppSelector } from '../../../../redux/reduxHooks';
+import useTranslationStyles from '../../../../../locales/useTranslationStyles';
+import { RootState } from '../../../../redux/store';
 
 const car = require('../../../../../assets/images/car1.png');
 const profile = require('../../../../../assets/images/profile.png');
@@ -39,32 +42,34 @@ const TripCard: React.FC<TripCardProps> = ({
   onReject,
   style,
 }) => {
+  const { flexDirection, textAlignment, flipImage } = useTranslationStyles();
+    const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.content}>
+      <View style={[styles.content,flexDirection]}>
 
         <View style={styles.vehicleSection}>
           <View style={{ position: 'relative' }}>
-            <Image source={car} style={styles.vehicleImage} resizeMode="contain" />
-            <Image source={profile} style={styles.driverImage} />
+            <Image source={car} style={[styles.vehicleImage, flipImage,isRTL?{marginLeft:10}:{marginRight:10}]} resizeMode="contain" />
+            <Image source={profile} style={[styles.driverImage,isRTL ? { left: 8,bottom:0 } : { right: 0,bottom:5 }]} />
           </View>
         </View>
 
         {/* Vehicle Info */}
         <View style={styles.vehicleInfo}>
-          <View style={styles.vehicleNameSection}>
-            <Text numberOfLines={1} style={styles.vehicleName}>{vehicleName}</Text>
-            <Text style={styles.vehicleRating}>
+          <View style={[styles.vehicleNameSection,flexDirection]}>
+            <Text numberOfLines={1} style={[styles.vehicleName,textAlignment]}>{vehicleName}</Text>
+            <Text style={[styles.vehicleRating, textAlignment,isRTL?{marginRight:10}:{marginLeft: 10,}]}>
               {vehicleRating} ⭐
             </Text>
           </View>
 
-          <Text style={styles.vehicleModel}>({vehicleModel})</Text>
-          <View style={styles.driverSection}>
-            <View style={styles.driverInfo}>
-              <View style={styles.driverNameSection}>
-                <Text style={styles.driverName}>{driverName}</Text>
-                <Text style={styles.driverRating}>
+          <Text style={[styles.vehicleModel,isRTL?{textAlign: 'right'  }:{textAlign: 'left' }]}>({vehicleModel})</Text>
+          <View style={[styles.driverSection,flexDirection]}>
+            <View style={[styles.driverInfo,flexDirection]}>
+              <View style={[styles.driverNameSection,flexDirection]}>
+                <Text numberOfLines={1} style={[styles.driverName,textAlignment]}>{driverName}</Text>
+                <Text style={[styles.driverRating,isRTL?{marginRight:8}:{marginLeft:8},textAlignment]}>
                   {driverRating} ⭐
                 </Text>
               </View>
@@ -74,7 +79,7 @@ const TripCard: React.FC<TripCardProps> = ({
               </Text>
             </View>
           </View>
-          <View style={styles.buttons}>
+          <View style={[styles.buttons,flexDirection,{alignSelf:isRTL?'flex-end':'flex-start'}]}>
             <TouchableOpacity style={styles.button} onPress={onReject}>
               <Svg xml={cross} rest={{ height: 14, width: 14 }} />
             </TouchableOpacity>
@@ -91,7 +96,7 @@ const TripCard: React.FC<TripCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 15,
+    padding: 10,
     borderRadius: 20,
     backgroundColor: '#ffffff',
     elevation: 5,
@@ -115,7 +120,7 @@ const styles = StyleSheet.create({
     width: screenWidth * 0.32,
     height: 120,
     borderRadius: 5,
-    marginRight: 10,
+    // marginRight: 10,
   },
   vehicleInfo: {
     flex: 1,
@@ -125,7 +130,8 @@ const styles = StyleSheet.create({
   vehicleNameSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: screenWidth * 0.45,
+    // width: screenWidth * 0.45,
+    // backgroundColor:'red'
   },
   vehicleName: {
     fontSize: screenWidth * 0.045,
@@ -139,7 +145,7 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.035,
     color: StyleGuide.color.black,
     fontFamily: StyleGuide.fontFamily.semiBold,
-    marginLeft: 10,
+    
   },
   vehicleModel: {
     fontSize: screenWidth * 0.027,
@@ -175,12 +181,13 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.029,
     color: StyleGuide.color.black,
     fontFamily: StyleGuide.fontFamily.semiBold,
+    width:'70%'
   },
   driverRating: {
     fontSize: screenWidth * 0.029,
     color: StyleGuide.color.black,
     fontFamily: StyleGuide.fontFamily.semiBold,
-    marginLeft: 8,
+   
   },
   price: {
     fontSize: screenWidth * 0.04,

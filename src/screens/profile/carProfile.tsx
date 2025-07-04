@@ -11,6 +11,10 @@ import {
 } from 'react-native';
 import { useScreenHeader } from '../../lib/hooks/useScreenHeader';
 import { StyleGuide } from '../../../StyleGuide';
+import useTranslationStyles from '../../../locales/useTranslationStyles';
+import { RootState } from '../../redux/store';
+import { useAppSelector } from '../../redux/reduxHooks';
+import { t } from 'i18next';
 
 const carMain=require('../../../assets/images/carp1.png')
 const engine1=require('../../../assets/images/carEngin1.png')
@@ -20,10 +24,11 @@ interface CarProfileProps {}
 
 const CarProfile: React.FC<CarProfileProps> = () => {
     useScreenHeader({
-        title: 'Profile',
+        title: t("header.profile"),
         
       });
-
+      const { flexDirection, flipImage ,textAlignment} = useTranslationStyles();
+      const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
   return (
     <SafeAreaView style={StyleGuide.layout.container    }>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
@@ -39,7 +44,7 @@ const CarProfile: React.FC<CarProfileProps> = () => {
         </View>
 
         {/* Interior Images */}
-        <View style={styles.interiorImagesContainer}>
+        <View style={[styles.interiorImagesContainer]}>
           <View style={styles.interiorImageWrapper}>
             <Image
               source={engine1}
@@ -56,24 +61,24 @@ const CarProfile: React.FC<CarProfileProps> = () => {
 
         {/* Car Details */}
         <View style={styles.detailsContainer}>
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow,flexDirection]}>
             <View style={styles.detailColumn}>
-              <Text style={styles.detailLabel}>Model</Text>
+              <Text style={[styles.detailLabel]}>{t('carProfile.model')}</Text>
               <Text style={styles.detailValue}>RR Cullinan</Text>
             </View>
             <View style={styles.detailColumn}>
-              <Text style={styles.detailLabel}>Plates Number</Text>
+              <Text style={styles.detailLabel}>{t('carProfile.plates_number')}</Text>
               <Text style={styles.detailValue}>B12</Text>
             </View>
           </View>
 
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow,flexDirection]}>
             <View style={styles.detailColumn}>
-              <Text style={styles.detailLabel}>Body</Text>
+              <Text style={styles.detailLabel}>{t('carProfile.body')}</Text>
               <Text style={styles.detailValue}>SUV</Text>
             </View>
             <View style={styles.detailColumn}>
-              <Text style={styles.detailLabel}>Color</Text>
+              <Text style={styles.detailLabel}>{t('carProfile.color')}</Text>
               <Text style={styles.detailValue}>Black</Text>
             </View>
           </View>
@@ -127,7 +132,7 @@ const styles = StyleSheet.create({
   },
   interiorImagesContainer: {
     flexDirection: 'row',
-    marginTop: 20,
+    // marginTop: 20,
     gap: 18,
   },
   interiorImageWrapper: {
@@ -157,12 +162,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 8,
     color: StyleGuide.color.lightGrey,
-    fontFamily:StyleGuide.fontFamily.semiBold
+    fontFamily:StyleGuide.fontFamily.semiBold,
+    textAlign:'center'
   },
   detailValue: {
     fontSize: 20,
     color: StyleGuide.color.blackishGrey,
-    fontFamily:StyleGuide.fontFamily.semiBold
+    fontFamily:StyleGuide.fontFamily.semiBold,
+    textAlign:'center'
   },
 });
 

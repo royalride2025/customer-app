@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     alignItems:'center'
   },
   remembermeText:{
-    marginLeft:6,
+    // marginLeft:6,
     fontFamily:StyleGuide.fontFamily.semiBold,
     fontSize:14
   },

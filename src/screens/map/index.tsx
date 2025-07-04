@@ -14,6 +14,10 @@ import RideCard from './components/rideCard';
 import PaymentMethods from './components/paymentCard';
 import RideInfoCard from './components/rideInfoCard';
 import TimeStatusCard from './components/timeStatusCard';
+import { t } from 'i18next';
+import useTranslationStyles from '../../../locales/useTranslationStyles';
+import { useAppSelector } from '../../redux/reduxHooks';
+import { RootState } from '../../redux/store';
 
 const car = require('../../../assets/images/halfCar.png')
 
@@ -36,6 +40,8 @@ const Map = () => {
   const [currentStep, setCurrentStep] = useState(1);
 
 const navigation=useNavigation()
+const { flexDirection } = useTranslationStyles();
+const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
 
 const handleChat=()=>{
   navigation.navigate('customerChat')
@@ -139,19 +145,19 @@ const handleChat=()=>{
   const rides = [
     {
       id: 1,
-      name: 'ROYAL RIDE',
-      type: 'PREMIUM',
+      name: t("ride_name"),
+      type: t("premium"),
       price: '160',
-      currency: 'QR',
+      currency: t("currency"),
       time: '06:44 PM',
       icon: car
     },
     {
       id: 2,
-      name: 'ROYAL RIDE',
-      type: 'VVIP',
+      name: t("ride_name"),
+      type: t("vvip"),
       price: '160',
-      currency: 'QR',
+      currency: t("currency"),
       time: '06:44 PM',
       icon: car
     }
@@ -160,10 +166,10 @@ const handleChat=()=>{
   const cardData = [
     {
       id: '1',
-      vehicleName: 'LR Defender',
-      vehicleModel: 'Black CF 21536',
+      vehicleName: t("lexus_600"),
+      vehicleModel: t("model_black_cf_2826"),
       vehicleRating: 5.5,
-      driverName: 'Yousuf Abd',
+      driverName: t("ride_name"),
       driverRating: 4.5,
       price: '120',
       currency: 'QR',
@@ -172,10 +178,10 @@ const handleChat=()=>{
     },
     {
       id: '2',
-      vehicleName: 'Toyota Land Cruiser',
-      vehicleModel: 'White TXL 3415',
+      vehicleName: t("defender"),
+      vehicleModel: t("model_black_cf_58719"),
       vehicleRating: 4.8,
-      driverName: 'Ahmed Ali',
+      driverName: t("ride_name"),
       driverRating: 4.2,
       price: '200',
       currency: 'QR',
@@ -238,7 +244,7 @@ const handleChat=()=>{
           // alignSelf: 'center',
         }}
         variant="secondary"
-        title="Cancel the Ride"
+        title={t('cancel_ride')}
         onPress={() => { }}
       />
       {from === 'bookRide' && (
@@ -264,7 +270,7 @@ const handleChat=()=>{
 
 
             )}
-            <Text style={{ textAlign: 'center', fontSize: 18, fontFamily: StyleGuide.fontFamily.bold }} >{currentStep === 1 ? "Choose a Ride" : "Payment Method"}</Text>
+            <Text style={{ textAlign: 'center', fontSize: 18, fontFamily: StyleGuide.fontFamily.bold }} >{currentStep === 1 ?t("choose_ride"): t("payment_method")}</Text>
           </View>
           {currentStep === 1 && (
             <>
@@ -281,20 +287,20 @@ const handleChat=()=>{
 
                 ))}
               </View>
-              <Pressable onPress={handlePaymentStep} style={{ backgroundColor: '#C8A7774D', flexDirection: 'row', paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Pressable onPress={handlePaymentStep} style={[styles.paymentButton,flexDirection]}>
+                <View style={[{alignItems: 'center' },flexDirection]}>
 
                   <Svg xml={atmCard} rest={{ height: 24, width: 30 }} />
-                  <Text style={{ fontFamily: StyleGuide.fontFamily.semiBold, fontSize: 18, color: StyleGuide.color.primary, paddingLeft: 20 }}>Card Payment</Text>
+                  <Text style={[styles.paymentText,isRTL?{paddingRight:10}:{paddingLeft:10}]}>{t('card_payment')}</Text>
                 </View>
-                <Svg xml={rightIcon} rest={{ height: 18, width: 18 }} />
+                <Svg xml={rightIcon} rest={{ height: 18, width: 18,transform: [{ rotate: '180deg' }] }} />
               </Pressable>
             </>
           )}
           {currentStep === 2 && (
             <PaymentMethods />
           )}
-          <AppButton title='Next' />
+          <AppButton title={t("next")} />
         </BottomModal>
       )}
       {/* Map */}
@@ -341,9 +347,9 @@ const handleChat=()=>{
       )}
       <TimeStatusCard
         icon="🛺"
-        title="Your ride is 5 minutes away"
+        title={t("your_ride_is_away")}
         waitingTime="5:00"
-      
+        waitingLabel={t('waiting_time')}
         containerStyle={{ position:'absolute',top:30 }}
         iconContainerStyle={{ backgroundColor: '#ffcc80' }}
       />
@@ -370,4 +376,14 @@ const styles = StyleSheet.create({
     zIndex: 1, // To ensure the cards stay on top of the map
     flexDirection: 'column', // Stack cards vertically
   },
+  paymentButton:{ backgroundColor: '#C8A7774D', 
+    paddingHorizontal: 15, 
+    paddingVertical: 12, 
+    borderRadius: 12,
+     alignItems: 'center', 
+     justifyContent: 'space-between',
+      marginBottom: 15 },
+      paymentText:{ fontFamily: StyleGuide.fontFamily.semiBold,
+         fontSize: 18,
+          color: StyleGuide.color.primary },
 });
