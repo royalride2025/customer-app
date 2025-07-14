@@ -58,8 +58,17 @@
     "title": "خدماتنا",
     "trip": "قم برحلة",
     "rent": "استأجر سيارة",
-    "book": "احجز رحلة"
+    "book": "احجز رحلة",
+    "airport": "نقل المطار"
   },
+  "hour": "ساعة",
+  "hours": "ساعات",
+  "pickup_location": "موقع الاستلام",
+  "enter_pickup_location": "أدخل موقع الاستلام",
+  "set_pickup_location": "حدد موقع الاستلام",
+  "airport_transfer": "نقل المطار",
+  "airport_destination": "وجهة المطار",
+  "airports": "المطارات",
   "savedLocations": "المواقع المحفوظة والأخيرة",
   "locations": {
     "work": "العمل",
@@ -171,5 +180,9 @@
   "support_team": "فريق الدعم",
   "online": "متصل",
   "offline": "غير متصل",
-  "usually_responds": "يستجيب عادة في بضع دقائق"
+  "usually_responds": "يستجيب عادة في بضع دقائق",
+  "schedule_ride": "جدولة الرحلة",
+  "flight_number_required": "رقم الرحلة",
+  "flight_number_required_error": "رقم الرحلة مطلوب",
+  "flight_info_helps_terminal": "توفير رقم الرحلة يساعدنا في تحديد الصالة الصحيحة."
 }

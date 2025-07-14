@@ -12,6 +12,7 @@ import {
 import { StyleGuide } from '../../../../StyleGuide';
 import Svg from '../../../lib/svg';
 import {
+  airportTransferIcon,
   bookRideicon,
   greenLeave,
   homeIcon,
@@ -42,6 +43,7 @@ interface HomeDashboardProps {
   onTripPress?: () => void;
   onRentPress?: () => void;
   onBookPress?: () => void;
+  onAirportPress?: () => void;
   onProfilePress?: () => void;
   isRTL:any
 }
@@ -56,6 +58,7 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
   onRentPress,
   onBookPress,
   onProfilePress,
+  onAirportPress,
   isRTL
 }) => {
   const { flexDirection, marginRightOrLeft ,textAlignment} = useTranslationStyles();
@@ -94,10 +97,10 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
         </View>
         <View style={[styles.coinsContainer]}>
          
-          <View>
-            <Text style={styles.coinsAmount}>6.1</Text>
-            <Text style={styles.coinsLabel}>kg</Text>
-          </View>
+            {/* <View>
+              <Text style={styles.coinsAmount}>6.1</Text>
+              <Text style={styles.coinsLabel}>kg</Text>
+            </View> */}
           <View style={styles.savedBadge}>
             <Text style={styles.savedText}>CO.{'\n'}Saved</Text>
           </View>
@@ -106,7 +109,7 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
       </View>
 
       {/* Search Bar */}
-      <View style={[styles.searchContainer,flexDirection]}>
+      {/* <View style={[styles.searchContainer,flexDirection]}>
         <Svg xml={searchIcon} rest={{ height: 45, width: 24 ,marginLeft: isRTL?10:0,marginRight: isRTL?0:10,}} />
         <TextInput
           style={[styles.searchInput, {
@@ -116,28 +119,36 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
           placeholder={t('userName')}
           placeholderTextColor={StyleGuide.color.grey}
         />
-      </View>
+      </View> */}
 
       {/* Services */}
       <Text style={[styles.servicesTitle,textAlignment]}>{t('services.title')}</Text>
-      <View style={[styles.servicesContainer,flexDirection]}>
-        <TouchableOpacity
-          style={[styles.serviceButtonSecondary, { marginHorizontal: 0, marginRight:isRTL? 0:5 }]}
-          onPress={onTripPress}
-        >
-          <Svg xml={tripIcon} rest={{ height: 40, width: 35 }} />
-          <Text style={styles.serviceText}>{t('services.trip')}</Text>
-        </TouchableOpacity>
+      <View style={styles.servicesGridContainer}>
+        <View style={styles.servicesRow}>
+          <TouchableOpacity
+            style={styles.serviceButtonSecondary}
+            onPress={onTripPress}
+          >
+            <Svg xml={tripIcon} rest={{ height: 50, width: 38 }} />
+            <Text style={styles.serviceText}>{t('services.trip')}</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.serviceButtonSecondary} onPress={onRentPress}>
-          <Svg xml={rentRideIcon} rest={{ height: 40, width: 35 }} />
-          <Text style={styles.serviceText}>{t('services.rent')}</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.serviceButtonSecondary} onPress={onRentPress}>
+            <Svg xml={rentRideIcon} rest={{ height: 50, width: 38 }} />
+            <Text style={styles.serviceText}>{t('services.rent')}</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.servicesRow}>
+          <TouchableOpacity style={styles.serviceButtonSecondary} onPress={onBookPress}>
+            <Svg xml={bookRideicon} rest={{ height: 50, width: 32 }} />
+            <Text style={styles.serviceText}>{t('services.book')}</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.serviceButtonSecondary} onPress={onBookPress}>
-          <Svg xml={bookRideicon} rest={{ height: 40, width: 28 }} />
-          <Text style={styles.serviceText}>{t('services.book')}</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.serviceButtonSecondary} onPress={onAirportPress}>
+            <Svg xml={airportTransferIcon} rest={{ height: 42, width: 32 }} />
+            <Text style={styles.serviceText}>{t('services.airport')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Saved Locations */}
@@ -225,7 +236,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(6),
     paddingVertical: getResponsiveSize(2),
     marginTop: getResponsiveSize(2),
-    borderLeftWidth: getResponsiveSize(3),
+    // borderLeftWidth: getResponsiveSize(3),
     marginLeft: getResponsiveSize(6),
     borderLeftColor: StyleGuide.color.grey,
   },
@@ -256,11 +267,14 @@ const styles = StyleSheet.create({
     color:StyleGuide.color.black,
     marginBottom: 12,
   },
-  servicesContainer: {
+  servicesGridContainer: {
+    marginBottom: getResponsiveSize(28),
+    marginTop: getResponsiveSize(14),
+  },
+  servicesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: getResponsiveSize(28),
-    marginTop:getResponsiveSize(14)
+    marginBottom: getResponsiveSize(10),
   },
   serviceButtonSecondary: {
     backgroundColor: StyleGuide.color.white,
@@ -274,7 +288,7 @@ const styles = StyleSheet.create({
     elevation: 0.4,
   },
   serviceText: {
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(13),
     fontFamily: StyleGuide.fontFamily.bold,
     textAlign: 'center',
     color: StyleGuide.color.blackishGrey,

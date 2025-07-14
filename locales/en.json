@@ -58,8 +58,17 @@
     "title": "Our Services",
     "trip": "Make a Trip",
     "rent": "Rent a Ride",
-    "book": "Book a Ride"
+    "book": "Book a Ride",
+    "airport": "Airport Transfer"
   },
+  "hour": "hour",
+  "hours": "hours",
+  "pickup_location": "Pickup Location",
+  "enter_pickup_location": "Enter pickup location",
+  "set_pickup_location": "Set pickup location",
+  "airport_transfer": "Airport Transfer",
+  "airport_destination": "Airport destination",
+  "airports": "Airports",
   "savedLocations": "Saved and recent locations",
   "locations": {
     "work": "Work",
@@ -171,7 +180,12 @@
    "support_team": "Support Team",
    "online": "Online",
    "offline": "Offline",
-   "usually_responds": "Usually responds in a few minutes"
+   "usually_responds": "Usually responds in a few minutes",
+  "schedule_ride": "Schedule Ride",
+  "flight_number_required": "Flight number",
+  "flight_number_required_error": "Flight number is required",
+  "flight_info_helps_terminal": "Providing your flight number helps us assign the correct terminal.",
+  "airport_pickup_exclusive_perks": "Airport pickup exclusive perks"
  
 
 }

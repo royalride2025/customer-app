@@ -123,77 +123,11 @@ const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
       </View>
     );
   }
-  // const DashboardScreen = () => (
-  //   <>
-     
-
-  //     {/* Content Card */}
-  //     <View>
-  //       {/* User Greeting */}
-  //       <View style={styles.greetingContainer}>
-  //         <View style={styles.userInfo}>
-  //           <View style={styles.avatar}>
-  //             <Text style={styles.avatarText}>👤</Text>
-  //           </View>
-  //           <View>
-  //             <Text style={styles.greetingText}>Good morning</Text>
-  //             <Text style={styles.userName}>Ibrahim.</Text>
-  //           </View>
-  //         </View>
-  //         <View style={styles.coinsContainer}>
-  //           <Text style={styles.coinsAmount}>61</Text>
-  //           <Text style={styles.coinsLabel}>kg</Text>
-  //           <View style={styles.savedBadge}>
-  //             <Text style={styles.savedText}>CO₂ Saved 🌱</Text>
-  //           </View>
-  //         </View>
-  //       </View>
-
-  //       {/* Search Bar */}
-  //       <View style={styles.searchContainer}>
-  //         <Text style={styles.searchPlaceholder}>🔍 Where to?</Text>
-  //       </View>
-
-  //       {/* Services */}
-  //       <Text style={styles.servicesTitle}>Our Services</Text>
-  //       <View style={styles.servicesContainer}>
-  //         <TouchableOpacity style={styles.serviceButton}>
-  //           <Text style={styles.serviceIcon}>🚗</Text>
-  //           <Text style={styles.serviceText}>Make a Trip</Text>
-  //         </TouchableOpacity>
-  //         <TouchableOpacity style={styles.serviceButtonSecondary}>
-  //           <Text style={styles.serviceIcon}>🚙</Text>
-  //           <Text style={styles.serviceText}>Rent a Ride</Text>
-  //         </TouchableOpacity>
-  //         <TouchableOpacity style={styles.serviceButtonSecondary}>
-  //           <Text style={styles.serviceIcon}>📱</Text>
-  //           <Text style={styles.serviceText}>Book a Ride</Text>
-  //         </TouchableOpacity>
-  //       </View>
-
-  //       {/* Saved Locations */}
-  //       <Text style={styles.savedTitle}>Saved and recent locations</Text>
-  //       <View style={styles.locationsContainer}>
-  //         {['Work', 'Home', 'Work'].map((location, index) => (
-  //           <View key={index} style={styles.locationItem}>
-  //             <Text style={styles.locationIcon}>
-  //               {location === 'Work' ? '💼' : '🏠'}
-  //             </Text>
-  //             <View>
-  //               <Text style={styles.locationName}>{location}</Text>
-  //               <Text style={styles.locationAddress}>23 Helliopolis st.</Text>
-  //             </View>
-  //           </View>
-  //         ))}
-  //       </View>
-  //     </View>
-
-  //   </>
-  // );
 
   return (
     <View style={styles.container}>
       <MapView
+      
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={region}
@@ -224,6 +158,7 @@ const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
   onTripPress={() =>navigation.navigate('makeTrip') }
   onRentPress={() => navigation.navigate('rentRide') }
   onBookPress={() => navigation.navigate('bookRide')}
+  onAirportPress={() => navigation.navigate('airportTransfer')}
   onProfilePress={openDrawer}
   onLocationPress={(item) => console.log("Location clicked:", item)}
   isRTL={isRTL}
@@ -263,6 +198,10 @@ const styles = StyleSheet.create({
     backgroundColor: StyleGuide.color.backgroundColor,
     borderTopLeftRadius:24,
     borderTopRightRadius:24,
+    // position: 'absolute',
+    // bottom: 0,
+    // left: 0,
+    // right: 0,
     
     // alignSelf: 'stretch',
 

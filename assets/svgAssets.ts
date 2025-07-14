@@ -292,3 +292,27 @@ export const logout=`<svg fill="#ff4757" xmlns="http://www.w3.org/2000/svg"
 		c-0.6,0.6-0.6,1.5,0,2.1l2.1,2.1c0.6,0.6,1.5,0.6,2.1,0L49.6,27z"/>
 </g>
 </svg>`
+
+// ... existing code ...
+
+export const airportTransferIcon = `<svg width="75" height="75" viewBox="0 0 75 75" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M37.5 0C37.5 0 45 15 45 30C45 45 37.5 60 37.5 60C37.5 60 30 45 30 30C30 15 37.5 0 37.5 0Z" fill="#D5B482"/>
+<path d="M15 25C15 25 25 30 37.5 30C50 30 60 25 60 25C60 25 55 35 37.5 35C20 35 15 25 15 25Z" fill="#D5B482"/>
+<path d="M37.5 35C37.5 35 45 45 45 60C45 75 37.5 75 37.5 75C37.5 75 30 75 30 60C30 45 37.5 35 37.5 35Z" fill="#D5B482"/>
+<path d="M20 40C20 40 30 45 37.5 45C45 45 55 40 55 40C55 40 50 50 37.5 50C25 50 20 40 20 40Z" fill="#D5B482"/>
+</svg>`
+
+export const swap=`<svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m13 18-4 4-4-4" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V10" stroke="#000000" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round"/><path d="m19 6-4-4-4 4" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 2v12" stroke="#000000" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round"/></svg>`
+
+export const inputCross=`<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+<!-- License: PD. Made by Alessio Atzeni : https://www.alessioatzeni.com/ -->
+<svg fill="#000000" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+	 width="800px" height="800px" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve">
+<polygon points="335.188,154.188 256,233.375 176.812,154.188 154.188,176.812 233.375,256 154.188,335.188 176.812,357.812 
+	256,278.625 335.188,357.812 357.812,335.188 278.625,256 357.812,176.812 "/>
+<path d="M256,0C114.609,0,0,114.609,0,256s114.609,256,256,256s256-114.609,256-256S397.391,0,256,0z M256,472
+	c-119.297,0-216-96.703-216-216S136.703,40,256,40s216,96.703,216,216S375.297,472,256,472z"/>
+</svg>`
