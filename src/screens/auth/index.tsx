@@ -30,6 +30,9 @@ import { setLanguage } from '../../redux/languageSlice';
 import { RootState } from '../../redux/store';
 import LanguageModal from './components/languageModale';
 import useTranslationStyles from '../../../locales/useTranslationStyles';
+import networkClient from '../../../networkClient';
+import { API_ENDPOINTS } from '../../../apiEndpoints';
+import { setToken } from '../../redux/authSlice';
 
 // Type for Country
 interface Country {
@@ -54,7 +57,7 @@ const Login = () => {
   });
   const [isCountryModalVisible, setIsCountryModalVisible] = useState<boolean>(false);
   const [languageModalVisible, setLanguageModalVisible] = useState<boolean>(false);
-  const navigation = useNavigation();
+  const navigation: any = useNavigation();
   type SignUpScreenRouteProp = RouteProp<RootStackParamList, 'login'>;
 
   const { t, i18n } = useTranslation();
@@ -68,8 +71,27 @@ const Login = () => {
     setIsCountryModalVisible(false);
   };
 
-  const handleLogin = () => {
-    navigation.navigate('Main');
+  const handleLogin = async () => {
+    try {
+      // Determine identifier (email or phone)
+      const identifier = phoneNumber.includes('@') ? phoneNumber : phoneNumber.replace(/\D/g, '');
+      const body = {
+        identifier,
+        password,
+        platform: 'admin_panel', // or 'driver_app' | 'customer_app' as needed
+      };
+      const response = await networkClient.post(API_ENDPOINTS.LOGIN, body);
+      // Assuming response.data.token contains the token
+      if (response.data && response.data.token) {
+        dispatch(setToken(response.data.token));
+        navigation.navigate('Main');
+      } else {
+        Alert.alert('Login Failed', 'Invalid response from server.');
+      }
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error.message || 'Login failed';
+      Alert.alert('Login Failed', message);
+    }
   };
 
   const handleSignup = () => {
@@ -200,7 +222,7 @@ const Login = () => {
           </TouchableOpacity>
         </View>
 
-        <AppButton title={t('login')} onPress={handleLogin} />
+        <AppButton title={t('login')} onPress={()=>navigation.navigate('Main')} />
 
         <View style={[styles.loginContainer, flexDirection]}>
           <Text style={styles.loginText}>{t('dont_have_account')}</Text>
