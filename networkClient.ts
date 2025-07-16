@@ -2,8 +2,10 @@ import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import store from './src/redux/store';
 import { RootState } from './src/redux/store';
 
+const API_BASE_URL = 'https://jsonplaceholder.typicode.com';
+
 const networkClient = axios.create({
-  baseURL: 'https://your-api-url.com/api', // TODO: Replace with your API base URL
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

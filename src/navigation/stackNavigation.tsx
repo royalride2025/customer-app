@@ -24,6 +24,8 @@ import ScheduleRideScreen from '../screens/home/airportTransfer/ScheduleRideScre
 import { Text } from 'react-native';
 import { t } from 'i18next';
 import { StyleGuide } from '../../StyleGuide';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 
 
 // Define the types for the navigator
@@ -51,48 +53,53 @@ export type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
- 
+  const token = useSelector((state: RootState) => state.auth.token);
+
   return (
     <Stack.Navigator initialRouteName="Introduction">
-      <Stack.Screen options={{ headerShown: false }} name="Introduction" component={Introduction} />
-      <Stack.Screen options={{ headerShown: false }} name="login" component={Login} />
-      <Stack.Screen options={{ headerShown: false }} name="signUp" component={Signup} />
-      {/* <Stack.Screen options={{ headerShown: false }} name="bottomTabs" component={BottomTabs} /> */}
-      <Stack.Screen options={{ headerShown: false }} name="Main" component={DrawerNavigator} />
-      <Stack.Screen  name="makeTrip" component={MakeTrip} />
-      <Stack.Screen  name="transaction" component={Transactions} />
-      <Stack.Screen options={{ headerShown: false }} name="paymentReceipt" component={PaymentReceipt} />
-      <Stack.Screen options={{ headerShown: false }} name="customerChat" component={CustomerClientChat} />
-      <Stack.Screen  name="ScheduleRide" component={ScheduleRideScreen} />
-
-
-      <Stack.Screen  name="rentRide" component={RentRide} />
-      <Stack.Screen  name="bookRide" component={BookRide} />
-      <Stack.Screen   name="airportTransfer" component={AirportTransfer} />
-      <Stack.Screen   name="forgetPassword" component={ForgetPassword}  options={{
-          headerTitle: () => (
-            <Text style={{
-               color:StyleGuide.color.black,
-              fontSize: 18,
-              fontFamily: StyleGuide.fontFamily.bold,
-            }}>
-              {t("forgotPassword")}
-            </Text>
-          ),
-        }} />
-      <Stack.Screen  name="otp" component={Otp} options={{
-          headerTitle: () => (
-            <Text style={{
-               color:StyleGuide.color.black,
-              fontSize: 18,
-              fontFamily: StyleGuide.fontFamily.bold,
-            }}>
-             {t('otpVerification')}
-            </Text>
-          ),
-        }}/>
-      <Stack.Screen  name="carProfile" component={CarProfile} />
-      <Stack.Screen options={{ headerShown: false }} name="map" component={Map} />
+      {!token ? (
+        <>
+          <Stack.Screen options={{ headerShown: false }} name="Introduction" component={Introduction} />
+          <Stack.Screen options={{ headerShown: false }} name="login" component={Login} />
+          <Stack.Screen options={{ headerShown: false }} name="signUp" component={Signup} />
+          <Stack.Screen name="forgetPassword" component={ForgetPassword} options={{
+            headerTitle: () => (
+              <Text style={{
+                color: StyleGuide.color.black,
+                fontSize: 18,
+                fontFamily: StyleGuide.fontFamily.bold,
+              }}>
+                {t("forgotPassword")}
+              </Text>
+            ),
+          }} />
+          <Stack.Screen name="otp" component={Otp} options={{
+            headerTitle: () => (
+              <Text style={{
+                color: StyleGuide.color.black,
+                fontSize: 18,
+                fontFamily: StyleGuide.fontFamily.bold,
+              }}>
+                {t('otpVerification')}
+              </Text>
+            ),
+          }} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen options={{ headerShown: false }} name="Main" component={DrawerNavigator} />
+          <Stack.Screen name="makeTrip" component={MakeTrip} />
+          <Stack.Screen name="transaction" component={Transactions} />
+          <Stack.Screen options={{ headerShown: false }} name="paymentReceipt" component={PaymentReceipt} />
+          <Stack.Screen options={{ headerShown: false }} name="customerChat" component={CustomerClientChat} />
+          <Stack.Screen name="ScheduleRide" component={ScheduleRideScreen} />
+          <Stack.Screen name="rentRide" component={RentRide} />
+          <Stack.Screen name="bookRide" component={BookRide} />
+          <Stack.Screen name="airportTransfer" component={AirportTransfer} />
+          <Stack.Screen name="carProfile" component={CarProfile} />
+          <Stack.Screen options={{ headerShown: false }} name="map" component={Map} />
+        </>
+      )}
     </Stack.Navigator>
   );
 };
