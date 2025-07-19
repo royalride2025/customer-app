@@ -182,10 +182,22 @@
    "offline": "Offline",
    "usually_responds": "Usually responds in a few minutes",
   "schedule_ride": "Schedule Ride",
-  "flight_number_required": "Flight number",
-  "flight_number_required_error": "Flight number is required",
+  "by_flight_arrival": "By Flight Arrival",
+  "by_time": "By Time",
+  "flight_number_optional": "Flight number (optional)",
+  "flight_number_required": "Flight number (required)",
   "flight_info_helps_terminal": "Providing your flight number helps us assign the correct terminal.",
-  "airport_pickup_exclusive_perks": "Airport pickup exclusive perks"
+  "dropoff_at_approx": "Drop-off at approx. {{time}}",
+  "estimated_ride_duration": "Estimated ride duration: {{duration}} min",
+  "airport_dropoff_perks": "Airport Drop-off exclusive perks",
+  "learn_more_blacklane": "Learn more at Blacklane",
+  "your_flight_to": "Your flight to DOH",
+  "add_flight_details_below": "Add your flight details below",
+  "date": "Date",
+  "time": "Time",
+  "airport_pickup_perks": "Airport Pickup exclusive perks",
+  "set_pickup_time": "Set pickup time",
+  "airport_pickup_exclusive_perks": "Airport Pickup exclusive perks"
  
 
 }

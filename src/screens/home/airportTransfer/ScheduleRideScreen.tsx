@@ -10,6 +10,7 @@ import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
 import { t } from 'i18next';
 import { useAppSelector } from '../../../redux/reduxHooks';
 import useTranslationStyles from '../../../../locales/useTranslationStyles';
+import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 
 const ScheduleRideScreen = () => {
   const navigation = useNavigation();
@@ -39,20 +40,22 @@ console.log("isAirportDestination",isAirportDestination)
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
   
       {/* Date & Time */}
+      {(!isAirportDestination ) &&(
+        <>
       <View style={styles.tabRow}>
-        <View style={{ flexDirection: 'row', flex: 1 }}>
           <TouchableOpacity
             style={[
               styles.tab,
               activeTab === 'flight' && styles.activeTab,
-              { flex: 1 }
+              // { flex: 1 }
             ]}
             onPress={() => setActiveTab('flight')}
           >
             <Text style={[
               styles.tabText,
+              {textAlign:isRTL?'right':'left'},
               activeTab === 'flight' && styles.activeTabText,
-              !isAirportDestination && styles.disabledTabText
+            
             ]}>
               {t('by_flight_arrival')}
             </Text>
@@ -61,26 +64,45 @@ console.log("isAirportDestination",isAirportDestination)
             style={[
               styles.tab,
               activeTab === 'time' && styles.activeTab,
-              { flex: 1 }
+              // { flex: 1 }
             ]}
             onPress={() => setActiveTab('time')}
           >
             <Text style={[
               styles.tabText,
+              {textAlign:isRTL?'right':'left'},
               activeTab === 'time' && styles.activeTabText
             ]}>
               {t('by_time')}
             </Text>
           </TouchableOpacity>
-        </View>
+       
       </View>
+      {activeTab==='flight'&&(
+      <View style={styles.flightCard}>
+          <View style={styles.flightIconContainer}>
+          <Svg xml={airportTransferIcon} rest={{ height: 20, width: 20, style: isRTL ? { marginLeft: 8 } : { marginRight: 8 } }} />
+
+            <View style={styles.gateIcon}>
+            {/* <Svg xml={airportTransferIcon} rest={{ height: 20, width: 20, style: isRTL ? { marginLeft: 8 } : { marginRight: 8 } }} /> */}
+
+            </View>
+          </View>
+          <View style={styles.flightInfo}>
+            <Text style={styles.flightTitle}>Your flight to DOH</Text>
+            <Text style={styles.flightSubtitle}>Add your flight details below</Text>
+          </View>
+        </View>
+      )}
+        </>
+      )}
       <View style={styles.cardInput}>
         <Text style={[styles.inputLabel, textAlignment]}>Date</Text>
         <TouchableOpacity onPress={() => { setPickerMode('date'); setShowDatePicker(true); }}>
           <Text style={[styles.inputValue, textAlignment]}>{formatDate(date)}</Text>
         </TouchableOpacity>
       </View>
-      {isAirportDestination &&(
+      {(isAirportDestination||activeTab==="time") &&(
       <View style={styles.cardInput}>
         <Text style={[styles.inputLabel, textAlignment]}>Time</Text>
         <TouchableOpacity onPress={() => { setPickerMode('time'); setShowDatePicker(true); }}>
@@ -112,7 +134,8 @@ console.log("isAirportDestination",isAirportDestination)
     </View>
 )}
       {/* Flight number (only if airport is destination) */}
-     
+     {activeTab!=="time"&&(
+      <>
           <View style={[styles.cardInputRow, flexDirection]}>
             <Svg xml={airportTransferIcon} rest={{ height: 20, width: 20, style: isRTL ? { marginLeft: 8 } : { marginRight: 8 } }} />
             <TextInput
@@ -125,10 +148,11 @@ console.log("isAirportDestination",isAirportDestination)
             />
           </View>
           <Text style={[styles.infoText, textAlignment]}>{t('flight_info_helps_terminal')}</Text>
-      
+          </>
+        )}
 
       {/* Drop-off estimate */}
-      {isAirportDestination &&(
+      {(isAirportDestination||activeTab==='time' )&&(
         <>
       <View style={styles.estimateRow}>
         <Svg xml={locationIcon} rest={{ height: 18, width: 18, style: isRTL ? { marginLeft: 8 } : { marginRight: 8 } }} />
@@ -141,10 +165,10 @@ console.log("isAirportDestination",isAirportDestination)
       </>
       )}
       {/* Airport drop-off perks */}
-      <View style={styles.perksRow}>
-        <Svg xml={airportTransferIcon} rest={{ height: 18, width: 18, style: isRTL ? { marginLeft: 8 } : { marginRight: 8 } }} />
+      <View style={[styles.perksRow,flexDirection]}>
+        <Svg xml={airportTransferIcon} rest={{ height: 24, width: 24, style: isRTL ? { marginLeft: 8 } : { marginRight: 8 } }} />
         <View>
-          <Text style={[styles.perksTitle, textAlignment]}>{t('airport_dropoff_perks')}</Text>
+          <Text style={[styles.perksTitle, textAlignment]}>{isAirportDestination?t('airport_dropoff_perks'):t('airport_pickup_exclusive_perks')}</Text>
           <Text style={[styles.perksLink, textAlignment]} onPress={() => Linking.openURL('https://www.blacklane.com/en/airport-transfer/')}>{t('learn_more_blacklane')}</Text>
         </View>
       </View>
@@ -177,7 +201,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: StyleGuide.fontFamily.bold,
     color: StyleGuide.color.black,
   },
   cardInput: {
@@ -222,9 +246,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    marginTop:SCREEN_WIDTH*0.1
   },
   dropoffTime: {
-    fontWeight: 'bold',
+    fontFamily: StyleGuide.fontFamily.bold,
     color: StyleGuide.color.black,
     fontSize: 16,
   },
@@ -240,10 +265,11 @@ const styles = StyleSheet.create({
   perksRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    // marginBottom: 8,
+    marginTop:10
   },
   perksTitle: {
-    fontWeight: 'bold',
+    fontFamily: StyleGuide.fontFamily.bold,
     color: StyleGuide.color.black,
     fontSize: 16,
   },
@@ -282,23 +308,28 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between', // Add space between tabs
     marginBottom: 16,
+    borderWidth:1,
+    borderRadius:12,
+    paddingVertical:5
   },
   tab: {
+    flex: 1,
+    marginHorizontal: 4,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: StyleGuide.color.grey,
+    borderColor: StyleGuide.color.lightGrey,
   },
   activeTab: {
     backgroundColor: StyleGuide.color.primary,
     borderColor: StyleGuide.color.primary,
   },
   tabText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontFamily: StyleGuide.fontFamily.bold,
   },
   activeTabText: {
     color: StyleGuide.color.white,
@@ -308,6 +339,40 @@ const styles = StyleSheet.create({
   },
   disabledTabText: {
     color: '#999',
+  },
+  flightCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F6F6F8',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 24,
+    marginBottom: 24,
+  },
+  flightIconContainer: {
+    position: 'relative',
+    marginRight: 16,
+  },
+  gateIcon: {
+    position: 'absolute',
+    bottom: -8,
+    right: -8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 2,
+  },
+  flightInfo: {
+    flex: 1,
+  },
+  flightTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  flightSubtitle: {
+    fontSize: 14,
+    color: '#666',
   },
 });
 
