@@ -102,7 +102,7 @@ const { t, i18n } = useTranslation();
 
         <AppButton
         title={t('signup')}
-         onPress={()=>{}}
+        onPress={()=>{}}
         />
 
         <View style={[styles.loginContainer,flexDirection]}>

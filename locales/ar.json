@@ -182,7 +182,20 @@
   "offline": "غير متصل",
   "usually_responds": "يستجيب عادة في بضع دقائق",
   "schedule_ride": "جدولة الرحلة",
-  "flight_number_required": "رقم الرحلة",
-  "flight_number_required_error": "رقم الرحلة مطلوب",
-  "flight_info_helps_terminal": "توفير رقم الرحلة يساعدنا في تحديد الصالة الصحيحة."
+  "by_flight_arrival": "حسب وصول الرحلة",
+  "by_time": "حسب الوقت",
+  "flight_number_optional": "رقم الرحلة (اختياري)",
+  "flight_number_required": "رقم الرحلة (إجباري)",
+  "flight_info_helps_terminal": "توفير رقم الرحلة يساعدنا في تحديد الصالة الصحيحة.",
+  "dropoff_at_approx": "الوصول تقريبًا في {{time}}",
+  "estimated_ride_duration": "مدة الرحلة المقدرة: {{duration}} دقيقة",
+  "airport_dropoff_perks": "مزايا حصرية لتوصيل المطار",
+  "learn_more_blacklane": "تعرف على المزيد في Blacklane",
+  "your_flight_to": "رحلتك إلى الدوحة",
+  "add_flight_details_below": "أضف تفاصيل رحلتك أدناه",
+  "date": "التاريخ",
+  "time": "الوقت",
+  "airport_pickup_perks": "مزايا حصرية لاستلام المطار",
+  "airport_pickup_exclusive_perks": "مزايا حصرية لاستلام المطار",
+  "set_pickup_time": "تعيين وقت الاستلام"
 }
