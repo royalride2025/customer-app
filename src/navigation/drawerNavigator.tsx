@@ -22,8 +22,9 @@ import Svg from '../lib/svg';
 import { Cash, CashInactive, homeActive, homeInactive, logout } from '../../assets/svgAssets';
 import ChatSupport from '../screens/chatSupport';
 import { t } from 'i18next';
-import { useAppSelector } from '../redux/reduxHooks';
+import { useAppSelector, useAppDispatch } from '../redux/reduxHooks';
 import { RootState } from '../redux/store';
+import { clearToken } from '../redux/authSlice';
 
 const Drawer = createDrawerNavigator();
 
@@ -33,6 +34,7 @@ const profile = require('../../assets/images/manBg.png');
 // Custom Drawer Content Component
 const CustomDrawerContent = (props) => {
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+  const dispatch = useAppDispatch();
   console.log('isRTL===>', isRTL)
   
   const handleLogout = () => {
@@ -51,15 +53,12 @@ const CustomDrawerContent = (props) => {
             if (props.navigation && props.navigation.closeDrawer) {
               props.navigation.closeDrawer();
             }
-  
-            // Add small delay to ensure drawer closes before navigation
-            setTimeout(() => {
-              // Reset navigation to the Login screen
-              props.navigation.reset({
-                index: 0,
-                routes: [{ name: 'login' }],
-              });
-            }, 300);
+            // Clear the token to trigger logout
+            dispatch(clearToken());
+            // Navigate to login screen after logout
+            if (props.navigation && props.navigation.navigate) {
+              props.navigation.navigate('login');
+            }
           }
         }
       ]

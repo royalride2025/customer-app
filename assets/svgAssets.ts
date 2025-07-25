@@ -89,6 +89,12 @@ export const backIcon=`<?xml version="1.0" encoding="utf-8"?>
 	h33.2c0.8,0,1.5-0.6,1.5-1.4v-3C50,23.8,49.4,23,48.6,23z"/>
 </svg>
 `
+export const lock = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="10" width="16" height="10" rx="2" stroke="#3C3B3C" stroke-width="2"/>
+  <path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="#3C3B3C" stroke-width="2"/>
+  <circle cx="12" cy="15" r="1.5" fill="#3C3B3C"/>
+</svg>`;
+
 export const locationPin=`<svg width="38" height="48" viewBox="0 0 38 48" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M18.9583 27.7761C13.0625 27.7761 8.28647 23.1459 8.28647 17.4376C8.28647 11.7293 13.0625 7.09906 18.9583 7.09906C24.849 7.09906 29.6302 11.7293 29.6302 17.4376C29.6302 23.1459 24.849 27.7761 18.9583 27.7761ZM18.5208 0.604273C8.35418 0.83344 0.31251 9.00531 0.552092 18.8491C0.755218 27.1407 13.9636 42.4532 18.1406 47.0886C18.7969 47.8178 19.9688 47.8022 20.599 47.0522C24.6615 42.2501 37.5677 26.3074 37.3646 18.0105C37.125 8.16157 28.6875 0.369898 18.5208 0.604273Z" fill="#D5B482"/>
 </svg>
@@ -112,6 +118,8 @@ export const carSvg=`<svg width="110" height="110" viewBox="0 0 110 110" fill="n
 </defs>
 </svg>
 `
+export const eye = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#3C3B3C" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3" stroke="#3C3B3C" stroke-width="2" fill="none"/></svg>`;
+export const eyeOff = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94C16.11 19.25 14.13 20 12 20c-7 0-11-8-11-8a21.77 21.77 0 0 1 5.06-6.06M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47M1 1l22 22" stroke="#3C3B3C" stroke-width="2" fill="none"/></svg>`;
 
 export const greenLeave=`<svg width="56" height="92" viewBox="0 0 56 92" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M1.63514 34.1303C0.911184 31.1251 -0.286734 24.2084 2.90598 16.9688C7.26014 7.11467 17.9529 0.708414 30.2341 0.447998C31.1039 2.79696 32.2445 6.93758 31.5049 11.8855C29.7601 23.5834 19.031 29.5522 16.2549 30.9532C10.6508 33.7761 5.25493 34.224 1.63514 34.1303ZM0.760142 42.3126C5.66118 41.1303 16.9268 39.172 28.7289 44.3855C44.7862 51.474 55.2289 68.9063 55.656 88.922C51.8226 90.3334 45.0779 92.198 37.0154 90.9949C17.9476 88.1511 8.22368 70.6615 5.94243 66.1355C1.33306 57.0001 0.6091 48.2032 0.760142 42.3126Z" fill="#47B85A"/>

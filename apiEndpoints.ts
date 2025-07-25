@@ -3,8 +3,8 @@
 
 export const API_ENDPOINTS = {
   // Auth
-  LOGIN: '/auth/login',
-  REGISTER: `posts/1`,
+  LOGIN: '/api/auth/login',
+  REGISTER: `/api/auth/register-customer`,
 
 
   // Add more endpoints as needed

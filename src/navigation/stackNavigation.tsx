@@ -56,7 +56,7 @@ const AppNavigator = () => {
   const token = useSelector((state: RootState) => state.auth.token);
 
   return (
-    <Stack.Navigator initialRouteName="Introduction">
+    <Stack.Navigator >
       {!token ? (
         <>
           <Stack.Screen options={{ headerShown: false }} name="Introduction" component={Introduction} />

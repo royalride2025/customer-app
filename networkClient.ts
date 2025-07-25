@@ -2,7 +2,7 @@ import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import store from './src/redux/store';
 import { RootState } from './src/redux/store';
 
-const API_BASE_URL = 'https://jsonplaceholder.typicode.com';
+const API_BASE_URL = 'https://app.royalride.qa';
 
 const networkClient = axios.create({
   baseURL: API_BASE_URL,

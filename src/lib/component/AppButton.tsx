@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, View, ActivityIndicator } from 'react-native';
 import { StyleGuide } from '../../../StyleGuide';
 
 // Define the types for the props that the button will accept
@@ -14,6 +14,7 @@ interface AppButtonProps {
   iconColor?: string; // Optional icon color
   backgroundColor?: string; // Optional background color
   variant?: 'primary' | 'secondary'; // Variant for different background colors
+  loading?: boolean; // Optional loading state
 }
 
 const AppButton: React.FC<AppButtonProps> = ({
@@ -24,9 +25,10 @@ const AppButton: React.FC<AppButtonProps> = ({
   textStyle,
   icon,
   iconSize = 24,
-  iconColor = '#fff',
+  iconColor = '#000',
   backgroundColor,
   variant = 'primary', // Default variant is primary
+  loading = false,
 }) => {
   // Determine the background color based on the variant prop
   const buttonBackgroundColor = variant === 'secondary' ? '#F2D5AF' : backgroundColor || StyleGuide.color.primary;
@@ -35,10 +37,16 @@ const AppButton: React.FC<AppButtonProps> = ({
     <TouchableOpacity
       style={[styles.button, { backgroundColor: buttonBackgroundColor }, style]}
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading}
     >
-      {icon && <View style={[styles.iconContainer, { width: iconSize, height: iconSize }]}>{icon}</View>}
-      <Text style={[styles.buttonText, textStyle]}>{title}</Text>
+      {loading ? (
+        <ActivityIndicator size={28} color={iconColor} style={{ marginRight: 0 }} />
+      ) : (
+        <>
+          {icon && <View style={[styles.iconContainer, { width: iconSize, height: iconSize }]}>{icon}</View>}
+          <Text style={[styles.buttonText, textStyle]}>{title}</Text>
+        </>
+      )}
     </TouchableOpacity>
   );
 };

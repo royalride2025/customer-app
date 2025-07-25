@@ -18,7 +18,7 @@ import CountryCodeModal from './components/countryCode';
 import AppButton from '../../lib/component/AppButton';
 import styles from './auth.styles';
 import Svg from '../../lib/svg';
-import { arrowDown, check } from '../../../assets/svgAssets';
+import { arrowDown, check, lock, eye, eyeOff } from '../../../assets/svgAssets';
 import { RouteProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import Signup from './signup';
 import { I18nManager } from 'react-native';
@@ -33,6 +33,7 @@ import useTranslationStyles from '../../../locales/useTranslationStyles';
 import networkClient from '../../../networkClient';
 import { API_ENDPOINTS } from '../../../apiEndpoints';
 import { setToken } from '../../redux/authSlice';
+import Toast from 'react-native-toast-message';
 
 // Type for Country
 interface Country {
@@ -57,6 +58,8 @@ const Login = () => {
   });
   const [isCountryModalVisible, setIsCountryModalVisible] = useState<boolean>(false);
   const [languageModalVisible, setLanguageModalVisible] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigation: any = useNavigation();
   type SignUpScreenRouteProp = RouteProp<RootStackParamList, 'login'>;
 
@@ -72,25 +75,31 @@ const Login = () => {
   };
 
   const handleLogin = async () => {
+    setLoading(true);
     try {
       // Determine identifier (email or phone)
-      const identifier = phoneNumber.includes('@') ? phoneNumber : phoneNumber.replace(/\D/g, '');
+      const identifier = phoneNumber.includes('@')
+        ? phoneNumber
+        : `${selectedCountry.code.replace('+', '')}${phoneNumber.replace(/\D/g, '')}`;
       const body = {
         identifier,
         password,
-        platform: 'admin_panel', // or 'driver_app' | 'customer_app' as needed
+        platform: 'customer_app', // or 'driver_app' | 'admin_panel' as needed
       };
+      console.log('body',body)
       const response = await networkClient.post(API_ENDPOINTS.LOGIN, body);
-      // Assuming response.data.token contains the token
       if (response.data && response.data.token) {
         dispatch(setToken(response.data.token));
-        navigation.navigate('Main');
+        Toast.show({ type: 'success', text1: 'Success', text2: response?.data?.message });
+        navigation.navigate('Main', { screen: 'Home' });
       } else {
-        Alert.alert('Login Failed', 'Invalid response from server.');
+        Toast.show({ type: 'error', text1: 'Login Failed', text2: 'Invalid response from server.' });
       }
     } catch (error: any) {
       const message = error?.response?.data?.message || error.message || 'Login failed';
-      Alert.alert('Login Failed', message);
+      Toast.show({ type: 'error', text1: 'Login Failed', text2: message });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -146,108 +155,120 @@ const Login = () => {
   }, [language, isRTL]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-
-        <TouchableOpacity
-          onPress={() => setLanguageModalVisible(true)} // Open language modal
-          style={{
-            backgroundColor: '#f0f0f0',
-            padding: 10,
-            borderRadius: 5,
-            alignItems: 'center',
-            marginBottom: 20,
-            position: 'absolute',
-            top: 30,
-            right: 15,
-            flexDirection: 'row',
-          }}
+    <>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={{ fontSize: 18, color: '#333' }}>{t('language')}</Text>
-          <Svg xml={arrowDown} rest={{ height: 15, width: 15, style: { marginLeft: 5 } }} />
-        </TouchableOpacity>
 
-        <View style={styles.header}>
-          <Image
-            source={logo}
-            style={{ width: 130, height: 100 }}
-            resizeMode="contain"
+          <TouchableOpacity
+            onPress={() => setLanguageModalVisible(true)} // Open language modal
+            style={{
+              backgroundColor: '#f0f0f0',
+              padding: 10,
+              borderRadius: 5,
+              alignItems: 'center',
+              marginBottom: 20,
+              position: 'absolute',
+              top: 30,
+              right: 15,
+              flexDirection: 'row',
+            }}
+          >
+            <Text style={{ fontSize: 18, color: '#333' }}>{t('language')}</Text>
+            <Svg xml={arrowDown} rest={{ height: 15, width: 15, style: { marginLeft: 5 } }} />
+          </TouchableOpacity>
+
+          <View style={styles.header}>
+            <Image
+              source={logo}
+              style={{ width: 130, height: 100 }}
+              resizeMode="contain"
+            />
+          </View>
+
+          {/* Title */}
+          <Text style={styles.title}>{t("welcome_message")}</Text>
+
+          <PhoneInput
+            selectedCountry={selectedCountry}
+            phoneNumber={phoneNumber}
+            onPhoneNumberChange={setPhoneNumber}
+            onCountryPress={openCountryModal}
+            isRTL={isRTL}
           />
-        </View>
+          <View style={[styles.inputPasswordContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0, alignSelf: 'center' } }} />
+            <TextInput
+              style={[
+                styles.phoneInput,
+                {
+                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                  textAlign: isRTL ? 'right' : 'left',
+                },
+              ]}
+              placeholder={t("password")}
+              placeholderTextColor="#999"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ alignSelf: 'center', marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }}>
+              <Svg xml={showPassword ? eyeOff : eye} rest={{ height: 20, width: 20 }} />
+            </TouchableOpacity>
+          </View>
 
-        {/* Title */}
-        <Text style={styles.title}>{t("welcome_message")}</Text>
+          <View style={[styles.forgotPasswordContainer, flexDirection]}>
+            <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={[styles.remembermeContainermain, flexDirection]}>
+              <View style={[styles.remembermeContainer,marginRightOrLeft]}>
+                {rememberMe && <Svg xml={check} rest={{ height: 18, width: 18 }} />}
+              </View>
 
-        <PhoneInput
-          selectedCountry={selectedCountry}
-          phoneNumber={phoneNumber}
-          onPhoneNumberChange={setPhoneNumber}
-          onCountryPress={openCountryModal}
-          isRTL={isRTL}
+              <Text style={[styles.remembermeText, marginRightOrLeft]}>
+                {t('remember_me')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleForgetPassword}>
+              <Text style={styles.forgotPasswordText}>{t('forgot_password')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <AppButton
+            title={t('login')}
+            onPress={handleLogin}
+            disabled={loading}
+            loading={loading}
+          />
+
+          <View style={[styles.loginContainer, flexDirection]}>
+            <Text style={styles.loginText}>{t('dont_have_account')}</Text>
+            <TouchableOpacity onPress={handleSignup}>
+              <Text style={styles.loginLink}>{t('signup')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <SocialLogin onSocialLogin={handleSocialLogin} />
+        </ScrollView>
+
+        <LanguageModal
+          visible={languageModalVisible}
+          onClose={() => setLanguageModalVisible(false)}
+          onLanguageSelect={handleLanguageSelect} // Pass the handler to the modal
+          currentLanguage={language}
         />
-        <View style={styles.inputPasswordContainer}>
-          <TextInput
-            style={[
-              styles.phoneInput,
-              {
-                writingDirection: isRTL ? 'rtl' : 'ltr',
-                textAlign: isRTL ? 'right' : 'left',
-              },
-            ]}
-            placeholder={t("password")}
-            placeholderTextColor="#999"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={true}
-          />
-        </View>
 
-        <View style={[styles.forgotPasswordContainer, flexDirection]}>
-          <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={[styles.remembermeContainermain, flexDirection]}>
-            <View style={[styles.remembermeContainer,marginRightOrLeft]}>
-              {rememberMe && <Svg xml={check} rest={{ height: 18, width: 18 }} />}
-            </View>
-
-            <Text style={[styles.remembermeText, marginRightOrLeft]}>
-              {t('remember_me')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleForgetPassword}>
-            <Text style={styles.forgotPasswordText}>{t('forgot_password')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <AppButton title={t('login')} onPress={()=>navigation.navigate('Main')} />
-
-        <View style={[styles.loginContainer, flexDirection]}>
-          <Text style={styles.loginText}>{t('dont_have_account')}</Text>
-          <TouchableOpacity onPress={handleSignup}>
-            <Text style={styles.loginLink}>{t('signup')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <SocialLogin onSocialLogin={handleSocialLogin} />
-      </ScrollView>
-
-      <LanguageModal
-        visible={languageModalVisible}
-        onClose={() => setLanguageModalVisible(false)}
-        onLanguageSelect={handleLanguageSelect} // Pass the handler to the modal
-        currentLanguage={language}
-      />
-
-      <CountryCodeModal
-        visible={isCountryModalVisible}
-        onClose={closeCountryModal}
-        onSelectCountry={handleCountrySelect}
-        selectedCountry={selectedCountry}
-      />
-    </SafeAreaView>
+        <CountryCodeModal
+          visible={isCountryModalVisible}
+          onClose={closeCountryModal}
+          onSelectCountry={handleCountrySelect}
+          selectedCountry={selectedCountry}
+        />
+      </SafeAreaView>
+      <Toast />
+    </>
   );
 };
 
