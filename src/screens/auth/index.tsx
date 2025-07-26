@@ -32,7 +32,7 @@ import LanguageModal from './components/languageModale';
 import useTranslationStyles from '../../../locales/useTranslationStyles';
 import networkClient from '../../../networkClient';
 import { API_ENDPOINTS } from '../../../apiEndpoints';
-import { setToken } from '../../redux/authSlice';
+import { setToken, setUser } from '../../redux/authSlice';
 import Toast from 'react-native-toast-message';
 
 // Type for Country
@@ -90,6 +90,7 @@ const Login = () => {
       const response = await networkClient.post(API_ENDPOINTS.LOGIN, body);
       if (response.data && response.data.token) {
         dispatch(setToken(response.data.token));
+        dispatch(setUser(response.data.user));
         Toast.show({ type: 'success', text1: 'Success', text2: response?.data?.message });
         navigation.navigate('Main', { screen: 'Home' });
       } else {
@@ -123,7 +124,7 @@ const Login = () => {
     setIsCountryModalVisible(false);
   };
 
-  const handleLanguageSelect = (language: string) => {
+  const handleLanguageSelect = (language: 'en' | 'ar') => {
     i18n
       .changeLanguage(language)
       .then(() => {
@@ -256,7 +257,6 @@ const Login = () => {
         <LanguageModal
           visible={languageModalVisible}
           onClose={() => setLanguageModalVisible(false)}
-          onLanguageSelect={handleLanguageSelect} // Pass the handler to the modal
           currentLanguage={language}
         />
 

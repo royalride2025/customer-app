@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import { StyleGuide } from '../../../../StyleGuide';
@@ -21,11 +22,30 @@ import { RootState } from '../../../redux/store';
 import { t } from 'i18next';
 import { screenHeight, screenWidth } from '../../../utils/dimenstions';
 import cross from '../../../../assets/svgAssets/cross.svg';
+import networkClient from '../../../../networkClient';
+import { API_ENDPOINTS } from '../../../../apiEndpoints';
+import Toast from 'react-native-toast-message';
 
 const MakeTripc = () => {
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
+
+  const [fromLocationData, setFromLocationData] = useState({
+    address: '',
+    latitude: null,
+    longitude: null,
+  });
+  const [toLocationData, setToLocationData] = useState({
+    address: '',
+    latitude: null,
+    longitude: null,
+  });
+
+
+  console.log(fromLocationData, "fromLocationData")
+  console.log(toLocationData, "toLocationData")
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { flexDirection, textAlignment } = useTranslationStyles();
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
 
@@ -73,12 +93,35 @@ const MakeTripc = () => {
     title: t('header.plan_your_ride'),
 
   });
-  const handleNextButton = () => {
-    navigation.navigate('map', { from: 'plan' });  // Navigate to the 'Map' screen and pass parameters
+  const handleNextButton = async () => {
+    setLoading(true);
+    try {
+      const payload = {
+        booking_type: 'instant',
+        pickup_location: {
+          type: 'Point',
+          coordinates: [fromLocationData.longitude, fromLocationData.latitude],
+          address: fromLocationData.address,
+        },
+        dropoff_location: {
+          type: 'Point',
+          coordinates: [toLocationData.longitude, toLocationData.latitude],
+          address: toLocationData.address,
+        },
+      };
+      const response = await networkClient.post(API_ENDPOINTS.CREATE_INSTANT_BOOKING, payload);
+      Toast.show({ type: 'success', text1: 'Booking successful!', text2: response?.data?.message });
+      navigation.navigate('map', { from: 'plan', booking: response?.data?.data });
+    } catch (error: any) {
+      Toast.show({ type: 'error', text1: 'Booking failed', text2: error?.response?.data?.message || error.message });
+    } finally {
+      setLoading(false);
+    }
   };
   const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
   const toLocationRef = useRef<GooglePlacesAutocompleteRef>(null);
   console.log(fromLocation, "fromLocation")
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
@@ -130,7 +173,24 @@ const MakeTripc = () => {
               },
             }}
             styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28 } }}
-            onPress={(data, details = null) => setFromLocation(data.description)}
+            onPress={(data, details = null) => {setFromLocation(data.description)
+              if (details) {
+                const { lat, lng } = details.geometry.location;
+                const address = data.description;
+            
+                // Save to state
+                setFromLocationData({
+                  address,
+                  latitude: lat,
+                  longitude: lng,
+                });
+            
+                console.log('Selected:', { address, lat, lng });
+              }
+            }
+            }
+
+
             query={{
               key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
               language: 'en',
@@ -169,7 +229,7 @@ const MakeTripc = () => {
             currentLocation={false}
             currentLocationLabel="Current location"
             debounce={0}
-            fetchDetails={false}
+            fetchDetails={true}
             keyboardShouldPersistTaps="always"
             keepResultsAfterBlur={false}
             minLength={2}
@@ -218,7 +278,20 @@ const MakeTripc = () => {
                 textAlign: isRTL ? 'right' : 'left'
               }, listView: { position: 'absolute', top: 50 }
             }}
-            onPress={(data, details = null) => setToLocation(data.description)}
+            onPress={(data, details = null) => {setToLocation(data.description)
+              if (details) {
+                const { lat, lng } = details.geometry.location;
+                const address = data.description;
+                setToLocationData({
+                  address,
+                  latitude: lat,
+                  longitude: lng,
+                });
+                console.log('Selected:', { address, lat, lng });
+              }
+            }
+            }
+
             query={{
               key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
               language: 'en',
@@ -257,7 +330,7 @@ const MakeTripc = () => {
             currentLocation={false}
             currentLocationLabel="Current location"
             debounce={0}
-            fetchDetails={false}
+            fetchDetails={true}
             keyboardShouldPersistTaps="always"
             keepResultsAfterBlur={false}
             minLength={2}
@@ -303,8 +376,9 @@ const MakeTripc = () => {
       </ScrollView>
 
       <View style={styles.buttonContainer}>
-        <AppButton onPress={handleNextButton} title={t('next')} />
+        <AppButton onPress={handleNextButton} title={t('next')} loading={loading} disabled={loading} />
       </View>
+      <Toast />
     </SafeAreaView>
   );
 };

@@ -21,6 +21,7 @@ import { RootState } from '../../redux/store';
 
 const car = require('../../../assets/images/halfCar.png')
 
+
 const routeCoordinates = [
   {
     latitude: 31.4926,
@@ -42,6 +43,9 @@ const Map = () => {
 const navigation=useNavigation()
 const { flexDirection } = useTranslationStyles();
 const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+const {booking}:any=useRoute().params
+console.log(booking, "booking=====")
+
 
 const handleChat=()=>{
   navigation.navigate('customerChat')
