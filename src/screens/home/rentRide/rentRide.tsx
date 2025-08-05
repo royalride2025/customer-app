@@ -1,4 +1,4 @@
-import React, { cloneElement, useRef, useState } from 'react';
+import React, { cloneElement, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,11 @@ import {
   Image,
   Appearance,
   Dimensions,
+  Alert,
 } from 'react-native';
 import DatePicker from 'react-native-date-picker';
 import Slider from '@react-native-community/slider';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import { StyleGuide } from '../../../../StyleGuide';
 import AppButton from '../../../lib/component/AppButton';
 import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
@@ -26,6 +27,10 @@ import Svg from '../../../lib/svg';
 import { locationBlackIcon, currentLocationicon, cross, inputCross } from '../../../../assets/svgAssets';
 import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 import { screenWidth } from '../../../utils/dimenstions';
+import networkClient from '../../../../networkClient';
+import { API_ENDPOINTS } from '../../../../apiEndpoints';
+import Toast from 'react-native-toast-message';
+import { useNavigation } from '@react-navigation/native';
 
 
 const car = require('../../../../assets/images/car.png')
@@ -49,35 +54,139 @@ const vehicles = [
     image: car,
   },
 ];
+interface VehicleDetails {
+  _id: string;
+  car_make: string;
+  car_model: string;
+  vehicle_color: string;
+  vehicle_pictures: string[];
+  year?: string;
+  license_plate?: string;
+  capacity?: number;
+}
+
+interface VehicleOwner {
+  _id: string;
+  phone: string;
+  provider?: string | null;
+  provider_id?: string | null;
+  role: string;
+  status: string;
+  is_verified: boolean;
+  access_platforms: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Vehicle {
+  _id: string;
+  vehicle_details: VehicleDetails;
+  owner: VehicleOwner;
+  status?: string;
+  is_available?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 const RentARide = () => {
   const [selectedTime, setSelectedTime] = useState(new Date());
   const [selectedHours, setSelectedHours] = useState(1);
-  const [selectedVehicle, setSelectedVehicle] = useState('Lexus 600');
-  const [autoAccept, setAutoAccept] = useState(false);
   const [pickupLocation, setPickupLocation] = useState('');
-  const [dropoffLocation, setDropoffLocation] = useState('');
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [pickupLocationData, setPickupLocationData] = useState({
+    address: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
+  });
+  const [selectedVehicle, setSelectedVehicle] = useState<string>('');
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
+  const [isBookingLoading, setIsBookingLoading] = useState(false);
 
-  const handleCurrentLocation = () => {
-    setIsGettingLocation(true);
-    // Add current location logic here
-    setTimeout(() => {
-      setIsGettingLocation(false);
-    }, 2000);
+  const fetchVehicles = async () => {
+    setIsVehiclesLoading(true);
+    try {
+      const response = await networkClient.get(`${API_ENDPOINTS.GET_VEHICLES_WITH_OWNERS}?limit=100`);
+      console.log('Vehicles response:', response.data,response.data?.vehicles[0]?.vehicle_details?._id);
+      
+      if (response.data && response.data.vehicles) {
+        setVehicles(response.data.vehicles);
+        // Set first vehicle as default selected if available
+        if (response?.data?.vehicles.length > 0) {
+          setSelectedVehicle(response.data?.vehicles[0]?.vehicle_details?._id);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching vehicles:', error);
+      Toast.show({ 
+        type: 'error', 
+        text1: 'Failed to load vehicles', 
+        text2: error?.response?.data?.message || 'Please try again later' 
+      });
+    } finally {
+      setIsVehiclesLoading(false);
+    }
   };
 
-  console.log("pickupLocation", pickupLocation)
+  // Fetch vehicles on component mount
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+  console.log("pickupLocation", pickupLocationData)
 
   useScreenHeader({
     title: t('header.rent_ride'),
   });
   const { flexDirection } = useTranslationStyles();
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+  const navigation = useNavigation();
+  console.log("pickupLocation", pickupLocation)
+  
+  const handleNextButton = async () => {
+    // Validate pickup location
+    if (!pickupLocation || !pickupLocationData.address) {
+      Alert.alert(
+        'Missing Location',
+        'Please select a pickup location before proceeding.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
+    setIsBookingLoading(true);
+    try {
+      const payload = {
+        booking_type: "rent",
+        booking_status: "pending",
+        start_time: selectedTime.toISOString(),
+        duration_for_rent: selectedHours,
+        pickup_coordinates: {
+          type: "Point",
+          coordinates: [pickupLocationData?.latitude, pickupLocationData?.longitude],
+          address: pickupLocationData?.address
+        },
+        "selected_vehicle_id":selectedVehicle
+      };
+      console.log(payload, "payload======")
+      const response = await networkClient.post(API_ENDPOINTS.CREATE_INSTANT_BOOKING, payload);
+
+      console.log(response?.data, "response======")
+      
+      Toast.show({ type: 'success', text1: 'Booking successful!', text2: response?.data?.message });
+      // Fix navigation - use proper navigation method
+      navigation.goBack();
+
+    } catch (error: any) {
+      console.log(error, "error======")
+      Alert.alert(error?.response?.data?.message)
+      Toast.show({ type: 'error', text1: 'Booking failed', text2: error?.response?.data?.message || error.message });
+    } finally {
+      setIsBookingLoading(false);
+    }
+  };
 
   const colorScheme = Appearance.getColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const textColor = isDarkMode ? '#FFF' : '#000';
-  const googlePlaceAutoCompleteRef = useRef<typeof GooglePlacesAutocomplete>(null);
+  const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
   console.log("googlePlaceAutoCompleteRef", googlePlaceAutoCompleteRef)
   return (
     <SafeAreaView style={styles.container}>
@@ -91,87 +200,103 @@ const RentARide = () => {
         position: 'absolute',
         alignSelf: 'center',
         borderLeftWidth: 6,
-        borderRadius:8,
+        borderRadius: 8,
         paddingHorizontal: 5,
         borderLeftColor: StyleGuide.color.primary,
-        borderBottomWidth:0.5,
-        borderTopWidth:0.5,
-        borderRightWidth:0.5,
-        borderBottomColor:StyleGuide.color.border,
-        borderRightColor:StyleGuide.color.border,
-        borderTopColor:StyleGuide.color.border,
+        borderBottomWidth: 0.5,
+        borderTopWidth: 0.5,
+        borderRightWidth: 0.5,
+        borderBottomColor: StyleGuide.color.border,
+        borderRightColor: StyleGuide.color.border,
+        borderTopColor: StyleGuide.color.border,
         top: 2,
       }} >
         <GooglePlacesAutocomplete
-                  ref={googlePlaceAutoCompleteRef}
-                  placeholder={t('from')}
-                  textInputProps={{
-                  
-                    placeholderTextColor: '#8e8e8e',
-                    value: pickupLocation,
-                    autoCorrect: false,
-                    onChange(e) {
-                        setPickupLocation(e.nativeEvent.target)
-                    },
-                  }}
-                  styles={{ textInput: { fontSize: 16,color:'black' ,height:50}, listView: { position: 'absolute', top: screenWidth*0.13 } }}
-                  onPress={(data, details = null) => setPickupLocation(data.description)}
-                  query={{
-                    key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
-                    language: 'en',
-                  }}
-                  enablePoweredByContainer={true}
-                  renderLeftButton={() => (
-                    <View
-                      style={{
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                      <Svg
-                        rest={{
-                          height: 18,
-                          width: 18,
-                          style: { marginVertical: 10 },
-                        }}
-                        xml={locationBlackIcon}
-                      />
-                    </View>
-                  )}
-                  renderRightButton={() =>
-                    pickupLocation ? (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setPickupLocation('');
-                        }}
-                        style={{ padding: 8,alignItems:'center',justifyContent:'center' }}
-                      >
-                        <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
-                      </TouchableOpacity>
-                    ) : null
-                  }
-                  predefinedPlaces={[]}
-                  autoFillOnNotFound={false}
-                  currentLocation={false}
-                  currentLocationLabel="Current location"
-                  debounce={300}
-                  fetchDetails={false}
-                  keyboardShouldPersistTaps="always"
-                  keepResultsAfterBlur={false}
-                  minLength={2}
-                  nearbyPlacesAPI="GooglePlacesSearch"
-                  numberOfLines={1}
-                  onFail={(e) => { console.warn('Google Place Failed : ', e) }}
-                  onNotFound={() => { }}
-                  onTimeout={() => console.warn('google places autocomplete: request timeout')}
-                  predefinedPlacesAlwaysVisible={false}
-                  timeout={20000}
-                  fields="*"
-                />
+          ref={googlePlaceAutoCompleteRef}
+          placeholder={t('from')}
+          textInputProps={{
+
+            placeholderTextColor: '#8e8e8e',
+            value: pickupLocation,
+            autoCorrect: false,
+            onChange(e) {
+              setPickupLocation(e.nativeEvent.target)
+            },
+          }}
+          styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28 } }}
+          onPress={(data, details = null) => {
+            setPickupLocation(data.description)
+            if (details) {
+              const { lat, lng } = details.geometry.location;
+              const address = data.description;
+
+              // Save to state
+              setPickupLocationData({
+                address,
+                latitude: lat,
+                longitude: lng,
+              });
+
+              console.log('Selected:', { address, lat, lng });
+            }
+          }
+          }
+          query={{
+            key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
+            language: 'en',
+          }}
+          enablePoweredByContainer={false}
+          renderLeftButton={() => (
+            <View
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              <Svg
+                rest={{
+                  height: 18,
+                  width: 18,
+                  style: { marginVertical: 10 },
+                }}
+                xml={locationBlackIcon}
+              />
+            </View>
+          )}
+          renderRightButton={() =>
+            pickupLocation ? (
+              <TouchableOpacity
+                onPress={() => {
+                  setPickupLocation('');
+                }}
+                style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
+              </TouchableOpacity>
+            ) : null
+          }
+          predefinedPlaces={[]}
+          autoFillOnNotFound={false}
+          currentLocation={false}
+          currentLocationLabel="Current location"
+          debounce={0}
+          fetchDetails={true}
+          keyboardShouldPersistTaps="always"
+          keepResultsAfterBlur={false}
+          minLength={2}
+          nearbyPlacesAPI="GooglePlacesSearch"
+          numberOfLines={1}
+          onFail={(e) => { console.warn('Google Place Failed : ', e) }}
+          onNotFound={() => { }}
+          onTimeout={() => console.warn('google places autocomplete: request timeout')}
+          predefinedPlacesAlwaysVisible={false}
+          timeout={20000}
+          fields="*"
+        />
       </View>
 
 
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1,paddingBottom: 100 }} style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Location Input */}
 
 
@@ -184,6 +309,7 @@ const RentARide = () => {
               date={selectedTime}
               onDateChange={setSelectedTime}
               mode="datetime"
+              minimumDate={new Date()}
               locale="en"
               dividerColor={StyleGuide.color.primary}
             />
@@ -240,45 +366,59 @@ const RentARide = () => {
         {/* Vehicle Selection */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { textAlign: isRTL ? 'right' : 'left' }]}>{t('select_your_ride')}</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.vehicleScroller}
-          >
-            {vehicles.map((vehicle) => (
-              <TouchableOpacity
-                key={vehicle.id}
-                style={[
-                  styles.vehicleCard,
-                  selectedVehicle === vehicle.name && styles.selectedVehicleCard,
-                ]}
-                onPress={() => setSelectedVehicle(vehicle.name)}
-              >
-                <View style={styles.vehicleImageContainer}>
-                  <Image source={vehicle?.image} style={{ height: 50, width: 50 }} resizeMode='contain' />
-                </View>
-                <Text style={[styles.vehicleName, selectedVehicle === vehicle.name && styles.selectedVehicleText, , { textAlign: isRTL ? 'right' : 'left' }]}>{vehicle.name}</Text>
-                <Text style={[styles.vehicleModel, { textAlign: isRTL ? 'right' : 'left' }]}>{vehicle.model}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          {isVehiclesLoading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading vehicles...</Text>
+            </View>
+          ) : vehicles.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.vehicleScroller}
+            >
+              {vehicles.map((vehicle) => (
+                <TouchableOpacity
+                  key={vehicle._id}
+                  style={[
+                    styles.vehicleCard,
+                    selectedVehicle === vehicle?.vehicle_details?._id && styles.selectedVehicleCard,
+                  ]}
+                  onPress={() => setSelectedVehicle(vehicle?.vehicle_details?._id)}
+                >
+                  <View style={styles.vehicleImageContainer}>
+                    <Image 
+                      source={vehicle.vehicle_details ? { uri: vehicle?.vehicle_details?.vehicle_pictures[0] } : car} 
+                      style={{ height: 100, width: 100 }} 
+                      resizeMode='contain' 
+                    />
+                  </View>
+                  <Text style={[styles.vehicleName, selectedVehicle === vehicle?.vehicle_details?._id && styles.selectedVehicleText, { textAlign: isRTL ? 'right' : 'left' }]}>
+                    {vehicle?.vehicle_details?.car_make}
+                  </Text>
+                  <Text style={[styles.vehicleModel, { textAlign: isRTL ? 'right' : 'left' }]}>
+                  ({vehicle?.vehicle_details?.vehicle_color})  {vehicle?.vehicle_details?.car_model}
+                  </Text>
+                  {/* {vehicle.owner && (
+                    <Text style={[styles.ownerText, { textAlign: isRTL ? 'right' : 'left' }]}>
+                      Owner: {vehicle.owner.name}
+                    </Text>
+                  )} */}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.noVehiclesContainer}>
+              <Text style={styles.noVehiclesText}>No vehicles available</Text>
+            </View>
+          )}
         </View>
-
-        {/* Auto Accept Toggle */}
-        {/* <View style={styles.toggleSection}>
-          <Text style={styles.toggleText}>Auto accept the nearest driver</Text>
-          <Switch
-            value={autoAccept}
-            onValueChange={setAutoAccept}
-            trackColor={{ false: '#E5E5E5', true: '#D4AF37' }}
-            thumbColor={autoAccept ? '#FFFFFF' : '#FFFFFF'}
-          />
-        </View> */}
 
       </ScrollView>
 
       {/* Next Button */}
-      <AppButton title={t("next")} onPress={() => { }} />
+      <View style={styles.buttonContainer}>
+        <AppButton loading={isBookingLoading} title={t("submit")} onPress={handleNextButton} />
+      </View>
     </SafeAreaView>
   );
 };
@@ -494,6 +634,35 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
     paddingHorizontal: 20,
+  },
+  buttonContainer: {
+    marginBottom: 20,
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.blackishGrey,
+  },
+  noVehiclesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noVehiclesText: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.blackishGrey,
   },
 });
 

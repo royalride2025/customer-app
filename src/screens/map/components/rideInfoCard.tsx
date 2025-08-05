@@ -41,13 +41,16 @@ interface RideInfoCardProps {
     onMessagePress?: () => void;
     onShowDetailsPress?: () => void;
     style?: object;
+    carImage?: string;
+    profileImage?: string;
+    carDriverName?: string;
 }
 
 const car = require('../../../../assets/images/car1.png');
 const profile = require('../../../../assets/images/profile.png');
 
 const RideInfoCard: React.FC<RideInfoCardProps> = ({
-    driverName = "RR Cullinan",
+    driverName ,
     driverRating = 5.5,
     carModel = "Rolls Royce Cullinan",
     carColor = "White",
@@ -60,6 +63,9 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
     onCallPress,
     onMessagePress,
     onShowDetailsPress,
+    carImage,
+    profileImage,
+    carDriverName,
     style,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -105,13 +111,13 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                     style={styles.carSection}
                 >
                     <Image
-                        source={car}
+                        source={{uri:carImage}}
                         style={[styles.carImage, flipImage]}
                         resizeMode="contain"
                     />
                     <Image
-                        source={profile}
-                        style={[styles.driverImage, isRTL ? { left: -3,bottom:5 } : { right: -10,bottom:5 }]}
+                        source={{uri:profileImage}}
+                        style={[styles.driverImage, isRTL ? { left: -3, bottom: 5 } : { right: -10, bottom: 5 }]}
                         resizeMode="cover"
                     />
                 </Pressable>
@@ -119,7 +125,7 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                 <View style={styles.driverInfo}>
                     <View style={[styles.driverNameRow,flexDirection]}>
                         <Text style={[styles.driverName,isRTL?{marginLeft:getResponsiveSize(10),textAlign:'right'}:{marginRight:getResponsiveSize(8),textAlign:'left'}]} numberOfLines={1}>
-                        {t('rideInfo.driverName')}
+                        {driverName}
                         </Text>
                         <Text style={styles.rating}>
                             {driverRating} 
@@ -128,13 +134,13 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                     </View>
                    
                     <Text style={[styles.carDetails,{textAlign:isRTL?'right':'left'}]} numberOfLines={1}>
-                    {t('rideInfo.carModel', { carModel })} ({carColor}) {t('rideInfo.licensePlate', { licensePlate })}
+                     { carModel } {carColor}  { licensePlate }
                     </Text>
                     
                     <View style={[styles.bottomRow,flexDirection]}>
                         <View style={[styles.driverDetailsRow,flexDirection]}>
                             <Text style={[styles.driverImageName,isRTL?{marginLeft:getResponsiveSize(8),textAlign:'right'}:{marginRight: getResponsiveSize(8),textAlign:'left'}]} numberOfLines={1}>
-                            {t('rideInfo.driverFullName')}
+                            {carDriverName}
                             </Text>
                             <Text style={[styles.driverRating]}>
                                 4.5 <Text style={styles.starIcon}>⭐</Text>
@@ -164,10 +170,10 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
             <TouchableOpacity 
                 style={[styles.showDetailsButton,{
                     alignSelf: isRTL ? 'flex-start' : 'flex-end',
-                    borderTopLeftRadius: isRTL ? 0 : getResponsiveSize(18), 
-                    borderTopRightRadius: isRTL ? getResponsiveSize(18) : 0, 
-                    borderBottomLeftRadius: isRTL&&isExpanded ? 0 : getResponsiveSize(16), 
-                    borderBottomRightRadius: isRTL ? 0 : getResponsiveSize(16),
+                    borderTopLeftRadius: !isRTL ? getResponsiveSize(18) : 0, 
+                    borderTopRightRadius: !isRTL ? 0 : getResponsiveSize(18), 
+                    borderBottomLeftRadius: !isRTL ? (isExpanded ? 0 : getResponsiveSize(0)) : getResponsiveSize(16), 
+                    borderBottomRightRadius: isRTL ? getResponsiveSize(16) : (isExpanded ? 0 : getResponsiveSize(16)),
                 }]} 
                 onPress={toggleExpanded}
                 activeOpacity={0.8}
@@ -203,7 +209,7 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                         </View>
                     </View>
 
-                    <View style={[styles.locationDivider, isRTL ? { marginRight: 14 } : { marginLeft: 14 }, { alignSelf: 'flex-end' }]} />
+                    <View style={[styles.locationDivider, isRTL ? { marginRight: 14 } : { marginLeft: 14 }]} />
 
 
                     <View style={[styles.locationItem, styles.officeLocationItem,flexDirection]}>
@@ -214,14 +220,14 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                             }}/>
                         </View>
                         <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                            <Text style={styles.locationLabel}>{t('rideInfo.officeLocation')}</Text>
+                            <Text style={styles.locationLabel}>Destination</Text>
                             <Text numberOfLines={2} style={[styles.locationAddress,{textAlign:isRTL?'right':'left'}]}>
                                 {officeLocation}
                             </Text>
                         </View>
                         <View style={styles.distanceContainer}>
-                            <Text style={styles.distance}>{distance}</Text>
-                            <Text style={styles.estimatedTime}>{estimatedTime}</Text>
+                            <Text style={styles.distance}>{distance} km</Text>
+                            <Text style={styles.estimatedTime}>{estimatedTime} hr</Text>
                         </View>
                     </View>
                 </View>
@@ -320,7 +326,7 @@ const createStyles = (isExpanded = false) => StyleSheet.create({
         borderRadius: getResponsiveSize(20),
         position: 'absolute',
         right: getResponsiveSize(-10),
-        bottom: getResponsiveSize(5),
+        bottom: getResponsiveSize(0),
         zIndex: 1,
     },
     driverImageName: {
@@ -352,11 +358,8 @@ const createStyles = (isExpanded = false) => StyleSheet.create({
         fontSize: getResponsiveFontSize(14),
     },
     showDetailsButton: {
-        alignSelf: 'flex-end',
         backgroundColor: StyleGuide.color.primary,
         paddingHorizontal: getResponsiveSize(16),
-        borderTopLeftRadius: getResponsiveSize(20),
-        borderBottomRightRadius: isExpanded ? 0 : getResponsiveSize(16),
     },
     showDetailsText: {
         color: StyleGuide.color.white,
@@ -406,6 +409,8 @@ const createStyles = (isExpanded = false) => StyleSheet.create({
         fontFamily: StyleGuide.fontFamily.regular,
         opacity: 0.9,
         lineHeight: getResponsiveFontSize(16),
+        // backgroundColor:'red',
+        height:getResponsiveSize(33)
     },
     locationDivider: {
         width: 2,

@@ -5,16 +5,20 @@ import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import languageReducer from './languageSlice';
 import authReducer from './authSlice';
+import driverReducer from './driverSlice';
+import bookingReducer from './bookingSlice';
 
 const rootReducer = combineReducers({
   language: languageReducer,
   auth: authReducer,
+  driver: driverReducer,
+  booking: bookingReducer,
 });
 
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'], // Only persist the auth slice
+  whitelist: ['auth', 'booking'], // Persist auth and booking slices
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

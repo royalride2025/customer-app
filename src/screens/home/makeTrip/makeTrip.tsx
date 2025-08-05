@@ -25,6 +25,7 @@ import cross from '../../../../assets/svgAssets/cross.svg';
 import networkClient from '../../../../networkClient';
 import { API_ENDPOINTS } from '../../../../apiEndpoints';
 import Toast from 'react-native-toast-message';
+import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 
 const MakeTripc = () => {
   const [fromLocation, setFromLocation] = useState('');
@@ -93,6 +94,8 @@ const MakeTripc = () => {
     title: t('header.plan_your_ride'),
 
   });
+  console.log(fromLocationData, "fromLocationData")
+  console.log(toLocationData, "toLocationData")
   const handleNextButton = async () => {
     setLoading(true);
     try {
@@ -100,18 +103,22 @@ const MakeTripc = () => {
         booking_type: 'instant',
         pickup_location: {
           type: 'Point',
-          coordinates: [fromLocationData.longitude, fromLocationData.latitude],
+          coordinates: [ fromLocationData.latitude,fromLocationData.longitude],
           address: fromLocationData.address,
         },
         dropoff_location: {
           type: 'Point',
-          coordinates: [toLocationData.longitude, toLocationData.latitude],
+          coordinates: [ toLocationData.latitude,toLocationData.longitude],
           address: toLocationData.address,
         },
       };
+      console.log(payload, "payload======")
       const response = await networkClient.post(API_ENDPOINTS.CREATE_INSTANT_BOOKING, payload);
+
+      console.log(response?.data, "response======")
       Toast.show({ type: 'success', text1: 'Booking successful!', text2: response?.data?.message });
       navigation.navigate('map', { from: 'plan', booking: response?.data?.data });
+
     } catch (error: any) {
       Toast.show({ type: 'error', text1: 'Booking failed', text2: error?.response?.data?.message || error.message });
     } finally {
@@ -172,7 +179,7 @@ const MakeTripc = () => {
                 setFromLocation(e.nativeEvent.target)
               },
             }}
-            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28 } }}
+            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.3 } }}
             onPress={(data, details = null) => {setFromLocation(data.description)
               if (details) {
                 const { lat, lng } = details.geometry.location;
@@ -368,7 +375,7 @@ const MakeTripc = () => {
                   <Text style={[styles.addressName, textAlignment]}>{address.name}</Text>
                   <Text style={[styles.addressText, textAlignment]}>{address.address}</Text>
                 </View>
-                <Text style={[styles.addressDistance, textAlignment]}>{address.distance}</Text>
+               {/* <Text style={[styles.addressDistance, textAlignment]}>{address.distance}</Text> */}
               </View>
             </TouchableOpacity>
           ))}
@@ -397,7 +404,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
-  content: { flex: 1, marginTop: screenHeight * 0.16 },
+  content: { flex: 1, marginTop: SCREEN_WIDTH * 0.36 },
   locationContainer: {
     backgroundColor: StyleGuide.color.white,
     borderRadius: 12,

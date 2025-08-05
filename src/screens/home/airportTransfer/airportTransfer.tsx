@@ -20,6 +20,7 @@ import { useAppSelector } from '../../../redux/reduxHooks';
 import { RootState } from '../../../redux/store';
 import { t } from 'i18next';
 import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
+import { screenWidth } from '../../../utils/dimenstions';
 
 const airports = [
     {
@@ -27,20 +28,36 @@ const airports = [
         name: 'Hamad International Airport',
         address: 'Hamad International Airport, Doha, Qatar',
         distance: '15.2 km',
+        latitude: 25.2730,  // Add actual coordinates
+        longitude: 51.6081,
     },
     {
         id: 2,
         name: 'Doha International Airport',
         address: 'Doha International Airport, Doha, Qatar',
         distance: '12.8 km',
+        latitude: 25.2611,  // Add actual coordinates
+        longitude: 51.5651,
     },
 ];
 
 
+
 const AirportTransfer = () => {
-    const [fromLocation, setFromLocation] = useState('Doha International Airport, Doha, Qatar');
+    const [fromLocation, setFromLocation] = useState('');
     const [toLocation, setToLocation] = useState('');
     const [isGettingLocation, setIsGettingLocation] = useState(false);
+    const [fromLocationData, setFromLocationData] = useState({
+        address: '',
+        latitude: null as number | null,
+        longitude: null as number | null,
+    });
+    const [toLocationData, setToLocationData] = useState({
+        address: '',
+        latitude: null as number | null,
+        longitude: null as number | null,
+    });
+    console.log("fromLocationlllll", fromLocation)
     const [focusedInput, setFocusedInput] = useState('from'); // Track which input is focused
     const { flexDirection, textAlignment } = useTranslationStyles();
     const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
@@ -49,19 +66,30 @@ const AirportTransfer = () => {
     const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
     const toLocationRef = useRef<GooglePlacesAutocompleteRef>(null);
 
+    console.log("fromLocationData", fromLocationData)
+    console.log("toLocationData", toLocationData)
 
-   
     const handleAddressSelect = (address: any) => {
         setFromLocation(address.address);
     };
 
     const handleAirportSelect = (airport: any) => {
-        if (focusedInput == 'from') {
+        if (focusedInput === 'from') {
             setFromLocation(airport.address);
-        }
-        else {
-
+            // Set coordinates for from location
+            setFromLocationData({
+                address: airport.address,
+                latitude: airport.latitude,
+                longitude: airport.longitude,
+            });
+        } else {
             setToLocation(airport.address);
+            // Set coordinates for to location
+            setToLocationData({
+                address: airport.address,
+                latitude: airport.latitude,
+                longitude: airport.longitude,
+            });
         }
     };
 
@@ -82,10 +110,17 @@ const AirportTransfer = () => {
     };
 
     const handleSwapLocations = () => {
-        const temp = fromLocation;
+        // Swap the location strings
+        const tempLocation = fromLocation;
         setFromLocation(toLocation);
-        setToLocation(temp);
+        setToLocation(tempLocation);
+
+        // Swap the location data objects
+        const tempLocationData = fromLocationData;
+        setFromLocationData(toLocationData);
+        setToLocationData(tempLocationData);
     };
+
 
     const handlePickupLocationSelect = (data: any) => {
         console.log('📍 Pickup location selected:', data.description);
@@ -101,24 +136,25 @@ const AirportTransfer = () => {
         title: t('airport_transfer'),
     });
 
-    console.log("from",fromLocation)
-    console.log(",to",toLocation)
+    console.log("from", fromLocation)
+    console.log(",to", toLocation)
+
+    // Check if both from and to location addresses are empty
+    const isButtonDisabled = !fromLocationData.address || !toLocationData.address;
 
     const handleNextButton = () => {
         // If pickup location is an airport, navigate to ScheduleRideScreen with both locations
-        if (fromLocation && fromLocation.toLowerCase().includes('airport')) {
-            (navigation as any).navigate('ScheduleRide', {
-                fromLocation,
-                toLocation,
-            });
-        } else {
-            // Default navigation (if needed, adjust as per your flow)
-            (navigation as any).navigate('ScheduleRide', {
-                fromLocation,
-                toLocation,
-            });
-        }
-    };
+
+        // Default navigation (if needed, adjust as per your flow)
+        (navigation as any).navigate('ScheduleRide', {
+
+            fromLocation,
+            toLocation,
+            fromLocationData,
+            toLocationData
+        });
+    }
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -129,79 +165,93 @@ const AirportTransfer = () => {
                 <View style={styles.airportFieldsRow}>
                     <View style={styles.airportFieldsColumn}>
                         <View style={styles.airportInputField}>
+                        <GooglePlacesAutocomplete
+            ref={googlePlaceAutoCompleteRef}
+            placeholder={t('from')}
+            textInputProps={{
+
+              placeholderTextColor: '#8e8e8e',
+              value: fromLocation,
+              autoCorrect: false,
+              onChange(e) {
+                setFromLocation(e.nativeEvent.target)
+              },
+            }}
+            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28 } }}
+            onPress={(data, details = null) => {setFromLocation(data.description)
+              if (details) {
+                const { lat, lng } = details.geometry.location;
+                const address = data.description;
+            
+                // Save to state
+                setFromLocationData({
+                  address,
+                  latitude: lat,
+                  longitude: lng,
+                });
+            
+                console.log('Selected:', { address, lat, lng });
+              }
+            }
+            }
+
+
+            query={{
+              key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
+              language: 'en',
+            }}
+            enablePoweredByContainer={false}
+            renderLeftButton={() => (
+              <View
+                style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Svg
+                  rest={{
+                    height: 18,
+                    width: 18,
+                    style: { marginVertical: 10 },
+                  }}
+                  xml={locationBlackIcon}
+                />
+              </View>
+            )}
+            renderRightButton={() =>
+              fromLocation ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    setFromLocation('');
+                  }}
+                  style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
+                </TouchableOpacity>
+              ) : null
+            }
+            predefinedPlaces={[]}
+            autoFillOnNotFound={false}
+            currentLocation={false}
+            currentLocationLabel="Current location"
+            debounce={0}
+            fetchDetails={true}
+            keyboardShouldPersistTaps="always"
+            keepResultsAfterBlur={false}
+            minLength={2}
+            nearbyPlacesAPI="GooglePlacesSearch"
+            numberOfLines={1}
+            onFail={(e) => { console.warn('Google Place Failed : ', e) }}
+            onNotFound={() => { }}
+            onTimeout={() => console.warn('google places autocomplete: request timeout')}
+            predefinedPlacesAlwaysVisible={false}
+            timeout={20000}
+            fields="*"
+          />
+                        </View>
+                        <View style={[styles.airportInputField, { marginBottom: 0 }]}>
                             <GooglePlacesAutocomplete
                                 ref={googlePlaceAutoCompleteRef}
-                                placeholder={t('pickup_location')}
-                                textInputProps={{
-                                    placeholderTextColor: '#8e8e8e',
-                                    value: fromLocation,
-                                    autoCorrect: false,
-                                    onFocus: () => {
-                                        console.log('📍 Pickup input focused');
-                                        setFocusedInput('from');
-                                    },
-                                    onChange(e) {
-                                        setFromLocation(e.nativeEvent.text);
-                                    },
-                                }}
-                                styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: SCREEN_WIDTH * 0.28, elevation: 1 } }}
-                                onPress={(data, details = null) => setFromLocation(data.description)}
-                                query={{
-                                    key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
-                                    language: 'en',
-                                }}
-                                enablePoweredByContainer={true}
-                                renderLeftButton={() => (
-                                    <View
-                                        style={{
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}>
-                                        <Svg
-                                            rest={{
-                                                height: 18,
-                                                width: 18,
-                                                style: { marginVertical: 10 },
-                                            }}
-                                            xml={locationBlackIcon}
-                                        />
-                                    </View>
-                                )}
-                                renderRightButton={() =>
-                                    fromLocation ? (
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setFromLocation('');
-                                            }}
-                                            style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
-                                        </TouchableOpacity>
-                                    ) : null
-                                }
-                                predefinedPlaces={[]}
-                                autoFillOnNotFound={false}
-                                currentLocation={false}
-                                currentLocationLabel="Current location"
-                                debounce={0}
-                                fetchDetails={false}
-                                keyboardShouldPersistTaps="always"
-                                keepResultsAfterBlur={false}
-                                minLength={2}
-                                nearbyPlacesAPI="GooglePlacesSearch"
-                                numberOfLines={1}
-                                onFail={(e) => { console.warn('Google Place Failed : ', e) }}
-                                onNotFound={() => { }}
-                                onTimeout={() => console.warn('google places autocomplete: request timeout')}
-                                predefinedPlacesAlwaysVisible={false}
-                                timeout={20000}
-                                fields="*"
-                            />
-                        </View>
-                        <View style={styles.airportInputField}>
-                            <GooglePlacesAutocomplete
-                                ref={toLocationRef}
-                                placeholder={t('airport_destination')}
+                                placeholder={t('to')}
                                 textInputProps={{
                                     placeholderTextColor: '#8e8e8e',
                                     value: toLocation,
@@ -220,14 +270,28 @@ const AirportTransfer = () => {
                                         fontSize: 16,
                                         color: StyleGuide.color.black,
                                         textAlign: isRTL ? 'right' : 'left'
-                                    }, listView: { position: 'absolute', top: 50, elevation: 2, backgroundColor: 'grey' }
+                                    }, listView: { position: 'absolute', top: 50 }
                                 }}
-                                onPress={(data, details = null) => setToLocation(data.description)}
+                                onPress={(data, details = null) => {
+                                    setToLocation(data.description)
+                                    if (details) {
+                                        const { lat, lng } = details.geometry.location;
+                                        const address = data.description;
+                                        setToLocationData({
+                                            address,
+                                            latitude: lat,
+                                            longitude: lng,
+                                        });
+                                        console.log('Selected:', { address, lat, lng });
+                                    }
+                                }
+                                }
+
                                 query={{
                                     key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
                                     language: 'en',
                                 }}
-                                enablePoweredByContainer={true}
+                                enablePoweredByContainer={false}
                                 renderLeftButton={() => (
                                     <View
                                         style={{
@@ -261,7 +325,7 @@ const AirportTransfer = () => {
                                 currentLocation={false}
                                 currentLocationLabel="Current location"
                                 debounce={0}
-                                fetchDetails={false}
+                                fetchDetails={true}
                                 keyboardShouldPersistTaps="always"
                                 keepResultsAfterBlur={false}
                                 minLength={2}
@@ -312,7 +376,7 @@ const AirportTransfer = () => {
             </ScrollView>
 
             <View style={styles.buttonContainer}>
-                <AppButton onPress={handleNextButton} title={t('next')} />
+                <AppButton onPress={handleNextButton} title={t('next')} disabled={isButtonDisabled} />
             </View>
         </SafeAreaView>
     );
@@ -512,8 +576,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     airportInputField: {
-        backgroundColor: 'white',
         marginBottom: 8,
+
         paddingHorizontal: 5,
         borderBottomWidth: 0.5,
         borderTopWidth: 0.5,
@@ -541,7 +605,7 @@ const styles = StyleSheet.create({
     airportSvgMargin: {
         marginTop: 7,
     },
-    fieldsParent:{
+    fieldsParent: {
         backgroundColor: 'transparent',
         borderLeftWidth: 6,
         borderLeftColor: StyleGuide.color.primary,
@@ -549,9 +613,8 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 8,
         // paddingVertical: 8,
         position: 'absolute',
-        // alignSelf: 'center',
+        alignSelf: 'center',
         top: 2,
-        left: 20,
         zIndex: 9999,
         width: '100%',
     }

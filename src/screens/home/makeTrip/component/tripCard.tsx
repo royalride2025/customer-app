@@ -50,8 +50,8 @@ const TripCard: React.FC<TripCardProps> = ({
 
         <View style={styles.vehicleSection}>
           <View style={{ position: 'relative' }}>
-            <Image source={car} style={[styles.vehicleImage, flipImage,isRTL?{marginLeft:10}:{marginRight:10}]} resizeMode="contain" />
-            <Image source={profile} style={[styles.driverImage,isRTL ? { left: 8,bottom:0 } : { right: 0,bottom:5 }]} />
+            <Image source={{uri:vehicleImage}} style={[styles.vehicleImage, flipImage,isRTL?{marginLeft:10}:{marginRight:10}]} resizeMode="contain" />
+            <Image source={{uri:driverImage}} style={[styles.driverImage,isRTL ? { left: 8,bottom:0 } : { right: 0,bottom:5 }]} />
           </View>
         </View>
 
@@ -64,7 +64,7 @@ const TripCard: React.FC<TripCardProps> = ({
             </Text>
           </View>
 
-          <Text style={[styles.vehicleModel,isRTL?{textAlign: 'right'  }:{textAlign: 'left' }]}>({vehicleModel})</Text>
+          <Text style={[styles.vehicleModel,isRTL?{textAlign: 'right'  }:{textAlign: 'left' }]}>({vehicleModel}) XYZ-123</Text>
           <View style={[styles.driverSection,flexDirection]}>
             <View style={[styles.driverInfo,flexDirection]}>
               <View style={[styles.driverNameSection,flexDirection]}>

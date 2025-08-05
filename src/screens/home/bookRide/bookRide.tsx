@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,67 +10,217 @@ import {
   StatusBar,
   Image,
   Appearance,
+  Alert,
 } from 'react-native';
 import DatePicker from 'react-native-date-picker';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import { StyleGuide } from '../../../../StyleGuide';
 import AppButton from '../../../lib/component/AppButton';
 import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
 import Svg from '../../../lib/svg';
-import { premiumIcon, standardIcon, vipIcon, locationBlackIcon } from '../../../../assets/svgAssets';
+import { premiumIcon, standardIcon, vipIcon, locationBlackIcon, inputCross } from '../../../../assets/svgAssets';
 import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '../../../redux/reduxHooks';
 import { RootState } from '../../../redux/store';
 import { t } from 'i18next';
 import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
+import { screenWidth } from '../../../utils/dimenstions';
+import Toast from 'react-native-toast-message';
+import networkClient from '../../../../networkClient';
+import { API_ENDPOINTS } from '../../../../apiEndpoints';
 
-const services = [
-    {
-        id:'standard',
-      icon: standardIcon,
-      text: 'Standard',
-      extraStyle: { marginRight: 5 },
-    },
-    {
-        id:'premium',
-      icon: premiumIcon,
-      text: 'Premium',
-      extraStyle: {},
-    },
-    {
-        id:'vip',
-      icon: vipIcon,
-      text: 'VIP',
-      extraStyle: {},
-    },
-  ];
+const car = require('../../../../assets/images/car.png')
+
+// Define vehicle interface based on actual API response
+interface VehicleDetails {
+  _id: string;
+  car_make: string;
+  car_model: string;
+  vehicle_color: string;
+  vehicle_pictures: string[];
+  year?: string;
+  license_plate?: string;
+  capacity?: number;
+}
+
+interface VehicleOwner {
+  _id: string;
+  phone: string;
+  provider?: string | null;
+  provider_id?: string | null;
+  role: string;
+  status: string;
+  is_verified: boolean;
+  access_platforms: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Vehicle {
+  _id: string;
+  vehicle_details: VehicleDetails;
+  owner: VehicleOwner;
+  status?: string;
+  is_available?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const BookRide = () => {
   const [selectedTime, setSelectedTime] = useState(new Date());
-  const [selectedService, setSelectedService] = useState(null);
   const [pickupLocation, setPickupLocation] = useState('');
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
- 
+  const [pickupLocationData, setPickupLocationData] = useState<any>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<string>('');
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
+  const [isBookingLoading, setIsBookingLoading] = useState(false);
+  const [timeValidationError, setTimeValidationError] = useState('');
   const navigation = useNavigation();
  
   useScreenHeader({
     title: 'Book a Ride',
   });
-  
-  const handleNextButton = () => {
-    navigation.navigate('map' as never, { from: 'bookRide' } as never);
+
+
+  console.log(vehicles, "/////vehicles")
+  console.log(selectedVehicle, "/////selectedVehicle")
+  // Fetch vehicles from API
+  const fetchVehicles = async () => {
+    setIsVehiclesLoading(true);
+    try {
+      const response = await networkClient.get(`${API_ENDPOINTS.GET_VEHICLES_WITH_OWNERS}?limit=100`);
+      console.log('Vehicles response:', response.data,response.data?.vehicles[0]?.vehicle_details?._id);
+      
+      if (response.data && response.data.vehicles) {
+        setVehicles(response.data.vehicles);
+        // Set first vehicle as default selected if available
+        if (response?.data?.vehicles.length > 0) {
+          setSelectedVehicle(response.data?.vehicles[0]?.vehicle_details?._id);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching vehicles:', error);
+      Toast.show({ 
+        type: 'error', 
+        text1: 'Failed to load vehicles', 
+        text2: error?.response?.data?.message || 'Please try again later' 
+      });
+    } finally {
+      setIsVehiclesLoading(false);
+    }
+  };
+
+  // Fetch vehicles on component mount
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  const validateTime = (time: Date) => {
+    const now = new Date();
+    const selectedDateTime = new Date(time);
+    const isToday = selectedDateTime.toDateString() === now.toDateString();
+    
+    if (selectedDateTime < now) {
+      setTimeValidationError('Please select a future date and time for your ride booking.');
+      return false;
+    }
+    
+    if (isToday) {
+      const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
+      if (selectedDateTime < thirtyMinutesFromNow) {
+        setTimeValidationError('Your booking must be scheduled at least 30 minutes in advance. Please select a later time.');
+        return false;
+      }
+    }
+    
+    setTimeValidationError('');
+    return true;
   };
   
-  const handleCurrentLocation = () => {
-    setIsGettingLocation(true);
-    // Add current location logic here
-    setTimeout(() => {
-      setIsGettingLocation(false);
-    }, 2000);
+  const handleSubmitButton = async () => {
+    // Clear previous validation errors
+    setTimeValidationError('');
+
+    // Validate pickup location
+    if (!pickupLocation || !pickupLocationData.address) {
+      Alert.alert(
+        'Missing Location',
+        'Please select a pickup location before proceeding.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
+    // Validate vehicle selection
+    if (!selectedVehicle) {
+      Alert.alert(
+        'Missing Vehicle',
+        'Please select a vehicle before proceeding.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
+    // Validate date and time - check if selected time is in the past
+    const now = new Date();
+    const selectedDateTime = new Date(selectedTime);
+    
+    // Check if selected date is today
+    const isToday = selectedDateTime.toDateString() === now.toDateString();
+    
+    if (selectedDateTime < now) {
+      setTimeValidationError('Please select a future date and time for your ride booking.');
+      return;
+    }
+    
+    // Additional check: if it's today, ensure at least 30 minutes in advance
+    if (isToday) {
+      const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
+      if (selectedDateTime < thirtyMinutesFromNow) {
+        setTimeValidationError('Your booking must be scheduled at least 30 minutes in advance. Please select a later time.');
+        return;
+      }
+    }
+
+    setIsBookingLoading(true);
+    try {
+      const payload = {
+        booking_type: "book",
+        date: selectedTime.toISOString().split('T')[0],
+        time: selectedTime.toISOString().split('T')[1], // start time
+        pickup_coordinates: {
+            type: "Point",
+            coordinates: [pickupLocationData?.latitude, pickupLocationData?.longitude],
+            address: pickupLocationData?.address
+    
+        },
+     
+        selected_vehicle_id: selectedVehicle
+    }
+      console.log(payload, "payload======")
+      const response = await networkClient.post(API_ENDPOINTS.CREATE_INSTANT_BOOKING, payload);
+
+      console.log(response?.data, "response======")
+      
+      Toast.show({ type: 'success', text1: 'Booking successful!', text2: response?.data?.message });
+      // Fix navigation - use proper navigation method
+      navigation.goBack();
+
+    } catch (error: any) {
+      console.log(error?.response?.data, "error======")
+      Alert.alert(error?.response?.data?.error)
+      Toast.show({ type: 'error', text1: 'Booking failed', text2: error?.response?.data?.message || error.message });
+    } finally {
+      setIsBookingLoading(false);
+    }
   };
+  
   const colorScheme = Appearance.getColorScheme();
   const textColor = colorScheme === 'dark' ? '#FFF' : '#000'; 
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
-  const googlePlaceAutoCompleteRef = useRef<typeof GooglePlacesAutocomplete>(null);
+  const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
+
+  console.log(selectedTime, "selectedTime")
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
@@ -91,26 +241,40 @@ const BookRide = () => {
         borderLeftColor: StyleGuide.color.primary,
         top: 2,
       }} >
-        <GooglePlacesAutocomplete
-
+       <GooglePlacesAutocomplete
           ref={googlePlaceAutoCompleteRef}
-          placeholder='Pick Up  Location'
+          placeholder={t('from')}
           textInputProps={{
-            placeholderTextColor: '#000',
-            // value: pickupLocation,
-            autoCorrect: false,
 
-            onChangeText(e) {
-              setPickupLocation(e);
+            placeholderTextColor: '#8e8e8e',
+            value: pickupLocation,
+            autoCorrect: false,
+            onChange(e) {
+              setPickupLocation(e.nativeEvent.target)
             },
           }}
-          styles={{ textInput: { fontSize: 16 }, listView: { position: 'absolute', top: 50 } }}
-          onPress={(data, details = null) => { console.log(data, details); }}
+          styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28 } }}
+          onPress={(data, details = null) => {
+            setPickupLocation(data.description)
+            if (details) {
+              const { lat, lng } = details.geometry.location;
+              const address = data.description;
+
+              // Save to state
+              setPickupLocationData({
+                address,
+                latitude: lat,
+                longitude: lng,
+              });
+
+              console.log('Selected:', { address, lat, lng });
+            }
+          }
+          }
           query={{
             key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
             language: 'en',
           }}
-
           enablePoweredByContainer={false}
           renderLeftButton={() => (
             <View
@@ -120,124 +284,47 @@ const BookRide = () => {
               }}>
               <Svg
                 rest={{
-                  height: 20,
-                  width: 20,
+                  height: 18,
+                  width: 18,
                   style: { marginVertical: 10 },
                 }}
                 xml={locationBlackIcon}
               />
             </View>
           )}
-          // renderRightButton={() => (
-
-          //   <View
-          //     style={{
-          //       justifyContent: 'center',
-          //       flexDirection: 'row',
-          //       alignItems: 'center',
-          //       right: 0,
-          //       position: 'absolute',
-          //       top: 15
-
-          //     }}>
-          //    {(pickupLocation || googlePlaceAutoCompleteRef.current?.getAddressText()) ? (
-          //   <TouchableOpacity
-          //     onPress={() => {
-          //       setPickupLocation('');
-          //       googlePlaceAutoCompleteRef.current?.clear();
-          //     }}>
-          //     <Svg xml={cross} rest={{ height: 16, width: 16 }} />
-          //   </TouchableOpacity>
-          // ) : null}
-
-          //   </View>)}
+          renderRightButton={() =>
+            pickupLocation ? (
+              <TouchableOpacity
+                onPress={() => {
+                  setPickupLocation('');
+                }}
+                style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
+              </TouchableOpacity>
+            ) : null
+          }
           predefinedPlaces={[]}
           autoFillOnNotFound={false}
           currentLocation={false}
           currentLocationLabel="Current location"
           debounce={0}
-          // disableScroll={false}
-          // enableHighAccuracyLocation={true}
-          fetchDetails={false}
-          // filterReverseGeocodingByTypes={[]}
-          // GooglePlacesDetailsQuery={{}}
-          // GooglePlacesSearchQuery={{
-          //  rankby: 'distance',
-          //  type: 'restaurant',
-          // }}
-          // GoogleReverseGeocodingQuery={{}}
-          // isRowScrollable={true}
+          fetchDetails={true}
           keyboardShouldPersistTaps="always"
-          // listHoverColor="#ececec"
-          // listUnderlayColor="#c8c7cc"
-          // listViewDisplayed="auto"
           keepResultsAfterBlur={false}
-          minLength={3}
+          minLength={2}
           nearbyPlacesAPI="GooglePlacesSearch"
           numberOfLines={1}
           onFail={(e) => { console.warn('Google Place Failed : ', e) }}
           onNotFound={() => { }}
           onTimeout={() => console.warn('google places autocomplete: request timeout')}
           predefinedPlacesAlwaysVisible={false}
-          // suppressDefaultStyles={false}
-          // textInputHide={false}
           timeout={20000}
-          // isNewPlacesAPI={false}
           fields="*"
         />
       </View>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Location Input */}
-        {/* <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { textAlign: isRTL ? 'right' : 'left' }]}>{t('pickup_location')}</Text>
-          <View style={styles.locationContainer}>
-            <View style={[styles.locationInputWrapper, { borderTopLeftRadius: 5, marginBottom: 15, borderBottomLeftRadius: 1 }]}>
-              <Svg xml={locationBlackIcon} rest={{ height: 20, width: 20 }} />
-              <View style={styles.autocompleteContainer}>
-                <GooglePlacesAutocomplete
-                  predefinedPlaces={[]}
-                  placeholder={t('set_pickup_location')}
-                  onPress={(data) => setPickupLocation(data.description)}
-                  query={{
-                    key: 'AIzaSyAKwc_liBJuKwkEuftyfFN-rJWpsWOQJjw',
-                    language: isRTL ? 'ar' : 'en',
-                    components: 'country:qa',
-                  }}
-                  fetchDetails={true}
-                  debounce={300}
-                  onFail={(error) => {
-                    console.error('❌ Places API Error:', error);
-                    console.error('Error type:', typeof error);
-                    console.error('Error details:', JSON.stringify(error, null, 2));
-                  }}
-                  onNotFound={() => {
-                    console.warn('⚠️ No places found for the search query');
-                  }}
-                  enablePoweredByContainer={false}
-                  textInputProps={{
-                    placeholderTextColor: '#8e8e8e',
-                    onChange: (e) => setPickupLocation(e?.nativeEvent?.text),
-                    value: pickupLocation,
-                  }}
-                  styles={{
-                    textInputContainer: {
-                      paddingHorizontal: 10,
-                    },
-                    textInput: {
-                      height: 46,
-                      fontSize: 16,
-                      color: StyleGuide.color.black,
-                      textAlign: isRTL ? 'right' : 'left'
-                    },
-                    listView: {
-                      backgroundColor: 'red',
-                    },
-                  }}
-                />
-              </View>
-            </View>
-          </View>
-        </View> */}
+      <ScrollView contentContainerStyle={{ flexGrow: 1,paddingBottom: SCREEN_WIDTH*0.35 }} style={styles.content} showsVerticalScrollIndicator={false}>
+    
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle,{textAlign:isRTL?'right':'left'}]}>{t('select_reservation_time')}</Text>
@@ -245,51 +332,77 @@ const BookRide = () => {
             <DatePicker
               theme='auto'
               date={selectedTime}
-              onDateChange={setSelectedTime}
+              onDateChange={(time) => {
+                setSelectedTime(time);
+                validateTime(time);
+              }}
               mode="datetime"
               locale="en"
+              minimumDate={new Date()}
               dividerColor={StyleGuide.color.primary}
             />
           </View>
+          {timeValidationError ? (
+            <Text style={styles.errorText}>{timeValidationError}</Text>
+          ) : null}
         </View>
 
-
-        {/* <Text style={styles.servicesTitle}>Select Your Ride</Text>
-        <View style={styles.servicesContainer}>
-  {services.map((service, index) => {
-    const isSelected = selectedService === service.id;
-    return (
-
-    <TouchableOpacity
-      key={index}
-      onPress={() => setSelectedService(service.id)}
-      style={[
-        styles.serviceButtonSecondary,
-        { marginHorizontal: 0 },
-        service.extraStyle,
-        isSelected && styles.selectedButton, 
-      ]}
-    >
-      <Svg xml={service.icon} rest={{ height: 62, width: 52 }} />
-      <Text style={styles.serviceText}>{service.text}</Text>
-    </TouchableOpacity>
-  )})}
-</View> */}
-        {/* Auto Accept Toggle */}
-        {/* <View style={styles.toggleSection}>
-          <Text style={styles.toggleText}>Auto accept the nearest driver</Text>
-          <Switch
-            value={autoAccept}
-            onValueChange={setAutoAccept}
-            trackColor={{ false: '#E5E5E5', true: '#D4AF37' }}
-            thumbColor={autoAccept ? '#FFFFFF' : '#FFFFFF'}
-          />
-        </View> */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { textAlign: isRTL ? 'right' : 'left' }]}>{t('select_your_ride')}</Text>
+          {isVehiclesLoading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading vehicles...</Text>
+            </View>
+          ) : vehicles.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.vehicleScroller}
+            >
+              {vehicles.map((vehicle) => (
+                <TouchableOpacity
+                  key={vehicle._id}
+                  style={[
+                    styles.vehicleCard,
+                    selectedVehicle === vehicle?.vehicle_details?._id && styles.selectedVehicleCard,
+                  ]}
+                  onPress={() => setSelectedVehicle(vehicle?.vehicle_details?._id)}
+                >
+                  <View style={styles.vehicleImageContainer}>
+                    <Image 
+                      source={vehicle.vehicle_details ? { uri: vehicle?.vehicle_details?.vehicle_pictures[0] } : car} 
+                      style={{ height: 100, width: 100 }} 
+                      resizeMode='contain' 
+                    />
+                  </View>
+                  <Text style={[styles.vehicleName, selectedVehicle === vehicle?.vehicle_details?._id && styles.selectedVehicleText, { textAlign: isRTL ? 'right' : 'left' }]}>
+                    {vehicle?.vehicle_details?.car_make}
+                  </Text>
+                  <Text style={[styles.vehicleModel, { textAlign: isRTL ? 'right' : 'left' }]}>
+                  ({vehicle?.vehicle_details?.vehicle_color})  {vehicle?.vehicle_details?.car_model}
+                  </Text>
+                  {/* {vehicle.owner && (
+                    <Text style={[styles.ownerText, { textAlign: isRTL ? 'right' : 'left' }]}>
+                      Owner: {vehicle.owner.name}
+                    </Text>
+                  )} */}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.noVehiclesContainer}>
+              <Text style={styles.noVehiclesText}>No vehicles available</Text>
+            </View>
+          )}
+        </View>
 
       </ScrollView>
 
       {/* Next Button */}
-      <AppButton onPress={handleNextButton} title={t('next')}/>
+      <View style={styles.buttonContainer}>
+        <AppButton loading={isBookingLoading} onPress={handleSubmitButton} title={t('submit')}/>
+      </View>
+     
     </SafeAreaView>
   );
 };
@@ -305,6 +418,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 10,
+    marginTop:20
   },
   sectionTitle: {
     fontSize: 18,
@@ -396,6 +510,115 @@ const styles = StyleSheet.create({
   },
   autocompleteContainer: {
     flex: 1,
+  },
+  buttonContainer: {
+    marginBottom: 20,
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  timeDisplayContainer: {
+    backgroundColor: StyleGuide.color.white,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dateTimeLabel: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.semiBold,
+    color: StyleGuide.color.blackishGrey,
+    flex: 1,
+  },
+  dateTimeValue: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.black,
+    flex: 2,
+    textAlign: 'right',
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: '#FF3B30',
+    marginTop: 8,
+    marginLeft: 4,
+  },
+  vehicleScroller: {
+    marginTop: 10,
+  },
+  vehicleCard: {
+    backgroundColor: StyleGuide.color.white,
+    borderRadius: 12,
+    padding: 20,
+    marginRight: 15,
+    alignItems: 'center',
+    minWidth: 120,
+  },
+  selectedVehicleCard: {
+    backgroundColor: StyleGuide.color.primary,
+
+  },
+  selectedVehicleText: {
+    color: StyleGuide.color.black
+  },
+  vehicleImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  vehicleImage: {
+    fontSize: 30,
+  },
+  vehicleName: {
+    fontSize: 18,
+    fontFamily: StyleGuide.fontFamily.semiBold,
+    color: StyleGuide.color.primary,
+    marginBottom: 5,
+  },
+  vehicleModel: {
+    fontSize: 12,
+    fontFamily: StyleGuide.fontFamily.regular,
+    color: StyleGuide.color.black,
+  },
+  ownerText: {
+    fontSize: 12,
+    fontFamily: StyleGuide.fontFamily.regular,
+    color: StyleGuide.color.blackishGrey,
+    marginTop: 5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.blackishGrey,
+  },
+  noVehiclesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noVehiclesText: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.blackishGrey,
   },
 });
 

@@ -35,7 +35,12 @@ const AppButton: React.FC<AppButtonProps> = ({
 
   return (
     <TouchableOpacity
-      style={[styles.button, { backgroundColor: buttonBackgroundColor }, style]}
+      style={[
+        styles.button, 
+        { backgroundColor: buttonBackgroundColor }, 
+        (disabled || loading) && styles.disabledButton,
+        style
+      ]}
       onPress={onPress}
       disabled={disabled || loading}
     >
@@ -60,6 +65,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     marginVertical: 10,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   buttonText: {
     fontSize: 18,

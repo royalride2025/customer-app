@@ -36,7 +36,7 @@ const logo = require('../../../../assets/images/logo.png');
 
 const TimeStatusCard: React.FC<StatusCardProps> = ({
     icon = "🚗",
-    title = "The Driver is heading to the pickup point",
+    title = "The Driver is heading toward you.",
     waitingTime = "2:12",
     waitingLabel = "Waiting Time",
 
