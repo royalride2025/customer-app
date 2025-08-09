@@ -50,35 +50,169 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
         } else {
           permission = PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
         }
+        
         const result = await request(permission);
         console.log('Location permission result:', result);
         
-        if (result === 'granted') {
-          Geolocation.getCurrentPosition(
-            (position) => {
-              setCurrentLocation({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              });
-              setLocationPermissionChecked(true);
-            },
-            (error) => {
-              console.log('Geolocation error:', error);
-              Alert.alert('Error', 'Unable to fetch location. Using default location.');
-              setLocationPermissionChecked(true);
-            },
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-          );
+        if (result === RESULTS.GRANTED) {
+          console.log('Permission granted, getting location...');
+          getLocationWithFallback();
         } else {
-          Alert.alert('Permission Denied', 'Location permission is required to show your current location. Using default location.');
-          setLocationPermissionChecked(true);
+          handlePermissionDenied(result);
         }
       } catch (error) {
         console.log('Location permission error:', error);
-        Alert.alert('Error', 'Unable to request location permission. Using default location.');
-        setLocationPermissionChecked(true);
+        // Alert.alert('Error', 'Unable to request location permission. Using default location.');
+        setDefaultLocation();
       }
     };
+  
+    const getLocationWithFallback = () => {
+      // First attempt: High accuracy with longer timeout
+      console.log('Attempting high accuracy location...');
+      
+      Geolocation.getCurrentPosition(
+        (position) => {
+          console.log('High accuracy location success:', position);
+          setCurrentLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setLocationPermissionChecked(true);
+        },
+        (error) => {
+          console.log('High accuracy failed, trying low accuracy...', error);
+          // Fallback: Low accuracy with shorter timeout
+          getLowAccuracyLocation();
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 15000, // 15 seconds for high accuracy
+          maximumAge: 30000, // Accept cached location up to 30 seconds old
+        }
+      );
+    };
+  
+    const getLowAccuracyLocation = () => {
+      console.log('Attempting low accuracy location...');
+      
+      Geolocation.getCurrentPosition(
+        (position) => {
+          console.log('Low accuracy location success:', position);
+          setCurrentLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setLocationPermissionChecked(true);
+        },
+        (error) => {
+          console.log('Low accuracy also failed, trying cached location...', error);
+          // Final fallback: Try with very old cached data
+          getCachedLocation();
+        },
+        { 
+          enableHighAccuracy: false, // Use network/cell tower location
+          timeout: 10000, // 10 seconds for low accuracy
+          maximumAge: 300000, // Accept cached location up to 5 minutes old
+        }
+      );
+    };
+  
+    const getCachedLocation = () => {
+      console.log('Attempting cached location...');
+      
+      Geolocation.getCurrentPosition(
+        (position) => {
+          console.log('Cached location success:', position);
+          setCurrentLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setLocationPermissionChecked(true);
+        },
+        (error) => {
+          console.log('All location attempts failed:', error);
+          handleLocationError(error);
+        },
+        { 
+          enableHighAccuracy: false,
+          timeout: 5000, // Very short timeout
+          maximumAge: 600000, // Accept very old cached data (10 minutes)
+        }
+      );
+    };
+  
+    const handleLocationError = (error) => {
+      let errorMessage = 'Unable to get your location. ';
+      let showRetry = false;
+      
+      switch (error.code) {
+        case 1: // PERMISSION_DENIED
+          errorMessage += 'Location permission was denied.';
+          break;
+        case 2: // POSITION_UNAVAILABLE
+          errorMessage += 'Location services are unavailable. Please check your GPS settings.';
+          showRetry = true;
+          break;
+        case 3: // TIMEOUT
+          errorMessage += 'Location request timed out. This may happen indoors or in areas with poor GPS signal.';
+          showRetry = true;
+          break;
+        default:
+          errorMessage += `Unknown error (code: ${error.code}).`;
+          showRetry = true;
+          break;
+      }
+      
+      if (showRetry) {
+        console.log(
+          'Location Timeout', 
+          errorMessage + ' Would you like to try again or use default location?',
+          [
+            { 
+              text: 'Try Again', 
+              onPress: () => getLocationWithFallback() 
+            },
+            { 
+              text: 'Use Default', 
+              onPress: () => setDefaultLocation() 
+            }
+          ]
+        );
+      } else {
+        console.log('Location Error', errorMessage + ' Using default location.');
+        setDefaultLocation();
+      }
+    };
+  
+    const handlePermissionDenied = (result) => {
+      let message = 'Location permission is required. Using default location.';
+      
+      if (result === RESULTS.DENIED) {
+        message = 'Location permission was denied. You can enable it later in settings.';
+      } else if (result === RESULTS.BLOCKED) {
+        message = 'Location permission is blocked. Please enable it in device settings.';
+      } else if (result === RESULTS.UNAVAILABLE) {
+        message = 'Location services are not available on this device.';
+      }
+      
+      console.log('Permission not granted:', result);
+      console.log('Permission Required', message);
+      setDefaultLocation();
+    };
+  
+    const setDefaultLocation = () => {
+      // Set your default location here (replace with your preferred default coordinates)
+      const defaultCoords = {
+        latitude: 37.7749, // San Francisco as example
+        longitude: -122.4194,
+      };
+      
+      console.log('Setting default location:', defaultCoords);
+      setCurrentLocation(defaultCoords);
+      setLocationPermissionChecked(true);
+    };
+  
     requestLocationPermission();
   }, []);
   // const requestLocationPermission = async () => {
@@ -214,7 +348,7 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
       },
       (error) => {
         console.log('Location error:', error);
-        Alert.alert('Error', 'Unable to fetch location. Using default location.');
+        // Alert.alert('Error', 'Unable to fetch location. Using default location.');
         setDefaultLocation();
       },
       { 

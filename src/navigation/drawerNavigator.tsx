@@ -25,6 +25,7 @@ import { t } from 'i18next';
 import { useAppSelector, useAppDispatch } from '../redux/reduxHooks';
 import { RootState } from '../redux/store';
 import { clearToken } from '../redux/authSlice';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Drawer = createDrawerNavigator();
 
@@ -69,7 +70,7 @@ const CustomDrawerContent = (props) => {
   const rtlStyles = createRTLStyles(isRTL);
   
   return (
-    <View style={[styles.drawerContainer, rtlStyles.container]}>
+    <SafeAreaView style={[styles.drawerContainer, rtlStyles.container]}>
       {/* Header Section with Logo */}
       <View style={styles.headerSection}>
         <Image
@@ -118,7 +119,7 @@ const CustomDrawerContent = (props) => {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

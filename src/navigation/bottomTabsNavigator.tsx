@@ -1,13 +1,14 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, TouchableOpacity } from 'react-native';
-import { useTranslation } from 'react-i18next'; // For translations
+import { I18nextProvider, useTranslation } from 'react-i18next'; // For translations
 import { StyleGuide } from '../../StyleGuide';
 import Home from '../screens/home';
 import Activities from '../screens/Activities/activities';
 import Svg from '../lib/svg';
 import { activitiesActive, activitiesInactive, homeActive, homeInactive, profile } from '../../assets/svgAssets'; // Import your icons
 import { useAppSelector } from '../redux/reduxHooks';
+import i18n from '../../i18n';
 
 // Define the types for the bottom tab navigator
 export type BottomTabParamList = {
@@ -28,6 +29,7 @@ const BottomTabs = ({ navigation }: any) => {
   };
 
   return (
+    <I18nextProvider i18n={i18n}>
     <Tab.Navigator
     screenOptions={{
       headerShown: false,
@@ -113,6 +115,7 @@ const BottomTabs = ({ navigation }: any) => {
         }}
       />
     </Tab.Navigator>
+    </I18nextProvider>
   );
 };
 

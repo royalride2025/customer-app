@@ -83,7 +83,12 @@ const Map = () => {
 
   // Handlers
   const handleChat = useCallback(() => {
-    (navigation as any).navigate('customerChat');
+    (navigation as any).navigate('customerChat',{
+      driverId: currentBooking?.driver_id,
+      bookingId: currentBooking?.booking_id,
+      driverName: currentBooking?.driver?.name,
+      driverImage: currentBooking?.driver?.profile_image,
+    });
   }, [navigation]);
 
   const toggleModal = useCallback(() => {
@@ -139,7 +144,7 @@ const Map = () => {
       },
       (error) => {
         console.log('Location error:', error);
-        Alert.alert('Error', 'Unable to fetch location. Using default location.');
+        // Alert.alert('Error', 'Unable to fetch location. Using default location.');
         setDefaultLocation();
       },
       {
@@ -239,34 +244,34 @@ const Map = () => {
 
   // Driver location update handler
   const handleDriverLocationUpdate = useCallback((data: any) => {
-    console.log('📍 Driver Location Update: ' + JSON.stringify(data));
+    console.log('Driver Location Update: ' + JSON.stringify(data));
     
-    if (data.latitude && data.longitude) {
-      const newLocation = {
-        latitude: data.latitude,
-        longitude: data.longitude
-      };
+    // if (data.latitude && data.longitude) {
+    //   const newLocation = {
+    //     latitude: data.latitude,
+    //     longitude: data.longitude
+    //   };
       
-      // Only update if the location has changed significantly (more than 10 meters)
-      setDriverLocation(prevLocation => {
-        if (!prevLocation) {
-          setShowDirections(true);
-          return newLocation;
-        }
+    //   // Only update if the location has changed significantly (more than 10 meters)
+    //   setDriverLocation(prevLocation => {
+    //     if (!prevLocation) {
+    //       setShowDirections(true);
+    //       return newLocation;
+    //     }
         
-        const distance = Math.sqrt(
-          Math.pow(newLocation.latitude - prevLocation.latitude, 2) +
-          Math.pow(newLocation.longitude - prevLocation.longitude, 2)
-        );
+    //     const distance = Math.sqrt(
+    //       Math.pow(newLocation.latitude - prevLocation.latitude, 2) +
+    //       Math.pow(newLocation.longitude - prevLocation.longitude, 2)
+    //     );
         
-        // Only update if distance is significant (approximately 10 meters)
-        if (distance > 0.0001) {
-          return newLocation;
-        }
+    //     // Only update if distance is significant (approximately 10 meters)
+    //     if (distance > 0.0001) {
+    //       return newLocation;
+    //     }
         
-        return prevLocation;
-      });
-    }
+    //     return prevLocation;
+    //   });
+    // }
   }, []);
 
   console.log('//////////////////currentLocation:', currentBooking?.booking?.pickup_location?.coordinates);
