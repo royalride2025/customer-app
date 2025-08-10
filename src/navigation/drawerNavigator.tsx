@@ -36,6 +36,8 @@ const profile = require('../../assets/images/manBg.png');
 const CustomDrawerContent = (props) => {
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
   const dispatch = useAppDispatch();
+const profileData = useAppSelector((state: RootState) => state.profile.data);
+
   console.log('isRTL===>', isRTL)
   
   const handleLogout = () => {
@@ -89,11 +91,11 @@ const CustomDrawerContent = (props) => {
         />
         <View style={styles.userInfo}>
           <Text numberOfLines={1} style={[styles.userName]}>
-            {t('profile.name')}
+            {profileData?.profile?.name}
           </Text>
-          <Text numberOfLines={1} style={[styles.userEmail, rtlStyles.text]}>
+          {/* <Text numberOfLines={1} style={[styles.userEmail, rtlStyles.text]}>
             Usman.Virk@example.com
-          </Text>
+          </Text> */}
         </View>
       </View>
 

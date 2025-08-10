@@ -92,7 +92,7 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
           </TouchableOpacity>
           <View>
             <Text style={[styles.greetingText,textAlignment]}>{t('greeting')}</Text>
-            <Text style={[styles.userName,textAlignment]}>{t('userName')}</Text>
+            <Text style={[styles.userName,textAlignment]}>{userName}</Text>
           </View>
         </View>
         <View style={[styles.coinsContainer]}>

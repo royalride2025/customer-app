@@ -7,12 +7,14 @@ import languageReducer from './languageSlice';
 import authReducer from './authSlice';
 import driverReducer from './driverSlice';
 import bookingReducer from './bookingSlice';
+import profileReducer from './profileSlice';
 
 const rootReducer = combineReducers({
   language: languageReducer,
   auth: authReducer,
   driver: driverReducer,
   booking: bookingReducer,
+  profile: profileReducer,
 });
 
 const persistConfig = {

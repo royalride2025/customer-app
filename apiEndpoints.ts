@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
   VERIFY_OTP: '/api/auth/verify-otp',
   FORGOT_PASSWORD: '/api/auth/forgot-password',
   RESET_PASSWORD: '/api/auth/reset-password',
+  GET_PROFILE: `/api/profile/my-profile`,
 
   // Booking
   CREATE_INSTANT_BOOKING: `/api/booking/create`,

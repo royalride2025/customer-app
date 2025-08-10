@@ -76,7 +76,10 @@ const Map = () => {
   const insets = useSafeAreaInsets();
 
 
-  console.log('Current booking state:', currentBooking);
+  console.log('Current booking state:',  {driverId: currentBooking?.driver_id,
+    bookingId: currentBooking?.booking_id,
+    driverName: currentBooking?.driver?.name,
+    driverImage: currentBooking?.driver?.profile_image,});
 
   console.log('Current drivers state:', drivers);
   console.log('Drivers count:', drivers.length);
@@ -308,6 +311,7 @@ const Map = () => {
     setDrivers([]);
     setDriverLocation(null);
     setShowDirections(false);
+    setCurrentBooking(null)
     
     // Show cancellation message to user
     Alert.alert(
@@ -371,6 +375,7 @@ const Map = () => {
            setDriverLocation(null);
            setShowDirections(false);
            setBookingStatus('');
+           setCurrentBooking(null);
            
            Alert.alert(
              'Ride Completed',

@@ -12,8 +12,8 @@ import {
   Alert,
   Animated,
   Dimensions,
-  SafeAreaView,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import { StyleGuide } from '../../../StyleGuide';
 import { 
@@ -32,7 +32,7 @@ const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", is
   const user = useAppSelector((state: RootState) => state?.auth?.user);
   const route = useRoute();
   const navigation = useNavigation();
-  const { driverId, bookingId, driverName, driverImage } = (route.params as any) || {};
+  // const { driverId, bookingId, driverName, driverImage } = (route.params as any) || {};
   console.log('routes',route)
   console.log("Customer chat params:", { driverId, bookingId, driverName, driverImage });
   console.log('👤 Current customer user:', user);
@@ -45,7 +45,11 @@ const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", is
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
   const flatListRef = useRef(null);
   const typingAnimation = useRef(new Animated.Value(0)).current;
-
+  const currentBooking = useAppSelector((state: RootState) => state.booking.currentBooking);
+  const driverId= currentBooking?.driver_id;
+  const bookingId= currentBooking?.booking_id;
+  const driverName= currentBooking?.driver?.name;
+  const driverImage= currentBooking?.driver?.profile_image;
   // Initialize with sample messages once user is loaded
   useEffect(() => {
     if (user?.id && driverId && messages.length === 0) {
@@ -584,7 +588,7 @@ const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", is
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -20}
       >
         {/* Messages */}
         <FlatList
@@ -634,6 +638,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: StyleGuide.color.backgroundColor,
+    paddingBottom: getResponsiveSize(20),
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -821,6 +826,8 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveSize(16), // Reduced from bottom safe area
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
+    // marginBottom: getResponsiveSize(8),
+
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -829,6 +836,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveSize(24),
     paddingHorizontal: getResponsiveSize(16),
     paddingVertical: getResponsiveSize(8),
+    marginBottom: getResponsiveSize(8),
   },
   textInput: {
     flex: 1,

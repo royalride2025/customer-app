@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Dimensions, StyleSheet, Alert, Text, Platform, Modal, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Dimensions, StyleSheet, Alert, Text, Platform, Modal, TouchableOpacity, Image, Linking, ActivityIndicator, Modal as RNModal, } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
@@ -8,11 +8,14 @@ import { check, locationPin } from '../../../assets/svgAssets';
 import { StyleGuide } from '../../../StyleGuide';
 import { screenHeight } from '../../utils/dimenstions';
 import HomeDashBoard from './components/homeDashBoard';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
-import { useAppSelector } from '../../redux/reduxHooks';
+import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useAppDispatch, useAppSelector } from '../../redux/reduxHooks';
 import { RootState } from '../../redux/store';
 import socketService from '../../services/socket';
 import AppButton from '../../lib/component/AppButton';
+import networkClient from '../../../networkClient';
+import { API_ENDPOINTS } from '../../../apiEndpoints';
+import { setProfile } from '../../redux/profileSlice';
 const logo=require('../../../assets/images/logo.png')
 
 const Home = () => {
@@ -20,11 +23,17 @@ const Home = () => {
   const [region, setRegion] = useState(null);
   const [locationPermissionChecked, setLocationPermissionChecked] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
-
+  const [showGPSModal, setShowGPSModal] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState<'enabled' | 'disabled' | 'checking'>('checking');
+  const [showLocationLoader, setShowLocationLoader] = useState(false);
 const navigation=useNavigation()
 const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
 const user = useAppSelector((state: RootState) => state?.auth?.user);
 const currentBooking = useAppSelector((state: RootState) => state.booking.currentBooking);
+const dispatch = useAppDispatch();
+
+const profile = useAppSelector((state: RootState) => state.profile.data);
+console.log('profile========/////////', profile);
   useEffect(() => {
     // Directly set hardcoded location instead of requesting permissions
     const hardcodedRegion = {
@@ -39,10 +48,119 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
       longitude: 74.3925,
     });
   }, []);
+  useEffect(() => {
+    console.log('Current user:', user);
+    fetchProfile();
+}, []); // Consider adding fetchProfile to dependencies
 
+const fetchProfile = useCallback(async () => {
+    try {
+        const response = await networkClient.get(API_ENDPOINTS.GET_PROFILE);
+        
+        if (response.data && response.data?.user) {
+            console.log('Profile data:', response.data);
+            
+            dispatch(setProfile({
+              user: response.data.user,
+              profile: response.data.profile
+            })
+          )
+            // TODO: Set profile data to state
+            // setProfile(response.data.profile); // or whatever your state setter is
+        } else {
+            console.log('API returned success: false');
+        }
+    } catch (err) {
+        console.error('Error fetching profile:', err);
+    }
+}, []);
+
+  console.log("current====",currentLocation)
 
   useEffect(() => {
-    const requestLocationPermission = async () => {
+    const checkLocationServicesEnabled = () => {
+      return new Promise((resolve) => {
+        Geolocation.getCurrentPosition(
+          () => resolve(true),
+          (error) => {
+            if (error.code === 2) { // POSITION_UNAVAILABLE
+              resolve(false);
+            } else {
+              resolve(true);
+            }
+          },
+          { 
+            enableHighAccuracy: false, 
+            timeout: 3000,
+            maximumAge: 0 
+          }
+        );
+      });
+    };
+  
+    // const enableLocationServicesAndroid = () => {
+    //   return new Promise((resolve, reject) => {
+    //     LocationServicesDialogBox.checkLocationServicesIsEnabled({
+    //       message: "Your location services are disabled. Please enable them to use location features.",
+    //       ok: "ENABLE",
+          
+    //       enableHighAccuracy: true, // true => GPS, false => NETWORK
+    //       showDialog: true, // Show the dialog
+    //       openLocationServices: true, // Auto open location settings if user clicks "ENABLE"
+    //       preventOutSideTouch: false, // Allow touching outside to dismiss
+    //       preventBackClick: false, // Allow back button to dismiss
+    //       providerListener: true // Listen for location provider changes
+    //     }).then((success) => {
+    //       console.log("Location services dialog result:", success);
+    //       resolve(success);
+    //     }).catch((error) => {
+    //       console.log("Location services dialog error:", error);
+    //       reject(error);
+    //     });
+    //   });
+    // };
+  
+    const handleLocationServicesDisabled = async () => {
+      if (Platform.OS === 'android') {
+        try {
+          console.log('Showing Android location services dialog...');
+          const result = await enableLocationServicesAndroid();
+          
+          if (result && (result.status === "enabled" || result.alreadyEnabled)) {
+            console.log('Location services enabled, proceeding with permission request...');
+            // Location services are now enabled, request app permission
+            await requestAppLocationPermission();
+                      } else {
+              console.log('User declined to enable location services');
+              setShowGPSModal(true);
+            }
+        } catch (error) {
+          console.log('Error with location services dialog:', error);
+          // Fallback to manual settings
+          showManualSettingsAlert();
+        }
+      } else {
+        // iOS - show manual settings alert
+        showManualSettingsAlert();
+      }
+    };
+  
+          const showManualSettingsAlert = () => {
+        setShowGPSModal(true);
+      };
+  console.log('showw',showGPSModal)
+    const checkLocationAfterSettings = async () => {
+      const isEnabled = await checkLocationServicesEnabled();
+      
+              if (isEnabled) {
+          console.log('Location services now enabled, requesting permission...');
+          await requestAppLocationPermission();
+        } else {
+          setShowGPSModal(true);
+        }
+    };
+  
+    const requestAppLocationPermission = async () => {
       try {
         let permission;
         if (Platform.OS === 'ios') {
@@ -52,23 +170,42 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
         }
         
         const result = await request(permission);
-        console.log('Location permission result:', result);
+        console.log('App location permission result:', result);
         
         if (result === RESULTS.GRANTED) {
-          console.log('Permission granted, getting location...');
+          console.log('App permission granted, getting location...');
           getLocationWithFallback();
         } else {
           handlePermissionDenied(result);
         }
       } catch (error) {
-        console.log('Location permission error:', error);
-        // Alert.alert('Error', 'Unable to request location permission. Using default location.');
+        console.log('App permission error:', error);
+        setDefaultLocation();
+      }
+    };
+  
+    const requestLocationPermission = async () => {
+      try {
+        // Step 1: Check if location services are enabled
+        const locationServicesEnabled = await checkLocationServicesEnabled();
+        
+        if (!locationServicesEnabled) {
+          console.log('Location services are disabled, handling...');
+          await handleLocationServicesDisabled();
+          return;
+        }
+  
+        // Step 2: Location services are enabled, request app permission
+        console.log('Location services are enabled, requesting app permission...');
+        await requestAppLocationPermission();
+        
+      } catch (error) {
+        console.log('Location setup error:', error);
         setDefaultLocation();
       }
     };
   
     const getLocationWithFallback = () => {
-      // First attempt: High accuracy with longer timeout
       console.log('Attempting high accuracy location...');
       
       Geolocation.getCurrentPosition(
@@ -82,13 +219,12 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
         },
         (error) => {
           console.log('High accuracy failed, trying low accuracy...', error);
-          // Fallback: Low accuracy with shorter timeout
           getLowAccuracyLocation();
         },
         { 
           enableHighAccuracy: true, 
-          timeout: 15000, // 15 seconds for high accuracy
-          maximumAge: 30000, // Accept cached location up to 30 seconds old
+          timeout: 15000,
+          maximumAge: 30000,
         }
       );
     };
@@ -107,13 +243,12 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
         },
         (error) => {
           console.log('Low accuracy also failed, trying cached location...', error);
-          // Final fallback: Try with very old cached data
           getCachedLocation();
         },
         { 
-          enableHighAccuracy: false, // Use network/cell tower location
-          timeout: 10000, // 10 seconds for low accuracy
-          maximumAge: 300000, // Accept cached location up to 5 minutes old
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 300000,
         }
       );
     };
@@ -136,73 +271,27 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
         },
         { 
           enableHighAccuracy: false,
-          timeout: 5000, // Very short timeout
-          maximumAge: 600000, // Accept very old cached data (10 minutes)
+          timeout: 5000,
+          maximumAge: 600000,
         }
       );
     };
   
-    const handleLocationError = (error) => {
-      let errorMessage = 'Unable to get your location. ';
-      let showRetry = false;
-      
-      switch (error.code) {
-        case 1: // PERMISSION_DENIED
-          errorMessage += 'Location permission was denied.';
-          break;
-        case 2: // POSITION_UNAVAILABLE
-          errorMessage += 'Location services are unavailable. Please check your GPS settings.';
-          showRetry = true;
-          break;
-        case 3: // TIMEOUT
-          errorMessage += 'Location request timed out. This may happen indoors or in areas with poor GPS signal.';
-          showRetry = true;
-          break;
-        default:
-          errorMessage += `Unknown error (code: ${error.code}).`;
-          showRetry = true;
-          break;
-      }
-      
-      if (showRetry) {
-        console.log(
-          'Location Timeout', 
-          errorMessage + ' Would you like to try again or use default location?',
-          [
-            { 
-              text: 'Try Again', 
-              onPress: () => getLocationWithFallback() 
-            },
-            { 
-              text: 'Use Default', 
-              onPress: () => setDefaultLocation() 
-            }
-          ]
-        );
-      } else {
-        console.log('Location Error', errorMessage + ' Using default location.');
-        setDefaultLocation();
-      }
-    };
+          const handleLocationError = (error: any) => {
+        if (error.code === 2) { // POSITION_UNAVAILABLE
+          setShowGPSModal(true);
+        } else {
+          // For other errors, show custom modal instead of alert
+          setShowGPSModal(true);
+        }
+      };
   
-    const handlePermissionDenied = (result) => {
-      let message = 'Location permission is required. Using default location.';
-      
-      if (result === RESULTS.DENIED) {
-        message = 'Location permission was denied. You can enable it later in settings.';
-      } else if (result === RESULTS.BLOCKED) {
-        message = 'Location permission is blocked. Please enable it in device settings.';
-      } else if (result === RESULTS.UNAVAILABLE) {
-        message = 'Location services are not available on this device.';
-      }
-      
-      console.log('Permission not granted:', result);
-      console.log('Permission Required', message);
-      setDefaultLocation();
-    };
+          const handlePermissionDenied = (result: any) => {
+        console.log('App permission not granted:', result);
+        setShowGPSModal(true);
+      };
   
     const setDefaultLocation = () => {
-      // Set your default location here (replace with your preferred default coordinates)
       const defaultCoords = {
         latitude: 37.7749, // San Francisco as example
         longitude: -122.4194,
@@ -213,8 +302,9 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
       setLocationPermissionChecked(true);
     };
   
+    // Start the location setup process
     requestLocationPermission();
-  }, []);
+  }, [navigation]);
   // const requestLocationPermission = async () => {
   //   try {
   //     let permission;
@@ -313,6 +403,212 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
     
     };
   }, [user, locationPermissionChecked]); // Wait for both user and location permission
+  useEffect(() => {
+    const checkGPSStatus = () => {
+      console.log('🔍 Checking GPS status...');
+      Geolocation.getCurrentPosition(
+        (position) => {
+          // GPS is working
+          console.log('✅ GPS status check: Enabled - Hiding modal');
+          setGpsStatus('enabled');
+          setShowGPSModal(false);
+          setShowLocationLoader(false);
+        },
+        (error) => {
+          console.log('❌ GPS status check failed:', error.code, error.message);
+          if (error.code === 2) { // POSITION_UNAVAILABLE
+            setGpsStatus('disabled');
+            setShowGPSModal(true);
+            console.log('❌ GPS status check: Disabled - Showing modal');
+          }
+        },
+        { 
+          enableHighAccuracy: false, 
+          timeout: 5000,
+          maximumAge: 0 
+        }
+      );
+    };
+
+    // Check GPS status every 1 second when modal is shown
+    let intervalId: NodeJS.Timeout;
+    if (showGPSModal) {
+      console.log('🔄 Starting GPS status checker...');
+      intervalId = setInterval(checkGPSStatus, 1000);
+      // Also check immediately
+      checkGPSStatus();
+    }
+
+    return () => {
+      if (intervalId) {
+        console.log('🛑 Stopping GPS status checker...');
+        clearInterval(intervalId);
+      }
+    };
+  }, [showGPSModal]);
+
+  // Monitor GPS changes during app usage
+  useEffect(() => {
+    const monitorGPSChanges = () => {
+      Geolocation.getCurrentPosition(
+        (position) => {
+          // GPS is working - ensure modal is hidden
+          if (showGPSModal) {
+            console.log('✅ GPS detected during app usage - hiding modal');
+            setShowGPSModal(false);
+            setShowLocationLoader(false);
+            setGpsStatus('enabled');
+          }
+        },
+        (error) => {
+          if (error.code === 2) { // POSITION_UNAVAILABLE
+            console.log('🚨 GPS turned off during app usage - showing modal');
+            setShowGPSModal(true);
+            setGpsStatus('disabled');
+          }
+        },
+        { 
+          enableHighAccuracy: false, 
+          timeout: 3000,
+          maximumAge: 0 
+        }
+      );
+    };
+
+    // Monitor GPS every 3 seconds during app usage
+    const intervalId = setInterval(monitorGPSChanges, 3000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [showGPSModal]);
+
+  // GPS Modal handlers
+  const handleEnableGPS = async () => {
+    setShowLocationLoader(true);
+    if (Platform.OS === 'android') {
+      try {
+        const result = await LocationServicesDialogBox.checkLocationServicesIsEnabled({
+          message: "Your location services are disabled. Please enable them to use location features.",
+          ok: "ENABLE",
+          cancel: "CANCEL",
+          enableHighAccuracy: true,
+          showDialog: true,
+          openLocationServices: true,
+          preventOutSideTouch: false,
+          preventBackClick: false,
+          providerListener: true
+        });
+        
+        if (result && (result.status === "enabled" || result.alreadyEnabled)) {
+          console.log('Location services enabled via dialog');
+          // Don't hide modal immediately, let the GPS checker handle it
+          setTimeout(() => {
+            setShowLocationLoader(false);
+          }, 2000);
+        } else {
+          console.log('User declined to enable location services');
+          setShowLocationLoader(false);
+          setShowGPSModal(true);
+        }
+      } catch (error) {
+        console.log('Error with location services dialog:', error);
+        handleOpenSettings();
+      }
+    } else {
+      handleOpenSettings();
+    }
+  };
+
+  const handleOpenSettings = () => {
+    setShowLocationLoader(true);
+    if (Platform.OS === 'ios') {
+      Linking.openURL('App-Prefs:Privacy&path=LOCATION');
+    } else {
+      Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS');
+    }
+    // Don't hide loader immediately, let the GPS checker handle it
+    setTimeout(() => {
+      setShowLocationLoader(false);
+    }, 3000);
+  };
+
+  const handleRetryGPS = () => {
+    setShowLocationLoader(true);
+    // Force a GPS check immediately
+    Geolocation.getCurrentPosition(
+      (position) => {
+        setGpsStatus('enabled');
+        setShowGPSModal(false);
+        setShowLocationLoader(false);
+        console.log('✅ GPS retry successful');
+      },
+      (error) => {
+        if (error.code === 2) {
+          setGpsStatus('disabled');
+          setShowGPSModal(true);
+          setShowLocationLoader(false);
+          console.log('❌ GPS retry failed');
+        }
+      },
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+    );
+  };
+
+  const handleContinueAnyway = () => {
+    setShowGPSModal(false);
+    // Set default location if needed
+    if (!currentLocation) {
+      const defaultCoords = {
+        latitude: 37.7749,
+        longitude: -122.4194,
+      };
+      setCurrentLocation(defaultCoords);
+    }
+  };
+
+  // Check GPS status when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔍 Screen focused - checking GPS status...');
+      
+      const checkGPSOnFocus = () => {
+        Geolocation.getCurrentPosition(
+          (position) => {
+            console.log('✅ GPS is enabled on screen focus');
+            setGpsStatus('enabled');
+            setShowGPSModal(false);
+            setShowLocationLoader(false);
+          },
+          (error) => {
+            console.log('❌ GPS check failed on screen focus:', error.code);
+            if (error.code === 2) { // POSITION_UNAVAILABLE
+              console.log('🚨 GPS is disabled - showing modal');
+              setGpsStatus('disabled');
+              setShowGPSModal(true);
+            }
+          },
+          { 
+            enableHighAccuracy: false, 
+            timeout: 5000, 
+            maximumAge: 0 
+          }
+        );
+      };
+
+      // Check GPS immediately when screen is focused
+      checkGPSOnFocus();
+      
+      // Also check after a short delay to ensure settings changes are detected
+      const timeoutId = setTimeout(() => {
+        checkGPSOnFocus();
+      }, 1000);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }, [])
+  );
 
   const setDefaultLocation = () => {
     const defaultRegion = {
@@ -332,32 +628,69 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
   };
 
   const getCurrentLocation = () => {
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        const newLocation = { latitude, longitude };
-        const newRegion = {
-          latitude,
-          longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        };
-        
-        setCurrentLocation(newLocation);
-        setRegion(newRegion);
-      },
-      (error) => {
-        console.log('Location error:', error);
-        // Alert.alert('Error', 'Unable to fetch location. Using default location.');
-        setDefaultLocation();
-      },
-      { 
-        enableHighAccuracy: true, 
-        timeout: 20000, 
-        maximumAge: 1000, 
-        distanceFilter: 10,
-      }
-    );
+    // Prevent multiple simultaneous location requests
+    if (showLocationLoader) {
+      console.log('Location request already in progress, skipping...');
+      return;
+    }
+
+    setShowLocationLoader(true);
+    
+    try {
+      Geolocation.getCurrentPosition(
+        (position) => {
+          console.log('Location obtained successfully:', position.coords);
+          const { latitude, longitude } = position.coords;
+          const newLocation = { latitude, longitude };
+          const newRegion = {
+            latitude,
+            longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          };
+          
+          setCurrentLocation(newLocation);
+          setRegion(newRegion);
+          setShowLocationLoader(false);
+        },
+        (error) => {
+          console.log('Location error:', error);
+          console.log('Error code:', error.code);
+          console.log('Error message:', error.message);
+          
+          // Handle specific error codes
+          switch (error.code) {
+            case 1: // PERMISSION_DENIED
+              console.log('Location permission denied');
+              setShowGPSModal(true);
+              break;
+            case 2: // POSITION_UNAVAILABLE
+              console.log('Location unavailable');
+              setDefaultLocation();
+              break;
+            case 3: // TIMEOUT
+              console.log('Location request timed out');
+              setDefaultLocation();
+              break;
+            default:
+              console.log('Unknown location error');
+              setDefaultLocation();
+              break;
+          }
+          setShowLocationLoader(false);
+        },
+        { 
+          enableHighAccuracy: false, // Changed to false to reduce timeout issues
+          timeout: 15000, // Reduced timeout
+          maximumAge: 300000, // 5 minutes cache
+          distanceFilter: 10,
+        }
+      );
+    } catch (error) {
+      console.log('Exception in getCurrentLocation:', error);
+      setDefaultLocation();
+      setShowLocationLoader(false);
+    }
   };
 
   const userLocationfind = (lat, lng) => {
@@ -371,14 +704,39 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
     setCurrentLocation(coordinate);
   };
 
-  if (!locationPermissionChecked) {
+  if (showGPSModal) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}> 
-        <Text>Checking location permission...</Text>
-        <Text style={{ marginTop: 10, fontSize: 12, color: '#666' }}>
-          Socket setup will begin after permission check
-        </Text>
+      <View style={{justifyContent:'center',alignItems:'center',flex:1,paddingHorizontal:30}}>
+      <View style={styles.gpsIconContainer}>
+        <Text style={styles.gpsIcon}>📍</Text>
       </View>
+      {
+        !showLocationLoader?
+        <>
+        <Text style={styles.gpsModalTitle}>GPS is Turned Off</Text>
+      <Text style={styles.gpsModalMessage}>
+        Location services are required for this app to work properly. Please enable GPS to continue.
+      </Text>
+        </>:
+        <>
+        <ActivityIndicator color={StyleGuide.color.primary} size={50}/>
+        </>
+      }
+      
+      {
+        !showLocationLoader&&(
+          <View style={styles.gpsModalButtons}>
+        <AppButton 
+          title="Enable GPS" 
+          onPress={handleOpenSettings} 
+          style={{ flex: 1, marginRight: 8 }} 
+        />
+      
+      </View>
+        )
+      }
+      
+    </View>
     );
   }
   const handleManualSocketRegister = () => {
@@ -424,13 +782,13 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
         zoomEnabled={true}
         showsMyLocationButton={false}
         maxZoomLevel={20}
-        minZoomLevel={3}
+        minZoomLevel={8}
         showsUserLocation={true} // This will show the blue dot for current location
         mapType="standard"
       >
         <Marker
           coordinate={currentLocation}
-          tracksViewChanges={false} // Set to false for better performance
+          tracksViewChanges={true} // Set to false for better performance
           onDragEnd={handleMarkerDragEnd}
           draggable={true}
           title="Your Location"
@@ -442,7 +800,7 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
 
       <View style={styles.bottomContent}>
       <HomeDashBoard
-  userName="Usman Virk"
+  userName={profile?.profile?.name}
   greeting="Good afternoon"
   onTripPress={() => {
     if (currentBooking) {
@@ -460,6 +818,53 @@ const currentBooking = useAppSelector((state: RootState) => state.booking.curren
   onLocationPress={(item) => console.log("Location clicked:", item)}
   isRTL={isRTL}
 />
+
+<RNModal
+        visible={showGPSModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}} // Prevent closing with back button
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.gpsModalContent}>
+            <View style={styles.gpsIconContainer}>
+              <Text style={styles.gpsIcon}>📍</Text>
+            </View>
+            <Text style={styles.gpsModalTitle}>GPS is Turned Off</Text>
+            <Text style={styles.gpsModalMessage}>
+              Location services are required for this app to work properly. Please enable GPS to continue.
+            </Text>
+            <View style={styles.gpsModalButtons}>
+              <AppButton 
+                title="Enable GPS" 
+                onPress={handleOpenSettings} 
+                style={{ flex: 1, marginRight: 8 }} 
+              />
+            
+            </View>
+          </View>
+        </View>
+      </RNModal>
+
+      {/* Location Loader Modal - Global */}
+      <RNModal
+        visible={showLocationLoader}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}} // Prevent closing
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.loaderModalContent}>
+            <View style={styles.loaderContainer}>
+              <Text style={styles.loaderIcon}>🔄</Text>
+            </View>
+            <Text style={styles.loaderTitle}>Getting Location...</Text>
+            <Text style={styles.loaderMessage}>
+              Please wait while we detect your location. This may take a few seconds.
+            </Text>
+          </View>
+        </View>
+      </RNModal>
       {/* <View style={styles.header}>
         <Image
           source={logo}
@@ -528,6 +933,89 @@ const styles = StyleSheet.create({
     textAlign:'center',
     marginBottom: screenHeight * 0.02, 
 
+  },
+  gpsModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: 320,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  gpsIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f0f8ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  gpsIcon: {
+    fontSize: 40,
+  },
+  gpsModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: StyleGuide.color.primary,
+    marginBottom: 12,
+    textAlign: 'center',
+    fontFamily: StyleGuide.fontFamily.semiBold,
+  },
+  gpsModalMessage: {
+    fontSize: 15,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+    fontFamily: StyleGuide.fontFamily.regular,
+  },
+  gpsModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 12,
+  },
+  loaderModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: 300,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  loaderContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f0f8ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  loaderIcon: {
+    fontSize: 40,
+  },
+  loaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: StyleGuide.color.primary,
+    marginBottom: 12,
+    textAlign: 'center',
+    fontFamily: StyleGuide.fontFamily.semiBold,
+  },
+  loaderMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    fontFamily: StyleGuide.fontFamily.regular,
   },
  
 });
