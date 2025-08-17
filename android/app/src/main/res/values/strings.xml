@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">Royal_ride</string>
+    <string name="app_name">Royal Rides</string>
+    <string name="default_web_client_id">619574928613-ethj6rkbukf80v0skp343h2ss6ccj2sf.apps.googleusercontent.com</string>
+
 </resources>

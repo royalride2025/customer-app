@@ -11,6 +11,7 @@ import {
   Image,
   TextInput,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import PhoneInput from './components/phoneInput';
 import SocialLogin from './components/socialComponent';
@@ -34,6 +35,13 @@ import networkClient from '../../../networkClient';
 import { API_ENDPOINTS } from '../../../apiEndpoints';
 import { setToken, setUser } from '../../redux/authSlice';
 import Toast from 'react-native-toast-message';
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
+import useGoogleLogin from './components/googleLoginComponent';
+import { StyleGuide } from '../../../StyleGuide';
 
 // Type for Country
 interface Country {
@@ -68,6 +76,9 @@ const Login = () => {
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
   const { flexDirection, marginRightOrLeft } = useTranslationStyles();
   const dispatch = useAppDispatch();
+
+  // Use the Google Login hook
+  const { googleLogin, googleLoading, userInfo, checkSignedIn, signOut } = useGoogleLogin();
 
   const handleCountrySelect = (country: Country) => {
     setSelectedCountry(country);
@@ -113,7 +124,11 @@ const Login = () => {
   };
 
   const handleSocialLogin = (platform: string) => {
-    Alert.alert(platform, `Continue with ${platform}`);
+    if (platform === 'google') {
+      googleLogin();
+    } else {
+      Alert.alert(platform, `Continue with ${platform}`);
+    }
   };
 
   const openCountryModal = () => {
@@ -135,25 +150,12 @@ const Login = () => {
     setLanguageModalVisible(false);
   };
 
-  // useFocusEffect(
-  //   React.useCallback(() => {
-  //     // This runs every time the screen comes into focus
-  //     const currentRTL = I18nManager.isRTL;
-  //     console.log('Screen focused - Language:', language, 'isRTL:', isRTL, 'I18nManager.isRTL:', currentRTL);
-      
-  //     // Ensure layout consistency when screen is focused
-  //     if (currentRTL !== isRTL) {
-  //       console.log('Layout inconsistency detected, forcing update');
-  //       I18nManager.forceRTL(isRTL);
-  //     }
-  //   }, [language, isRTL])
-  // );
-
-
   // Listen to changes in the language and RTL settings
   useEffect(() => {
     console.log('Language or RTL changed:', language, isRTL);
   }, [language, isRTL]);
+
+  
 
   return (
     <>
@@ -164,7 +166,6 @@ const Login = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-
           <TouchableOpacity
             onPress={() => setLanguageModalVisible(true)} // Open language modal
             style={{
@@ -174,13 +175,13 @@ const Login = () => {
               alignItems: 'center',
               marginBottom: 20,
               position: 'absolute',
-              top: 30,
-              right: 15,
+              top: 40,
+              right: 0,
               flexDirection: 'row',
             }}
           >
             <Text style={{ fontSize: 18, color: '#333' }}>{t('language')}</Text>
-            <Svg xml={arrowDown} rest={{ height: 15, width: 15, style: { marginLeft: 5 } }} />
+            <Svg xml={arrowDown} rest={{ height: 12, width: 12, style: { marginLeft: 5 } }} />
           </TouchableOpacity>
 
           <View style={styles.header}>
@@ -223,7 +224,7 @@ const Login = () => {
           </View>
 
           <View style={[styles.forgotPasswordContainer, flexDirection]}>
-            <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={[styles.remembermeContainermain, flexDirection]}>
+            {/* <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={[styles.remembermeContainermain, flexDirection]}>
               <View style={[styles.remembermeContainer,marginRightOrLeft]}>
                 {rememberMe && <Svg xml={check} rest={{ height: 18, width: 18 }} />}
               </View>
@@ -231,7 +232,7 @@ const Login = () => {
               <Text style={[styles.remembermeText, marginRightOrLeft]}>
                 {t('remember_me')}
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity onPress={handleForgetPassword}>
               <Text style={styles.forgotPasswordText}>{t('forgot_password')}</Text>
             </TouchableOpacity>
@@ -243,6 +244,15 @@ const Login = () => {
             disabled={loading}
             loading={loading}
           />
+          
+          {/* Optional: Keep the official Google Sign-in Button */}
+          {/* <GoogleSigninButton
+            style={styles.googleButton}
+            size={GoogleSigninButton.Size.Wide}
+            color={GoogleSigninButton.Color.Dark}
+            onPress={googleLogin}
+            disabled={googleLoading}
+          /> */}
 
           <View style={[styles.loginContainer, flexDirection]}>
             <Text style={styles.loginText}>{t('dont_have_account')}</Text>
@@ -250,8 +260,9 @@ const Login = () => {
               <Text style={styles.loginLink}>{t('signup')}</Text>
             </TouchableOpacity>
           </View>
+          {googleLoading ? <View style={{flex:1, justifyContent:'center', alignItems:'center'}}><ActivityIndicator size="large" color={StyleGuide.color.primary} /></View>:<SocialLogin onSocialLogin={handleSocialLogin} />}
 
-          <SocialLogin onSocialLogin={handleSocialLogin} />
+          
         </ScrollView>
 
         <LanguageModal

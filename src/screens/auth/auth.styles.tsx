@@ -6,7 +6,8 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
-...StyleGuide.layout.container
+...StyleGuide.layout.container,
+// paddingTop:100
   },
   scrollContainer: {
     flexGrow: 1,
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     paddingHorizontal: screenWidth * 0.03,
-    marginTop: screenHeight * 0.05,
+    marginTop: screenHeight * 0.02,
   },
   termsText: {
     fontSize: Math.min(screenWidth * 0.038, 18),
@@ -122,7 +123,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     flexDirection:'row',
-    justifyContent:'space-between'
+    justifyContent:'flex-end'
   },
   forgotPasswordText: {
     fontSize: Math.min(screenWidth * 0.035, 14),

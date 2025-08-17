@@ -26,6 +26,7 @@ import { t } from 'i18next';
 import { StyleGuide } from '../../StyleGuide';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
+import ManageAddress from '../screens/address';
 
 
 // Define the types for the navigator
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   paymentReceipt:undefined
   customerChat:undefined
   ScheduleRide: undefined;
+  address:undefined
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -62,7 +64,8 @@ const AppNavigator = () => {
           <Stack.Screen options={{ headerShown: false }} name="Introduction" component={Introduction} />
           <Stack.Screen options={{ headerShown: false }} name="login" component={Login} />
           <Stack.Screen options={{ headerShown: false }} name="signUp" component={Signup} />
-          <Stack.Screen name="forgetPassword" component={ForgetPassword} options={{
+          <Stack.Screen name="forgetPassword"  component={ForgetPassword} options={{
+            headerShown: false,
             headerTitle: () => (
               <Text style={{
                 color: StyleGuide.color.black,
@@ -74,6 +77,7 @@ const AppNavigator = () => {
             ),
           }} />
           <Stack.Screen name="otp" component={Otp} options={{
+            headerShown: false,
             headerTitle: () => (
               <Text style={{
                 color: StyleGuide.color.black,
@@ -90,6 +94,8 @@ const AppNavigator = () => {
           <Stack.Screen options={{ headerShown: false }} name="Main" component={DrawerNavigator} />
           <Stack.Screen name="makeTrip" component={MakeTrip} />
           <Stack.Screen name="transaction" component={Transactions} />
+          <Stack.Screen name="address" component={ManageAddress} />
+
           <Stack.Screen options={{ headerShown: false }} name="paymentReceipt" component={PaymentReceipt} />
           <Stack.Screen options={{ headerShown: false }} name="customerChat" component={CustomerClientChat} />
           <Stack.Screen name="ScheduleRide" component={ScheduleRideScreen} />

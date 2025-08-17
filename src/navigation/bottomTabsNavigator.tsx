@@ -37,6 +37,7 @@ const BottomTabs = ({ navigation }: any) => {
         flexDirection: isRTL ? 'row-reverse' : 'row',
         // Add additional RTL-specific styling
         paddingHorizontal: 10,
+        height:60,
       },
       // Force RTL layout for the entire tab bar
       tabBarLabelPosition: 'below-icon',

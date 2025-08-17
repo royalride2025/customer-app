@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -17,48 +17,76 @@ import { useAppSelector } from '../../../redux/reduxHooks';
 import useTranslationStyles from '../../../../locales/useTranslationStyles';
 import { RootState } from '../../../redux/store';
 import { t } from 'i18next';
+import moment from 'moment';
 
 interface RideInfoCardProps {
     driverName?: string;
     driverRating?: number;
-    carModel?: string;
-    carColor?: string;
+    vehicleName: string;
+    vehicleModel?: string;
+    vehicleColor?: string;
     licensePlate?: string;
     driverImage?: string;
-    currentLocation?: string;
-    officeLocation?: string;
+    pickupLocation?: string;
+    dropLocation?: string;
     distance?: string;
+    carImage: string;
     estimatedTime?: string;
+    duration?: any;
     onCallPress?: () => void;
     onMessagePress?: () => void;
     onShowDetailsPress?: () => void;
-    style?: object; // Accept style as prop
+    style?: object;
+    date: any,
+    price: any,
+    bookingType: string,
+    status: any
 }
-
 
 const car = require('../../../../assets/images/car1.png');
 const profile = require('../../../../assets/images/profile.png');
 
 const ActivityCard: React.FC<RideInfoCardProps> = ({
-    driverName = "RR Cullinan",
+    driverName = "driver name",
+    vehicleName = 'honda',
     driverRating = 5.5,
-    carModel = "Rolls Royce Cullinan",
-    carColor = "White",
+    vehicleModel = "Rolls Royce Cullinan",
+    vehicleColor = "White",
     licensePlate = "CF 21536",
-    driverImage = "https://via.placeholder.com/60x60/8B4513/FFFFFF?text=YA",
-    currentLocation = "Zone 55 House 25 Street 873 ",
-    officeLocation = "Zone 55 House 25 Street 873 ",
+    carImage = "https://via.placeholder.com/60x60/8B4513/FFFFFF?text=YA",
+    pickupLocation = "Zone 55 House 25 Street 873 ",
+    dropLocation = "Zone 55 House 25 Street 873 ",
     distance = "2.7km",
     estimatedTime = "1 Hour",
+    price = "800",
+    duration = 2,
+    bookingType,
     onCallPress,
     onMessagePress,
+    date,
+    status,
     onShowDetailsPress,
-    style, // Get style from props
+    style,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [animation] = useState(new Animated.Value(0));
+    const [expandedHeight, setExpandedHeight] = useState(0);
     const { flexDirection, flipImage } = useTranslationStyles();
     const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+
+    // Calculate dynamic height based on booking type
+    const calculateExpandedHeight = () => {
+        if (bookingType === 'rent') {
+            return 80; // Height for just pickup location
+        } else {
+            return 140; // Height for pickup + drop location
+        }
+    };
+
+    useEffect(() => {
+        setExpandedHeight(calculateExpandedHeight());
+    }, [bookingType]);
+
     const toggleExpanded = () => {
         const toValue = isExpanded ? 0 : 1;
 
@@ -74,10 +102,12 @@ const ActivityCard: React.FC<RideInfoCardProps> = ({
             onShowDetailsPress();
         }
     };
+
     const navigation = useNavigation()
-    const expandedHeight = animation.interpolate({
+
+    const animatedHeight = animation.interpolate({
         inputRange: [0, 1],
-        outputRange: [0, 140], // Reduced height for better fit
+        outputRange: [0, expandedHeight], // Use dynamic height
     });
 
     const rotateIcon = animation.interpolate({
@@ -90,28 +120,24 @@ const ActivityCard: React.FC<RideInfoCardProps> = ({
         outputRange: [0, 1],
     });
 
-
+    const formattedDate = moment(date).format('MMM Do YYYY');
+    const formattedTime = moment(date).format('h:mm A');
+    const capitalizeFirstLetter = (string: any) => {
+        return string?.charAt(0)?.toUpperCase() + string?.slice(1);
+    };
 
     return (
-        <View style={[styles.container, style]}> {/* Apply the style prop */}
+        <View style={[styles.container, style]}>
             {/* Header Section */}
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10 }}>
-
-                <Text style={{ fontSize: 12, color: StyleGuide.color.grey }}>December 2, 2024 <Text style={{ color: StyleGuide.color.primary, fontSize: 14 }}>|</Text> 3:00 PM</Text>
-                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10 }}>
-                    <Pressable>
-                        <Svg xml={editIcon} rest={{ height: 16, width: 16 }} />
-                    </Pressable>
-                    <Pressable>
-                        <Svg xml={deletIcon} rest={{ height: 16, width: 16 }} />
-                    </Pressable>
-
-                </View>
+                <Text style={{ fontSize: 12, color: StyleGuide.color.grey }}>{formattedDate}<Text style={{ color: StyleGuide.color.primary, fontSize: 14 }}> | </Text>{formattedTime}</Text>
+                <Text style={{ fontSize: 12, color: StyleGuide.color.grey }}>{capitalizeFirstLetter(bookingType)}<Text style={{ color: StyleGuide.color.primary, fontSize: 14 }}> | </Text>{capitalizeFirstLetter(status)}</Text>
             </View>
+
             <View style={[styles.header, flexDirection]}>
                 <Pressable onPress={() => navigation.navigate('carProfile')} style={styles.carSection}>
                     <Image
-                        source={car}
+                        source={{ uri: carImage }}
                         style={[styles.carImage, flipImage]}
                         resizeMode="center"
                     />
@@ -123,36 +149,39 @@ const ActivityCard: React.FC<RideInfoCardProps> = ({
 
                 <View style={styles.driverInfo}>
                     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }}>
-                        <Text numberOfLines={1} style={[styles.driverName, { textAlign: isRTL ? 'right' : 'left' }]}>{t('rideInfo.driverName')}</Text>
-
+                        <Text numberOfLines={1} style={[styles.driverName, { textAlign: isRTL ? 'right' : 'left' }]}>{vehicleName}</Text>
                         <Text style={styles.rating}>{driverRating} <Text style={{ fontSize: 10, textAlign: isRTL ? 'left' : 'right', marginBottom: 2 }}>⭐</Text></Text>
                     </View>
 
-
                     <Text style={[styles.carDetails, { textAlign: isRTL ? 'right' : 'left' }]}>
-                        {t('rideInfo.carModel', { carModel })} ({carColor}) {t('rideInfo.licensePlate', { licensePlate })}
-
+                        {vehicleModel} ({vehicleColor}){'\n'} {t('rideInfo.licensePlate', { licensePlate })}
                     </Text>
                     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', marginVertical: 10, alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }}>
-                            <Text style={[styles.driverImageName, { textAlign: isRTL ? 'right' : 'left' }]}> {t('rideInfo.driverFullName')}</Text>
+                            <Text style={[styles.driverImageName, { textAlign: isRTL ? 'right' : 'left' }]}> {driverName}</Text>
                             <Text style={[styles.driverRating, isRTL ? { marginRight: 7 } : { marginLeft: 4 }]}>4.5{'  '}<Text style={{ fontSize: 10, textAlign: 'center', marginBottom: 2 }}>⭐</Text></Text>
                         </View>
                     </View>
                 </View>
             </View>
+
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', paddingLeft: isRTL ? 0 : 20, alignItems: 'center' }}>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }}>
                     <Svg xml={Cash} rest={{ height: 16, width: 16, marginRight: isRTL ? 10 : 0, }} />
-                    <Text style={[isRTL ? { marginRight: 10 } : { marginLeft: 10 }, { fontFamily: StyleGuide.fontFamily.semiBold, color: StyleGuide.color.black }]}>{t('rideInfo.cash')}</Text>
+                    <Text style={[isRTL ? { marginRight: 10 } : { marginLeft: 10 }, { fontFamily: StyleGuide.fontFamily.semiBold, color: StyleGuide.color.black }]}>{price.toFixed(2)}</Text>
+                    {bookingType === 'rent' && (
+                        <View style={{ marginLeft: 5, backgroundColor: StyleGuide.color.primary, borderRadius: 16, paddingVertical: 2, paddingHorizontal: 10 }}>
+                            <Text style={{ fontFamily: StyleGuide.fontFamily.semiBold, color: StyleGuide.color.white, fontSize: 12 }}>{duration} h</Text>
+                        </View>
+                    )}
                 </View>
                 <TouchableOpacity style={[styles.showDetailsButton, {
-                    flexDirection: isRTL ? 'row-reverse' : 'row', // Reverse flex direction for RTL
-                    alignSelf: isRTL ? 'flex-start' : 'flex-end', // Adjust alignment for RTL
-                    borderTopLeftRadius: isRTL ? 0 : 20, // Reverse the corner radius for RTL
-                    borderTopRightRadius: isRTL ? 20 : 0, // Reverse the corner radius for RTL
-                    borderBottomLeftRadius: isRTL ? 8 : 0, // Reverse the corner radius for RTL
-                    borderBottomRightRadius: isRTL ? 0 : 8, // Reverse the corner radius for RTL
+                    flexDirection:isRTL ? 'row-reverse' : 'row',
+                    alignSelf: isRTL ? 'flex-start' : 'flex-end',
+                    borderTopLeftRadius: isRTL ? 0 : 20,
+                    borderTopRightRadius: isRTL ? 20 : 0,
+                    borderBottomLeftRadius: isRTL ? (isExpanded ? 0 : 8) : 0,
+                    borderBottomRightRadius: isRTL ? 0 : (isExpanded ? 0 : 15),
                 },]} onPress={toggleExpanded}>
                     <Text style={styles.showDetailsText}>
                         {isExpanded ? t('rideInfo.hideDetails') : t('rideInfo.showDetails')}
@@ -160,49 +189,48 @@ const ActivityCard: React.FC<RideInfoCardProps> = ({
                 </TouchableOpacity>
             </View>
 
-
-            {/* Location Section */}
-            <View>
-
-                {/* Expandable Details Section */}
-                <Animated.View
-                    style={[
-                        styles.expandableSection,
-                        {
-                            height: expandedHeight,
-                            opacity: opacity,
-                        }
-                    ]}
-                >
-                    <View style={styles.expandableContent}>
-                        <View style={[styles.locationItem, flexDirection]}>
-                            <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
-                                <Svg xml={locationBlackIcon} rest={{ height: 18, width: 18 }} />
-                            </View>
-                            <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                                <Text style={styles.locationLabel}>{t('rideInfo.currentLocation')}</Text>
-                                <Text numberOfLines={2} style={[styles.locationAddress, { width: '90%', textAlign: isRTL ? 'right' : 'left' }]}>{currentLocation}</Text>
-                            </View>
+            {/* Expandable Details Section */}
+            <Animated.View
+                style={[
+                    styles.expandableSection,
+                    {
+                        height: animatedHeight,
+                        opacity: opacity,
+                    }
+                ]}
+            >
+                <View style={styles.expandableContent}>
+                    <View style={[styles.locationItem, flexDirection]}>
+                        <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
+                            <Svg xml={locationBlackIcon} rest={{ height: 18, width: 18 }} />
                         </View>
-
-                        <View style={[styles.locationDivider, isRTL ? { marginRight: 14 } : { marginLeft: 14 }, { alignSelf: 'flex-end' }]} />
-
-                        <View style={[styles.locationItem, { marginTop: 10 }, flexDirection]}>
-                            <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
-                                <Svg xml={homeBlackIcon} rest={{ height: 18, width: 18 }} />
-                            </View>
-                            <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                                <Text style={styles.locationLabel}>{t('rideInfo.officeLocation')}</Text>
-                                <Text numberOfLines={2} style={styles.locationAddress}>{officeLocation}</Text>
-                            </View>
-                            <View style={styles.distanceContainer}>
-                                <Text style={styles.distance}> {distance}</Text>
-                                <Text style={styles.estimatedTime}>{estimatedTime}</Text>
-                            </View>
+                        <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                            <Text style={styles.locationLabel}>{'Pickup Location'}</Text>
+                            <Text numberOfLines={2} style={[styles.locationAddress, { width: '90%', textAlign: isRTL ? 'right' : 'left' }]}>{pickupLocation}</Text>
                         </View>
                     </View>
-                </Animated.View>
-            </View>
+
+                    {bookingType !== 'rent' && (
+                        <>
+                            <View style={[styles.locationDivider, isRTL ? { marginRight: 14 } : { marginLeft: 14 }, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
+
+                            <View style={[styles.locationItem, { marginTop: 10 }, flexDirection]}>
+                                <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
+                                    <Svg xml={homeBlackIcon} rest={{ height: 18, width: 18 }} />
+                                </View>
+                                <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                                    <Text style={styles.locationLabel}>{'Drop Location'}</Text>
+                                    <Text numberOfLines={2} style={styles.locationAddress}>{dropLocation}</Text>
+                                </View>
+                                <View style={styles.distanceContainer}>
+                                    <Text style={styles.distance}> {distance}</Text>
+                                    <Text style={styles.estimatedTime}>{estimatedTime}</Text>
+                                </View>
+                            </View>
+                        </>
+                    )}
+                </View>
+            </Animated.View>
         </View>
     );
 };
@@ -212,46 +240,33 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 12,
         borderWidth: 1,
-        // margin:,
         borderColor: StyleGuide.color.primary,
         borderBottomRightRadius: 20,
-        marginBottom: 20
-        // overflow: 'hidden',
+        marginBottom: 20,
     },
     header: {
         flexDirection: 'row',
-        // padding: 10,
         paddingHorizontal: 10,
         paddingTop: 10,
         backgroundColor: '#FFFFFF',
-        // alignItems: 'center',
     },
     carSection: {
-        // flex: 1,
-        // backgroundColor:'yellow',
         justifyContent: 'center',
-        // alignItems:'center',
         position: 'relative'
-
     },
     carImage: {
         width: 140,
         height: 80,
-        // backgroundColor: 'blue',
     },
     driverInfo: {
         flex: 1,
-        // marginLeft: 10,
-        // backgroundColor:'red',
         paddingHorizontal: 20
-
     },
     driverName: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
         marginBottom: 4,
-        // backgroundColor:'red',
         width: '80%'
     },
     ratingContainer: {
@@ -265,7 +280,6 @@ const styles = StyleSheet.create({
         fontFamily: StyleGuide.fontFamily.medium,
         marginLeft: 10,
     },
-
     emptyStar: {
         color: '#DDD',
         fontSize: 14,
@@ -286,9 +300,7 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         position: 'absolute',
         right: -10,
-
         zIndex: 1
-
     },
     driverImageName: {
         fontSize: 12,
@@ -312,13 +324,11 @@ const styles = StyleSheet.create({
     },
     actionButtons: {
         flexDirection: 'row',
-        // gap: 8,
     },
     actionButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        // backgroundColor: '#F0F0F0',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -340,18 +350,14 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     expandableSection: {
-        overflow: 'hidden',
+        overflow: 'hidden', // Important: Add this back for smooth animation
     },
     expandableContent: {
         paddingVertical: 10,
         paddingHorizontal: 10,
         backgroundColor: StyleGuide.color.primary,
-        borderBottomLeftRadius: 15,
-        borderBottomRightRadius: 15,
-        minHeight: 120,
-        marginBottom: 5,
-        overflow: 'hidden',
-
+        borderBottomLeftRadius: 12,
+        borderBottomRightRadius: 12,
     },
     locationItem: {
         flexDirection: 'row',
@@ -364,36 +370,29 @@ const styles = StyleSheet.create({
         backgroundColor: StyleGuide.color.white,
         justifyContent: 'center',
         alignItems: 'center',
-        // marginRight: 12,
     },
     locationIconText: {
         fontSize: 16,
     },
     locationTextContainer: {
         flex: 1,
-
         height: 60
     },
     locationLabel: {
         fontSize: 14,
         color: StyleGuide.color.white,
         fontFamily: StyleGuide.fontFamily.medium,
-        // marginBottom: 4,
     },
     locationAddress: {
         fontSize: 12,
         color: StyleGuide.color.white,
         fontFamily: StyleGuide.fontFamily.regular,
         opacity: 0.9,
-
-        // width:screenWidth*0.7
-        // lineHeight: 16,
     },
     locationDivider: {
         width: 2,
         height: 40,
         backgroundColor: 'rgba(255, 255, 255, 0.3)',
-
         marginVertical: -25,
     },
     distanceContainer: {

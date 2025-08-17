@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StatusBar,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import { StyleGuide } from '../../../../StyleGuide';
@@ -30,7 +31,9 @@ import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 const MakeTripc = () => {
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
-
+  const [focusedInput, setFocusedInput] = useState('from');
+  const [addresses, setAddresses] = useState<any[]>([]); // Stores fetched addresses
+  const [addressLoading, setAddressLoading] = useState<boolean>(false);
   const [fromLocationData, setFromLocationData] = useState({
     address: '',
     latitude: null,
@@ -43,53 +46,83 @@ const MakeTripc = () => {
   });
 
 
+
   console.log(fromLocationData, "fromLocationData")
   console.log(toLocationData, "toLocationData")
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  // const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [loading, setLoading] = useState(false);
   const { flexDirection, textAlignment } = useTranslationStyles();
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
 
-  const GOOGLE_PLACES_API_KEY = 'AIzaSyDKnHa_iplWVK5q4VjxWvfp8ZlDMDtdkWY';
+  // const GOOGLE_PLACES_API_KEY = 'AIzaSyDKnHa_iplWVK5q4VjxWvfp8ZlDMDtdkWY';
   const navigation = useNavigation()
-  const savedAddresses = [
-    {
-      id: 1,
-      name: t('office'),
-      address: 'Zone 55 House 10 Street 873 South Muaither Doha',
-      distance: '2.7 km',
-    },
-    {
-      id: 2,
-      name: t('home'),
-      address: 'Zone 55 House 35 Street 873 South Muaither Doha',
-      distance: '2.7 km',
-    },
-    {
-      id: 3,
-      name: t('wardrobe'),
-      address: 'Zone 55 House 89 Street 801 South Muaither Doha',
-      distance: '2.7 km',
-    },
-    {
-      id: 4,
-      name: t('shop'),
-      address: 'Zone 55 House 08 Street 740 South Muaither Doha',
-      distance: '2.7 km',
-    },
-  ];
+  // const savedAddresses = [
+  //   {
+  //     id: 1,
+  //     name: t('office'),
+  //     address: 'Zone 55 House 10 Street 873 South Muaither Doha',
+  //     distance: '2.7 km',
+  //   },
+  //   {
+  //     id: 2,
+  //     name: t('home'),
+  //     address: 'Zone 55 House 35 Street 873 South Muaither Doha',
+  //     distance: '2.7 km',
+  //   },
+  //   {
+  //     id: 3,
+  //     name: t('wardrobe'),
+  //     address: 'Zone 55 House 89 Street 801 South Muaither Doha',
+  //     distance: '2.7 km',
+  //   },
+  //   {
+  //     id: 4,
+  //     name: t('shop'),
+  //     address: 'Zone 55 House 08 Street 740 South Muaither Doha',
+  //     distance: '2.7 km',
+  //   },
+  // ];
+  useEffect(() => {
+    fetchAddress();  // Call the function to fetch addresses when the component mounts
+  }, []);
+console.log('addressState',addresses)
+  const fetchAddress = async () => {
+    setAddressLoading(true);
+    try {
+      const response = await networkClient.get(`${API_ENDPOINTS.GET_ADDRESS_LIST}`);
 
-  const handleAddressSelect = (address) => {
-    setFromLocation(address.address);
+      console.log('fetch address',response)
+      if (response && response.data) {
+        setAddresses(response?.data?.addresses);  // Assuming "data" contains the request data
+      }
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+    } finally {
+      setAddressLoading(false);
+    }
   };
+  
+  const handleAddressSelect = (e: any) => {
+    if (focusedInput === 'from') {
+        setFromLocation(e.address);
+        // Set coordinates for from location
+        setFromLocationData({
+            address: e.address,
+            latitude: e.latitude,
+            longitude: e.longitude,
+        });
+    } else {
+        setToLocation(e.address);
+        // Set coordinates for to location
+        setToLocationData({
+            address: e.address,
+            latitude: e.latitude,
+            longitude: e.longitude,
+        });
+    }
+};
 
-  const handleCurrentLocation = () => {
-    setIsGettingLocation(true);
-    setTimeout(() => {
-      setFromLocation('Current Location - Zone 45 Street 923 Doha, Qatar');
-      setIsGettingLocation(false);
-    }, 1500);
-  };
+
   useScreenHeader({
     title: t('header.plan_your_ride'),
 
@@ -175,6 +208,10 @@ const MakeTripc = () => {
               placeholderTextColor: '#8e8e8e',
               value: fromLocation,
               autoCorrect: false,
+              onFocus: () => {
+                console.log('📍 Pickup input focused');
+                setFocusedInput('from');
+            },
               onChange(e) {
                 setFromLocation(e.nativeEvent.target)
               },
@@ -275,7 +312,13 @@ const MakeTripc = () => {
               placeholderTextColor: '#8e8e8e',
               value: toLocation,
               autoCorrect: false,
-              onChangeText: setToLocation,
+              onChange(e) {
+                setToLocation(e.nativeEvent.target)
+              },
+              onFocus: () => {
+                console.log('📍 Pickup input focused');
+                setFocusedInput('to');
+            },
             }}
             styles={{
               textInput: {
@@ -358,27 +401,41 @@ const MakeTripc = () => {
         <View style={styles.savedAddressesContainer}>
           <View style={[styles.savedAddressesHeader, flexDirection]}>
             <Text style={styles.savedAddressesTitle}>{t('saved_addresses')}</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={()=>navigation.navigate('address')}>
               <Text style={styles.addButton}>{t('add')}</Text>
             </TouchableOpacity>
           </View>
-
-          {savedAddresses.map((address) => (
-            <TouchableOpacity
-              key={address.id}
-              style={styles.addressItem}
-              onPress={() => handleAddressSelect(address)}
-            >
-              <View style={[styles.addressContent, flexDirection]}>
-                <Svg xml={locationIcon} rest={{ height: 20, width: 20, marginTop: 7, }} />
-                <View style={[styles.addressDetails, isRTL ? { marginRight: 13 } : { marginLeft: 13, }]}>
-                  <Text style={[styles.addressName, textAlignment]}>{address.name}</Text>
-                  <Text style={[styles.addressText, textAlignment]}>{address.address}</Text>
-                </View>
-               {/* <Text style={[styles.addressDistance, textAlignment]}>{address.distance}</Text> */}
+          {
+  addressLoading ? (
+    <ActivityIndicator size={24} color={StyleGuide.color.primary} />
+  ) : (
+    <>
+      {addresses && addresses.length > 0 ? (
+        addresses.map((address) => (
+          <TouchableOpacity
+            key={address.id}
+            style={styles.addressItem}
+            onPress={() => handleAddressSelect(address)}
+          >
+            <View style={[styles.addressContent, flexDirection]}>
+              <Svg xml={locationIcon} rest={{ height: 20, width: 20, marginTop: 7 }} />
+              <View style={[styles.addressDetails, isRTL ? { marginRight: 13 } : { marginLeft: 13 }]}>
+                <Text style={[styles.addressName, textAlignment]}>{address.label}</Text>
+                <Text style={[styles.addressText, textAlignment]}>{address.address}</Text>
               </View>
-            </TouchableOpacity>
-          ))}
+              {/* Uncomment below to display the distance */}
+              {/* <Text style={[styles.addressDistance, textAlignment]}>{address.distance}</Text> */}
+            </View>
+          </TouchableOpacity>
+        ))
+      ) : (
+        <Text style={styles.noAddressesText}>No addresses added yet.</Text>
+      )}
+    </>
+  )
+}
+
+          
         </View>
       </ScrollView>
 
@@ -507,5 +564,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  noAddressesText: {
+    fontSize: 16,
+    fontFamily:StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.grey,  
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

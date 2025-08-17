@@ -14,6 +14,8 @@ import Svg from '../../../lib/svg';
 import {
   airportTransferIcon,
   bookRideicon,
+  deletIcon,
+  editIcon,
   greenLeave,
   homeIcon,
   locationIcon,
@@ -22,10 +24,15 @@ import {
   tripIcon,
   workIcon,
 } from '../../../../assets/svgAssets';
-import { getResponsiveFontSize, getResponsiveSize, isSmallScreen } from '../../../lib/responsiveStyles';
+import { getResponsiveFontSize, getResponsiveSize, isSmallScreen, SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 import useTranslationStyles from '../../../../locales/useTranslationStyles';
 import { t } from 'i18next';
 import i18n from '../../../../i18n';
+import { getTimeGreeting } from '../../../lib/timeGreeting';
+import { useNavigation } from '@react-navigation/native';
+import { Image } from 'react-native';
+import { useAppSelector } from '../../../redux/reduxHooks';
+import { RootState } from '../../../redux/store';
 
 // Define the location item interface
 export interface LocationItem {
@@ -39,12 +46,14 @@ export interface LocationItem {
 interface HomeDashboardProps {
   userName?: string;
   greeting?: string;
+  address:any;
   onLocationPress?: (item: LocationItem) => void;
   onTripPress?: () => void;
   onRentPress?: () => void;
   onBookPress?: () => void;
   onAirportPress?: () => void;
   onProfilePress?: () => void;
+  onDeletePress?: (item: LocationItem) => void;
   isRTL:any
 }
 
@@ -54,45 +63,58 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
   userName = 'User',
   greeting = 'Good morning',
   onLocationPress,
+  address,
   onTripPress,
   onRentPress,
   onBookPress,
   onProfilePress,
+  onDeletePress,
   onAirportPress,
   isRTL
 }) => {
   const { flexDirection, marginRightOrLeft ,textAlignment} = useTranslationStyles();
-  const locationData = useMemo(() => [
-    {
-      title: t('locations.work'),  
-      description: t('locations.nearOffice'),  
-      address: t('locations.address'),
-      icon: workIcon,
-    },
-    {
-      title: t('locations.home'), 
-      description: t('locations.familyHouse'),  
-      address: t('locations.address'),
-      icon: homeIcon,
-    },
-    {
-      title: t('locations.work'), 
-      description: t('locations.clientSite'),
-      address: t('locations.address'),
-      icon: locationIcon,
-    },
-  ], [isRTL, t]);
+  const timeGreeting=getTimeGreeting()
+  const navigation=useNavigation()
+console.log('lllll',address)
+const profileData = useAppSelector((state: RootState) => state.profile.data);
+
   return (
     <View>
       {/* User Greeting */}
       <View style={[styles.greetingContainer,flexDirection]}>
         <View style={[styles.userInfo,flexDirection]}>
           <TouchableOpacity onPress={onProfilePress} style={[styles.avatar,marginRightOrLeft]}>
-            <Text style={styles.avatarText}>👤</Text>
+            {(() => {
+              // Check if there's a valid image in profile data
+              const profile = profileData?.profile as any;
+              const hasValidImage = profile?.customer_profile?.profile_img && 
+                                   profile.customer_profile.profile_img !== '' && 
+                                   profile.customer_profile.profile_img !== 'null' && 
+                                   profile.customer_profile.profile_img !== 'undefined';
+              
+              if (hasValidImage) {
+                return (
+                  <Image
+                    source={{uri: profile.customer_profile.profile_img}}
+                    style={[styles.userImage]}
+                    resizeMode="center"
+                  />
+                );
+              } else {
+                const userName = profile?.customer_profile?.name || '';
+                const initials = userName ? userName.split(' ').slice(0, 2).map(word => word.charAt(0)).join('').toUpperCase() : 'U';
+                
+                return (
+                  <View style={[styles.userImage, styles.userImagePlaceholder]}>
+                    <Text style={styles.userImageInitials}>{initials}</Text>
+                  </View>
+                );
+              }
+            })()}
           </TouchableOpacity>
           <View>
-            <Text style={[styles.greetingText,textAlignment]}>{t('greeting')}</Text>
-            <Text style={[styles.userName,textAlignment]}>{userName}</Text>
+            <Text style={[styles.greetingText,textAlignment]}>{timeGreeting}</Text>
+            <Text style={[styles.userName,textAlignment]}>{profileData?.profile?.customer_profile?.name}</Text>
           </View>
         </View>
         <View style={[styles.coinsContainer]}>
@@ -154,22 +176,52 @@ const HomeDashBoard: React.FC<HomeDashboardProps> = ({
       {/* Saved Locations */}
       <Text style={styles.savedTitle}>{t('savedLocations')}</Text>
       <View style={styles.locationsContainer}>
-        <ScrollView style={{ writingDirection: isRTL ? 'rtl' : 'ltr' }}  horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={flexDirection}>
-          {locationData.map((item, index) => (
+  <ScrollView
+    style={{ writingDirection: isRTL ? 'rtl' : 'ltr' }}
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    contentContainerStyle={flexDirection}
+  >
+      {address && address.length > 0 ? address.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.locationItem,{alignItems:isRTL?'flex-end':'flex-start'}]}
-              onPress={() => onLocationPress?.(item)}
+              style={[styles.locationItem, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}
+              onPress={() => navigation.navigate('address', { address: item, action: 'edit' })}
             >
-              <Svg xml={item.icon} rest={{ height: 25, width: 25 }} />
+              {/* Parent View to allow space between icons and text */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                {/* Location Icon */}
+                <Svg xml={locationIcon} rest={{ height: 25, width: 25 }} />
+                
+                {/* Actions Container */}
+                <View style={styles.actionsContainer}>
+                  <TouchableOpacity
+                    onPress={() => onDeletePress?.(item.id)} // Now properly calls the prop function
+                  >
+                    <Svg xml={deletIcon} rest={{ height: 20, width: 20 }} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Text Section */}
               <View>
-                <Text style={[styles.locationIcon,textAlignment]}>{item.title}</Text>
-                <Text style={[styles.locationName,textAlignment]}>{item.address}</Text>
+                <Text numberOfLines={1} style={[styles.label, textAlignment]}>
+                  {item.label}
+                </Text>
+                <Text numberOfLines={2} style={[styles.locationName, textAlignment]}>
+                  {item.address}
+                </Text>
               </View>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+          )) : (
+            <View style={styles.noDataContainer}>
+              <Text style={styles.noDataText}>No saved locations</Text>
+            </View>
+          )}
+  </ScrollView>
+</View>
+
+
     </View>
   );
 };
@@ -195,6 +247,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  userImage: {
+    width: getResponsiveSize(42),
+    height: getResponsiveSize(42),
+    borderRadius: getResponsiveSize(21),
+  },
+  userImagePlaceholder: {
+    backgroundColor: StyleGuide.color.secondary,
+    borderWidth: 2,
+    borderColor: StyleGuide.color.primary,
+    justifyContent:'center',
+  },
+  userImageInitials: {
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: StyleGuide.fontFamily.bold,
+    color: StyleGuide.color.primary,
+    textAlign: 'center',
   },
   avatarText: {
     fontSize: 20,
@@ -307,7 +376,8 @@ const styles = StyleSheet.create({
   locationItem: {
     alignItems: 'flex-start',
     backgroundColor: StyleGuide.color.white,
-    padding: getResponsiveSize(13),
+    paddingVertical: getResponsiveSize(13),
+    paddingHorizontal:getResponsiveSize(8),
     justifyContent: 'space-between',
     borderRadius: 12,
     marginRight: getResponsiveSize(16),
@@ -325,15 +395,26 @@ const styles = StyleSheet.create({
   //   marginBottom: getResponsiveSize(10),
   //   minWidth: getResponsiveSize(120),
   // },
-  locationIcon: {
+  label: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: StyleGuide.fontFamily.semiBold,
     marginTop: getResponsiveSize(3),
     color: StyleGuide.color.blackishGrey,
+    width:SCREEN_WIDTH*0.24
+
   },
   locationName: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: StyleGuide.fontFamily.semiBold,
-    color: StyleGuide.color.grey,
+    fontSize: getResponsiveFontSize(10),
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.lightGrey,
+    width:SCREEN_WIDTH*0.24
   },
+  actionsContainer: {
+   alignItems:'flex-end',
+ width:SCREEN_WIDTH*0.22,
+    right:3
+     // Adjust the margin as needed
+  },
+ 
+
 });

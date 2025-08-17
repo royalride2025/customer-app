@@ -31,6 +31,7 @@ import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { profile, lock, eye, eyeOff } from '../../../assets/svgAssets';
 import Svg from '../../lib/svg';
+import useGoogleLogin from './components/googleLoginComponent';
 
 const logo=require('../../../assets/images/logo.png')
 
@@ -64,16 +65,18 @@ const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { googleLogin, googleLoading, userInfo, checkSignedIn, signOut } = useGoogleLogin();
 
   const handleSignUp = async () => {
-    if (!phoneNumber.trim()) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter your mobile number' });
-      return;
-    }
     if (!userName.trim()) {
       Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter your name' });
       return;
     }
+    if (!phoneNumber.trim()) {
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter your mobile number' });
+      return;
+    }
+   
     if (!password.trim()) {
       Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter your password' });
       return;
@@ -104,13 +107,13 @@ const { t, i18n } = useTranslation();
   };
  
 
-//   const handleLogin = () => {
-//     Alert.alert('Login', 'Redirecting to login...');
-//   };
-
-  const handleSocialLogin = (platform:any) => {
+const handleSocialLogin = (platform: string) => {
+  if (platform === 'google') {
+    googleLogin();
+  } else {
     Alert.alert(platform, `Continue with ${platform}`);
-  };
+  }
+};
 
   const openCountryModal = () => {
     setIsCountryModalVisible(true);
@@ -203,7 +206,9 @@ const { t, i18n } = useTranslation();
             </TouchableOpacity>
           </View>
 
-          <SocialLogin onSocialLogin={handleSocialLogin} />
+          {googleLoading ? <View style={{flex:1, justifyContent:'center', alignItems:'center'}}><ActivityIndicator size="large" color={StyleGuide.color.primary} /></View>:<SocialLogin onSocialLogin={handleSocialLogin} />}
+
+        
 
           <View style={styles.termsContainer}>
             <Text style={styles.termsText}>{t("byRegisteringAgree")} <Text style={styles.termsLink}>{t("our")}</Text> </Text>

@@ -27,11 +27,11 @@ const SocialLogin = ({ onSocialLogin }) => {
 
            
             <View style={styles.socialContainer}>
-                <TouchableOpacity onPress={() => onSocialLogin('Apple')}>
+                <TouchableOpacity onPress={() => onSocialLogin('apple')}>
                     <Svg xml={apple} rest={{ height: 24, width: 24 }} />
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => onSocialLogin('Google')}  >
+                <TouchableOpacity onPress={() => onSocialLogin('google')}  >
                     <Svg xml={google} rest={{ height: 24, width: 24 }} />
                 </TouchableOpacity>
 
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     dividerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: screenHeight * 0.04,
+        marginBottom: screenHeight * 0.03,
         justifyContent:'center'
     },
     dividerLine: {

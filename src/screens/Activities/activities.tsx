@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   StatusBar,
-  Image,
+  ActivityIndicator,
 } from 'react-native';
 import RideInfoCard from '../map/components/rideInfoCard';
 import ActivityCard from './components/activityCard';
@@ -17,6 +17,8 @@ import { t } from 'i18next';
 import { useAppSelector } from '../../redux/reduxHooks';
 import { RootState } from '../../redux/store';
 import useTranslationStyles from '../../../locales/useTranslationStyles';
+import networkClient from '../../../networkClient';
+import { API_ENDPOINTS } from '../../../apiEndpoints';
 
 interface Trip {
   id: string;
@@ -35,27 +37,127 @@ interface Trip {
 }
 
 const Activities: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
+  const [activeTab, setActiveTab] = useState<'requests'|'upcoming' | 'history'>('requests');
+  const [bookings, setBookings] = useState([]);  // Stores the fetched booking data
+  const [isBookingLoading, setIsBookingLoading] = useState(false);
+  const [historyBookings, setHistoryBookings] = useState<Trip[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [requestBookings, setRequestBookings] = useState<Trip[]>([]);  // Stores the fetched request data
+  const [isRequestLoading, setIsRequestLoading] = useState(false); 
+  const user = useAppSelector((state: RootState) => state.auth.user);
 
-  
+  const isCurrentLoading = 
+  activeTab === 'upcoming' ? isBookingLoading : 
+  activeTab === 'requests' ? isRequestLoading : 
+  isHistoryLoading;
+
+  console.log('booking',bookings)
+  useEffect(() => {
+    // Fetch the appropriate bookings or requests based on the active tab
+    if (activeTab === 'upcoming') {
+      fetchScheduleBookings();  // For upcoming bookings
+    } else if (activeTab === 'requests') {
+      fetchRequests();  // For requests
+    } else {
+      fetchHistory();  // For history
+    }
+  }, [activeTab]);
+
+  const fetchRequests = async () => {
+    setIsRequestLoading(true);
+    try {
+      const response = await networkClient.get(`${API_ENDPOINTS.GET_CUSTOMER_REQUESTS(user?.id)}`);
+
+      console.log('request',response)
+      if (response && response.data) {
+        setRequestBookings(response?.data?.data);  // Assuming "data" contains the request data
+      }
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+    } finally {
+      setIsRequestLoading(false);
+    }
+  };
+
+  const fetchScheduleBookings = async () => {
+    setIsBookingLoading(true);
+    try {
+      const response = await networkClient.get(`${API_ENDPOINTS.GET_CUSTOMER_BOOKINGS(user?.id)}`);
+      if (response && response.data) {
+        setBookings(response?.data?.data);
+      }
+    } catch (error) {
+      console.error('Error fetching schedule bookings:', error);
+    } finally {
+      setIsBookingLoading(false);
+    }
+  };
+
+  const fetchHistory = async () => {
+    setIsHistoryLoading(true);
+    try {
+      const response = await networkClient.get(`${API_ENDPOINTS.GET_HISTORY}`);
+      console.log('his',response?.data?.data)
+      if (response && response.data) {
+        setHistoryBookings(response?.data?.data);
+      }
+    } catch (error) {
+      console.error('Error fetching schedule bookings:', error);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
   useScreenHeader({
     title: 'My Activities',
-    
   });
+
   const { flexDirection } = useTranslationStyles();
-    const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+  const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+
+  // Render function for booking items
+  const renderBookingItem = ({ item }: { item: Trip }) => (
+    <ActivityCard
+      date={item?.start_time}
+      price={item?.price}
+      vehicleName={item?.selected_vehicle_id?.car_make}
+      vehicleRating={4.9}
+      vehicleModel={item?.selected_vehicle_id?.car_model}
+      vehicleColor={item?.selected_vehicle_id?.vehicle_color}
+      licensePlate={item?.selected_vehicle_id?.license_plate}
+      driverName={item?.driver_id?.name}
+      driverRating={item?.driverRating}
+      pickupLocation={item?.currentLocation}
+      dropLocation={item?.destination}
+      distance={item?.distance}
+      estimatedTime={item?.duration}
+      paymentMethod={item?.paymentMethod}
+      onShowDetailsPress={() => console.log('Show details')}
+      bookingType={item?.booking_type}
+      status={item?.status}
+    duration={item?.duration_for_rent}
+    />
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
-    
-      <View style={[styles.tabContainer,flexDirection]}>
+
+      <View style={[styles.tabContainer, flexDirection]}>
+      <TouchableOpacity
+          style={[styles.tab, activeTab === 'requests' && styles.activeTab]}
+          onPress={() => setActiveTab('requests')}
+        >
+          <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>
+            Request
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
           onPress={() => setActiveTab('upcoming')}
         >
           <Text style={[styles.tabText, activeTab === 'upcoming' && styles.activeTabText]}>
-          {t('upcoming')}
+            {t('upcoming')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -63,70 +165,36 @@ const Activities: React.FC = () => {
           onPress={() => setActiveTab('history')}
         >
           <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
-          {t('history')}
+            {t('history')}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.sectionTitle,{textAlign:isRTL?'right':'left'}]}>{t('upcomingTrips')}</Text>
-        <ActivityCard
-                date="January 13, 2025"
-                time="7:45 PM"
-                vehicleName="Honda Civic"
-                vehicleRating={4.1}
-                vehicleModel="Honda Civic"
-                vehicleColor="White"
-                licensePlate="UBR 456"
-                driverName="Fatima Al-Zahra"
-                driverRating={4.6}
-                currentLocation="City Centre Deira, Dubai"
-                officeLocation="Dubai Marina Walk"
-                distance="12.3km"
-                estimatedTime="22 Minutes"
-                paymentMethod="Cash"
-                onEditPress={() => handleEdit('ride-003')}
-                onDeletePress={() => handleDelete('ride-003')}
-                style={{ marginVertical: 8 }}
+      <View style={styles.content}>
+        {isCurrentLoading ? (
+          <ActivityIndicator size={24} color={StyleGuide.color.primary} />
+        ) : (
+          <>
+            <Text style={[styles.sectionTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {activeTab === 'upcoming' ? t('upcomingTrips') : t('tripHistory')}
+            </Text>
+            <FlatList
+             data={activeTab === 'requests' ? requestBookings : activeTab === 'upcoming' ? bookings : historyBookings}
+              renderItem={renderBookingItem}
+              keyExtractor={(item) => item?.id?.toString()}
+              showsVerticalScrollIndicator={false}
             />
-
-            {/* Example 5: Luxury ride */}
-            <ActivityCard
-                date="January 12, 2025"
-                time="11:00 AM"
-                vehicleName="Mercedes S-Class"
-                vehicleRating={4.9}
-                vehicleModel="Mercedes-Benz S-Class"
-                vehicleColor="Pearl White"
-                licensePlate="LUX 001"
-                driverName="Omar Khalil"
-                driverRating={4.8}
-                currentLocation="Four Seasons Resort Dubai"
-                officeLocation="Dubai Opera House"
-                distance="6.8km"
-                estimatedTime="12 Minutes"
-                paymentMethod="Premium Account"
-                onEditPress={() => handleEdit('ride-004')}
-                onDeletePress={() => handleDelete('ride-004')}
-                onShowDetailsPress={() => console.log('Show luxury ride details')}
-            />
-      </ScrollView>
+          </>
+        )}
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-   ...StyleGuide.layout.container
+    ...StyleGuide.layout.container
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    // paddingHorizontal: 20,
-    paddingVertical: 15,
-    // backgroundColor: '#F5F5F5',
-  },
-  
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 20,
@@ -146,191 +214,21 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 16,
-    fontFamily:StyleGuide.fontFamily.medium,
-    color:StyleGuide.color.primary,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.primary,
   },
   activeTabText: {
-    fontFamily:StyleGuide.fontFamily.medium,
-    color:StyleGuide.color.white,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.white,
   },
   content: {
     flex: 1,
-    // paddingHorizontal: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily:StyleGuide.fontFamily.bold,
-    color:StyleGuide.color.black,
+    fontFamily: StyleGuide.fontFamily.bold,
+    color: StyleGuide.color.black,
     marginBottom: 15,
-  },
-  tripCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 15,
-    marginBottom: 15,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  tripHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  tripDate: {
-    fontSize: 14,
-    color: '#666',
-  },
-  tripActions: {
-    flexDirection: 'row',
-  },
-  actionButton: {
-    marginLeft: 10,
-    padding: 5,
-  },
-  actionText: {
-    fontSize: 16,
-  },
-  tripContent: {
-    gap: 15,
-  },
-  vehicleSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  vehicleImage: {
-    width: 80,
-    height: 50,
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  vehicleInfo: {
-    flex: 1,
-  },
-  vehicleType: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  vehicleDetails: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  ratingSection: {
-    alignItems: 'center',
-  },
-  rating: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-  },
-  stars: {
-    flexDirection: 'row',
-    marginTop: 2,
-  },
-  star: {
-    fontSize: 12,
-    color: '#FFD700',
-  },
-  driverSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  driverAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  driverInfo: {
-    flex: 1,
-  },
-  driverName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
-  },
-  driverRating: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  locationSection: {
-    gap: 12,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  locationIcon: {
-    width: 30,
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  locationDot: {
-    fontSize: 16,
-  },
-  locationText: {
-    flex: 1,
-  },
-  locationLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  locationAddress: {
-    fontSize: 13,
-    color: '#000',
-    lineHeight: 18,
-  },
-  distanceInfo: {
-    alignItems: 'flex-end',
-  },
-  distance: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000',
-  },
-  duration: {
-    fontSize: 11,
-    color: '#666',
-    marginTop: 2,
-  },
-  tripFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  paymentSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  paymentIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  paymentMethod: {
-    fontSize: 14,
-    color: '#000',
-  },
-  detailsButton: {
-    backgroundColor: '#D4B896',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 15,
-  },
-  detailsButtonText: {
-    fontSize: 12,
-    color: '#FFF',
-    fontWeight: '500',
   },
 });
 
