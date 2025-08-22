@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, TouchableOpacity } from 'react-native';
+import { Platform, Text, TouchableOpacity } from 'react-native';
 import { I18nextProvider, useTranslation } from 'react-i18next'; // For translations
 import { StyleGuide } from '../../StyleGuide';
 import Home from '../screens/home';
@@ -9,6 +9,7 @@ import Svg from '../lib/svg';
 import { activitiesActive, activitiesInactive, homeActive, homeInactive, profile } from '../../assets/svgAssets'; // Import your icons
 import { useAppSelector } from '../redux/reduxHooks';
 import i18n from '../../i18n';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Define the types for the bottom tab navigator
 export type BottomTabParamList = {
@@ -18,14 +19,26 @@ export type BottomTabParamList = {
 };
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
-
 const BottomTabs = ({ navigation }: any) => {
   const isRTL = useAppSelector((state) => state.language.isRTL);
+  const insets = useSafeAreaInsets();
 
   const { t } = useTranslation();
 
   const tabBarStyle = {
-    flexDirection: isRTL ? 'row-reverse' : 'row', // Flip layout for RTL
+    flexDirection: isRTL ? ('row-reverse' as const) : ('row' as const), // Fix flexDirection type
+    height: 60 + insets.bottom, // Add bottom safe area
+    paddingBottom: insets.bottom, // Add bottom padding
+    paddingHorizontal: 10,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    // Ensure tab bar is above navigation buttons
+    elevation: Platform.OS === 'android' ? 8 : 0,
+    shadowColor: Platform.OS === 'ios' ? '#000' : undefined,
+    shadowOffset: Platform.OS === 'ios' ? { width: 0, height: -2 } : undefined,
+    shadowOpacity: Platform.OS === 'ios' ? 0.1 : undefined,
+    shadowRadius: Platform.OS === 'ios' ? 4 : undefined,
   };
 
   return (
@@ -33,12 +46,7 @@ const BottomTabs = ({ navigation }: any) => {
     <Tab.Navigator
     screenOptions={{
       headerShown: false,
-      tabBarStyle: {
-        flexDirection: isRTL ? 'row-reverse' : 'row',
-        // Add additional RTL-specific styling
-        paddingHorizontal: 10,
-        height:60,
-      },
+      tabBarStyle: tabBarStyle,
       // Force RTL layout for the entire tab bar
       tabBarLabelPosition: 'below-icon',
       tabBarActiveTintColor: StyleGuide.color.primary,
@@ -71,6 +79,7 @@ const BottomTabs = ({ navigation }: any) => {
         name="Activities"
         component={Activities}
         options={{
+          headerShown:true,
           tabBarLabel: ({ focused }) => (
             <Text
               style={{

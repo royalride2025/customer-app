@@ -47,6 +47,9 @@ interface BookingState {
   isLoading: boolean;
   error: string | null;
   lastUpdated: string | null;
+  bookingStatus: string;
+  statusMessage: string;
+  statusIcon: string;
 }
 
 const initialState: BookingState = {
@@ -55,6 +58,9 @@ const initialState: BookingState = {
   isLoading: false,
   error: null,
   lastUpdated: null,
+  bookingStatus: '',
+  statusMessage: 'The Driver is heading toward you.',
+  statusIcon: '🚗',
 };
 
 const bookingSlice = createSlice({
@@ -117,6 +123,32 @@ const bookingSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    
+    // Update booking status
+    updateBookingStatus: (state, action: PayloadAction<{ status: string; message?: string; icon?: string }>) => {
+      state.bookingStatus = action.payload.status;
+      if (action.payload.message) {
+        state.statusMessage = action.payload.message;
+      }
+      if (action.payload.icon) {
+        state.statusIcon = action.payload.icon;
+      }
+      state.lastUpdated = new Date().toISOString();
+    },
+    
+    // Clear booking status
+    clearBookingStatus: (state) => {
+      state.bookingStatus = '';
+      state.statusMessage = 'The Driver is heading toward you.';
+      state.statusIcon = '🚗';
+    },
+    
+    // Set status message and icon
+    setStatusInfo: (state, action: PayloadAction<{ message: string; icon: string }>) => {
+      state.statusMessage = action.payload.message;
+      state.statusIcon = action.payload.icon;
+      state.lastUpdated = new Date().toISOString();
+    },
   },
 });
 
@@ -130,6 +162,9 @@ export const {
   clearBookingHistory,
   setError,
   clearError,
+  updateBookingStatus,
+  clearBookingStatus,
+  setStatusInfo,
 } = bookingSlice.actions;
 
 export default bookingSlice.reducer; 

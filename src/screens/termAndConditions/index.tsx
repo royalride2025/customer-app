@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview'; // Import WebView
 import { StyleGuide } from '../../../StyleGuide';
+import { useScreenHeader } from '../../lib/hooks/useScreenHeader';
 
 const TermAndConditions = () => {
   const [webViewVisible, setWebViewVisible] = useState(false); // Manage WebView visibility
@@ -19,6 +20,10 @@ const TermAndConditions = () => {
     console.log('App component mounted');
   }, []);
 
+  useScreenHeader({
+    title: 'Term & Conditions',
+    showBackButton: true,
+  });
   const handlePress = () => {
     setWebViewVisible(true); // Show WebView when button is pressed
   };

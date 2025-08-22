@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   Alert, 
   Linking, 
-  I18nManager 
+  I18nManager,
+  Switch
 } from 'react-native';
 import { 
   createDrawerNavigator, 
@@ -20,16 +21,19 @@ import Wallet from '../screens/Wallet';
 import { StyleGuide } from '../../StyleGuide';
 import { screenWidth } from '../utils/dimenstions';
 import Svg from '../lib/svg';
-import { activeCustomerChat, activeFaq, activeSetting, activeTerms, call, Cash, CashInactive, customerChat, faq, homeActive, homeInactive, logout, setting, terms } from '../../assets/svgAssets';
+import { accountSettings, activeAccountSettings, activeCustomerChat, activeFaq, activePrivacy, activeSetting, activeTerms, call, Cash, CashInactive, customerChat, faq, homeActive, homeInactive, logout, privacy, setting, terms } from '../../assets/svgAssets';
 import ChatSupport from '../screens/chatSupport';
 import { t } from 'i18next';
 import { useAppSelector, useAppDispatch } from '../redux/reduxHooks';
 import { RootState } from '../redux/store';
 import { clearToken } from '../redux/authSlice';
+import { setLanguage } from '../redux/languageSlice';
+import { changeLanguage } from '../../i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import UserProfile from '../screens/profile/userProfile';
 import TermAndConditions from '../screens/termAndConditions';
 import FAQ from '../screens/faq';
+import PrivacyPolicy from '../screens/privacyPolicy';
 
 const Drawer = createDrawerNavigator();
 
@@ -39,6 +43,7 @@ const profile = require('../../assets/images/manBg.png');
 // Custom Drawer Content Component
 const CustomDrawerContent = (props) => {
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+  const currentLanguage = useAppSelector((state: RootState) => state.language.language);
   const dispatch = useAppDispatch();
   const profileData = useAppSelector((state: RootState) => state.profile.data);
 console.log('pppppp',profileData)
@@ -121,6 +126,9 @@ console.log('pppppp',profileData)
           }
         })()}
         <View style={styles.userInfo}>
+        <Text numberOfLines={1} style={[styles.userEmail,{fontSize:10,lineHeight:16}]}>
+          Customer
+          </Text>
           <Text numberOfLines={1} style={[styles.userName,{lineHeight:18}]}>
             {profileData?.profile?.customer_profile?.name}
           </Text>
@@ -134,6 +142,35 @@ console.log('pppppp',profileData)
       <DrawerContentScrollView {...props} style={styles.drawerItems}>
         <DrawerItemList {...props} />
       </DrawerContentScrollView>
+
+      {/* Language Toggle Section */}
+      <View style={styles.languageSection}>
+        <View style={styles.languageToggleContainer}>
+          <Text style={[
+            styles.languageToggleText,
+            currentLanguage === 'en' && styles.languageToggleTextActive
+          ]}>
+            English
+          </Text>
+          <Switch
+            value={currentLanguage === 'ar'}
+            onValueChange={(value) => {
+              const newLanguage = value ? 'ar' : 'en';
+              dispatch(setLanguage(newLanguage));
+              changeLanguage(newLanguage);
+            }}
+            trackColor={{ false: StyleGuide.color.border, true: StyleGuide.color.primary }}
+            thumbColor={StyleGuide.color.white}
+            ios_backgroundColor={StyleGuide.color.border}
+          />
+          <Text style={[
+            styles.languageToggleText,
+            currentLanguage === 'ar' && styles.languageToggleTextActive
+          ]}>
+            العربية
+          </Text>
+        </View>
+      </View>
 
       {/* Emergency Call Section (Under Chat) */}
       <View style={styles.emergencyCallSection}>
@@ -246,7 +283,7 @@ const DrawerNavigator = () => {
 
   const getDrawerStyle = () => {
     const baseStyle = {
-      width: screenWidth * 0.68,
+      width: screenWidth * 0.7,
       flex: 1,
       backgroundColor: StyleGuide.color.backgroundColor,
     };
@@ -281,16 +318,19 @@ const DrawerNavigator = () => {
           borderRadius: 10,
           marginHorizontal: 10,
           marginVertical: 2,
+          paddingVertical: 0, // Reduced padding to make items smaller
         },
         drawerLabelStyle: {
-          fontSize: 16,
+          fontSize: 14,
           fontFamily: StyleGuide.fontFamily.medium,
           textAlign: isRTL ? 'right' : 'left',
           marginLeft: isRTL ? 0 : -16,
           marginRight: isRTL ? -16 : 0,
+          lineHeight: 18,
         },
         drawerActiveTintColor: StyleGuide.color.primary,
         drawerInactiveTintColor: '#666',
+     
       }}
     >
       <Drawer.Screen 
@@ -298,7 +338,11 @@ const DrawerNavigator = () => {
         component={BottomTabs}
         options={{
           title: t('drawer.home'),
-          drawerLabel: t('drawer.home'),
+          drawerLabel: ({ focused, color }) => (
+            <Text style={{ color: focused ? color : '#666', fontSize:  14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
+              {t('drawer.home')}
+            </Text>
+          ),
           headerShown: false,
           drawerIcon: ({ color, size, focused }) => (
             <View style={{ 
@@ -322,7 +366,11 @@ const DrawerNavigator = () => {
         component={Wallet}
         options={{
           title: t('drawer.wallet'),
-          drawerLabel: t('drawer.wallet'),
+          drawerLabel: ({ focused, color }) => (
+            <Text style={{ color: focused ? color : '#666', fontSize:  14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
+              {t('drawer.wallet')}
+            </Text>
+          ),
           drawerIcon: ({ color, size, focused }) => (
             <View style={{
               alignItems: 'center',
@@ -345,7 +393,11 @@ const DrawerNavigator = () => {
         component={ChatSupport}
         options={{
           title: t('drawer.chat'),
-          drawerLabel: t('drawer.chat'),
+          drawerLabel: ({ focused, color }) => (
+            <Text style={{ color: focused ? color : '#666', fontSize:  14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
+              {t('drawer.chat')}
+            </Text>
+          ),
           headerShown: false,
           drawerIcon: ({ color, size, focused }) => (
             <View style={{
@@ -357,8 +409,8 @@ const DrawerNavigator = () => {
               marginLeft: isRTL ? 8 : 0,
             }}>
               <Svg xml={focused ? activeCustomerChat : customerChat} rest={{
-                height: 23, 
-                width: 23
+                height: 20, 
+                width: 20
               }}/>
             </View>
           ),
@@ -368,9 +420,13 @@ const DrawerNavigator = () => {
         name="Account" 
         component={UserProfile}
         options={{
-          title: 'Account',
-          drawerLabel: 'Account',
-          headerShown: false,
+          title: 'Account Settings',
+          drawerLabel: ({ focused, color }) => (
+            <Text style={{ color: focused ? color : '#666', fontSize: 14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
+              {'Account Settings'}
+            </Text>
+          ),
+          headerShown: true,
           drawerIcon: ({ color, size, focused }) => (
             <View style={{
               alignItems: 'center',
@@ -380,9 +436,9 @@ const DrawerNavigator = () => {
               marginRight: isRTL ? 0 : 8,
               marginLeft: isRTL ? 8 : 0,
             }}>
-              <Svg xml={focused ? activeSetting : setting} rest={{
-                height: 23, 
-                width: 23
+              <Svg xml={focused ? activeAccountSettings : accountSettings} rest={{
+                height: 20, 
+                width: 20
               }}/>
             </View>
           ),
@@ -393,8 +449,12 @@ const DrawerNavigator = () => {
         component={FAQ}
         options={{
           title: 'FAQ',
-          drawerLabel:'FAQ',
-          headerShown: false,
+          drawerLabel: ({ focused, color }) => (
+            <Text style={{ color: focused ? color : '#666', fontSize: 14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
+              {'FAQ'}
+            </Text>
+          ),
+          headerShown: true,
           drawerIcon: ({ color, size, focused }) => (
             <View style={{
               alignItems: 'center',
@@ -417,8 +477,12 @@ const DrawerNavigator = () => {
         component={TermAndConditions}
         options={{
           title: 'Term & Conditions',
-          drawerLabel:'Term & Conditions',
-          headerShown: false,
+          drawerLabel: ({ focused, color }) => (
+            <Text style={{ color: focused ? color : '#666', fontSize:  14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
+                Term & Conditions
+            </Text>
+          ),
+          headerShown: true,
           drawerIcon: ({ color, size, focused }) => (
             <View style={{
               alignItems: 'center',
@@ -429,6 +493,34 @@ const DrawerNavigator = () => {
               marginLeft: isRTL ? 8 : 0,
             }}>
               <Svg xml={focused ? activeTerms : terms} rest={{
+                height: 20, 
+                width: 20
+              }}/>
+            </View>
+          ),
+        }}
+      />
+      <Drawer.Screen 
+        name="privacyPolicy" 
+        component={PrivacyPolicy}
+        options={{
+          title: 'Privacy Policy',
+          drawerLabel: ({ focused, color }) => (
+            <Text style={{ color: focused ? color : '#666', fontSize:  14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
+                Privacy Policy
+            </Text>
+          ),
+          headerShown: true,
+          drawerIcon: ({ color, size, focused }) => (
+            <View style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 24,
+              height: 24,
+              marginRight: isRTL ? 0 : 8,
+              marginLeft: isRTL ? 8 : 0,
+            }}>
+              <Svg xml={focused ? activePrivacy : privacy} rest={{
                 height: 20, 
                 width: 20
               }}/>
@@ -447,28 +539,29 @@ const styles = StyleSheet.create({
     backgroundColor: StyleGuide.color.backgroundColor,
   },
   headerSection: {
-    marginTop: 50,
+    marginTop: 40, // Reduced from 50
     alignItems: 'center',
     paddingHorizontal: 20,
   },
   logo: {
     width: '100%',
-    height: 60,
-    marginBottom: 20,
+    height: 60, // Reduced from 60
+    marginBottom: 15, // Reduced from 20
     borderRadius: 100,
   },
   profileSection: {
+    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 12, // Reduced from 15
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-    marginBottom: 10,
+   
   },
   userImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 50, // Reduced from 60
+    height: 50, // Reduced from 60
+    borderRadius: 25, // Adjusted for new size
     backgroundColor: StyleGuide.color.grey
   },
   userInfo: {
@@ -476,59 +569,91 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   userName: {
-    fontSize: 16,
+    fontSize: 14, // Reduced from 16
     fontFamily: StyleGuide.fontFamily.bold,
     color: StyleGuide.color.black,
-    marginBottom: 4,
+    marginBottom: 3, // Reduced from 4
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: 12, // Reduced from 14
     fontFamily: StyleGuide.fontFamily.regular,
-    color: StyleGuide.color.grey,
+    color: StyleGuide.color.lightGrey,
   },
   drawerItems: {
     flex: 1,
-    paddingTop: 10,
+    paddingTop: 0, // Reduced from 10
   },
   logoutSection: {
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    paddingVertical: 15,
+    paddingVertical: 12, // Reduced from 15
     paddingHorizontal: 20,
     marginTop: 'auto',
   },
   logoutButton: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10, // Reduced from 12
     paddingHorizontal: 15,
     borderRadius: 10,
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: 14, // Reduced from 16
     color: '#ff4757',
     fontFamily: StyleGuide.fontFamily.semiBold,
   },
   emergencyCallSection: {
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    paddingVertical: 15,
+    paddingVertical: 12, // Reduced from 15
     paddingHorizontal: 20,
-    marginTop: 20,
   },
   emergencyCallButton: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#ff4757',
     borderRadius: 10,
-    paddingVertical: 10,
+    paddingVertical: 10, // Reduced from 12
+    paddingHorizontal: 15,
+    paddingRight:24
   },
   emergencyCallText: {
-    fontSize: 16,
+    fontSize: 14, // Reduced from 16
     fontFamily: StyleGuide.fontFamily.semiBold,
     color: '#ffffff',
     marginLeft: 10,
   },
-  emergencyCallIcon: {
-    marginLeft: 10,
+  languageSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  languageToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  languageToggleText: {
+    fontSize: 14,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.heading,
+  },
+  languageToggleTextActive: {
+    color: StyleGuide.color.primary,
+    fontFamily: StyleGuide.fontFamily.semiBold,
+  },
+  initialsContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: StyleGuide.color.primary,
+    borderRadius: 25,
+  },
+  initialsText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontFamily: StyleGuide.fontFamily.bold,
   },
 });
 

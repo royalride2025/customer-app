@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
+ 
   StatusBar,
   Alert,
   Dimensions,
@@ -42,6 +42,7 @@ import {
 } from '@react-native-google-signin/google-signin';
 import useGoogleLogin from './components/googleLoginComponent';
 import { StyleGuide } from '../../../StyleGuide';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Type for Country
 interface Country {
@@ -175,7 +176,7 @@ const Login = () => {
               alignItems: 'center',
               marginBottom: 20,
               position: 'absolute',
-              top: 40,
+              top: 10,
               right: 0,
               flexDirection: 'row',
             }}
@@ -187,7 +188,7 @@ const Login = () => {
           <View style={styles.header}>
             <Image
               source={logo}
-              style={{ width: 130, height: 100 }}
+              style={{ width: 110, height: 90 }}
               resizeMode="contain"
             />
           </View>
@@ -203,7 +204,7 @@ const Login = () => {
             isRTL={isRTL}
           />
           <View style={[styles.inputPasswordContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0, alignSelf: 'center' } }} />
+            {/* <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0, alignSelf: 'center' } }} /> */}
             <TextInput
               style={[
                 styles.phoneInput,

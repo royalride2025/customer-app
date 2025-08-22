@@ -107,6 +107,7 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
             {/* Header Section */}
             <View style={[styles.header,flexDirection]}>
                 <Pressable 
+                    disabled={true}
                     onPress={() => navigation.navigate('carProfile')} 
                     style={styles.carSection}
                 >

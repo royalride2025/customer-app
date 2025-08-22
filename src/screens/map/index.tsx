@@ -1,5 +1,6 @@
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import React, { useEffect, useState, useCallback } from 'react';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View, Linking, Platform, PermissionsAndroid } from 'react-native';
+import Toast from 'react-native-toast-message';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import Svg from '../../lib/svg';
@@ -11,6 +12,7 @@ import { screenWidth } from '../../utils/dimenstions';
 import AppButton from '../../lib/component/AppButton';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import BottomModal from '../../lib/component/BottomModal';
+import RatingModal from '../../lib/component/RatingModal';
 import RideCard from './components/rideCard';
 import PaymentMethods from './components/paymentCard';
 import RideInfoCard from './components/rideInfoCard';
@@ -19,25 +21,27 @@ import { t } from 'i18next';
 import useTranslationStyles from '../../../locales/useTranslationStyles';
 import { useAppSelector, useAppDispatch } from '../../redux/reduxHooks';
 import { RootState } from '../../redux/store';
-import { setCurrentBooking, updateCurrentBooking, clearCurrentBooking } from '../../redux/bookingSlice';
+import { setCurrentBooking, updateCurrentBooking, clearCurrentBooking, updateBookingStatus, clearBookingStatus, setStatusInfo } from '../../redux/bookingSlice';
 import { useSocketReconnection } from '../../lib/hooks/useSocketReconnection';
 import networkClient from '../../../networkClient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 const car = require('../../../assets/images/halfCar.png');
 
 // Google Maps API Key - Replace with your actual API key
 const GOOGLE_MAPS_APIKEY = 'YOUR_GOOGLE_MAPS_API_KEY';
 
-const routeCoordinates = [
-  {
-    latitude: 31.4926,
-    longitude: 74.3925,
-  },
-  { latitude: 31.6018, longitude: 74.3206 },
-];
+// Remove hardcoded route coordinates and destination
+// const routeCoordinates = [
+//   {
+//     latitude: 31.4926,
+//     longitude: 74.3925,
+//   },
+//   { latitude: 31.6018, longitude: 74.3206 },
+// ];
 
-const destination = { latitude: 31.6018, longitude: 74.3206 };
+// const destination = { latitude: 31.6018, longitude: 74.3206 };
 
 const Map = () => {
   // State variables
@@ -51,15 +55,18 @@ const Map = () => {
   const [acceptedDriverId, setAcceptedDriverId] = useState<string | null>(null);
   const [acceptedDriver, setAcceptedDriver] = useState<any>(null);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [driverLocation, setDriverLocation] = useState<{latitude: number; longitude: number} | null>(null);
+  const [driverLocation, setDriverLocation] = useState(null);
   const [showDirections, setShowDirections] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [pickupLocation, setPickupLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [dropoffLocation, setDropoffLocation] = useState<{latitude: number; longitude: number} | null>(null);
-  const [bookingStatus, setBookingStatus] = useState<string>('');
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  // const [locationWatcher, setLocationWatcher] = useState<number | null>(null);
   
-
-  console.log(drivers,"//////////drivers")
+  console.log(bookingStatus, "bookingStatus")
+  console.log(driverLocation,"//////////drivers")
   // Navigation and route
   const navigation = useNavigation();
   const route = useRoute();
@@ -71,11 +78,17 @@ const Map = () => {
   const { flexDirection } = useTranslationStyles();
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
   const currentBooking = useAppSelector((state: RootState) => state.booking.currentBooking);
+  const bookingStatus = useAppSelector((state: RootState) => state.booking.bookingStatus);
+  const statusMessage = useAppSelector((state: RootState) => state.booking.statusMessage);
+  const statusIcon = useAppSelector((state: RootState) => state.booking.statusIcon);
   
   // Safe area insets for proper button positioning
   const insets = useSafeAreaInsets();
 
+  // Map ref to control camera/fit coordinates
+  const mapRef = useRef<MapView | null>(null);
 
+console.log(booking,"boooooooo")
   console.log('Current booking state:',  {driverId: currentBooking?.driver_id,
     bookingId: currentBooking?.booking_id,
     driverName: currentBooking?.driver?.name,
@@ -85,6 +98,102 @@ const Map = () => {
   console.log('Drivers count:', drivers.length);
 
   // Handlers
+  const handleRatingSubmit = useCallback(async (rating: number, review: string) => {
+    console.log('⭐ Rating submitted:', rating, 'Review:', review);
+    
+    try {
+      // Set loading state
+      setIsSubmittingRating(true);
+      
+      // Get the booking ID from current booking
+      const bookingId = currentBooking?.booking_id;
+      
+      if (!bookingId) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Booking ID not found. Please try again.',
+          position: 'top',
+          visibilityTime: 3000,
+        });
+        setIsSubmittingRating(false);
+        return;
+      }
+      
+      // Prepare the payload
+      const payload = {
+        rating: rating.toString(),
+        review: review
+      };
+      
+      console.log('📤 Sending rating to API:', payload);
+      
+      // Make API call to submit rating
+      const response = await networkClient.post(`/api/review/${bookingId}`, payload);
+      
+      console.log('✅ Rating submitted successfully:', response.data);
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Thank You!',
+        text2: 'Your rating has been submitted successfully.',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+      
+      // Close rating modal
+      setShowRatingModal(false);
+      
+      // Clear all booking and driver state
+      dispatch(clearCurrentBooking());
+      setAcceptedDriver(null);
+      setAcceptedDriverId(null);
+      setDrivers([]);
+      setDriverLocation(null);
+      setShowDirections(false);
+      dispatch(clearBookingStatus());
+      setCurrentBooking(null);
+      
+      // Navigate to Main screen
+      setTimeout(() => {
+        (navigation as any).navigate('Main');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error submitting rating:', error);
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to submit rating. Please try again.',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+    } finally {
+      // Always clear loading state
+      setIsSubmittingRating(false);
+    }
+  }, [dispatch, navigation, currentBooking]);
+
+  const handleRatingModalClose = useCallback(() => {
+    setShowRatingModal(false);
+    
+    // Clear all booking and driver state
+    dispatch(clearCurrentBooking());
+    setAcceptedDriver(null);
+    setAcceptedDriverId(null);
+    setDrivers([]);
+    setDriverLocation(null);
+          setShowDirections(false);
+      dispatch(clearBookingStatus());
+      setCurrentBooking(null);
+    
+    // Navigate to Main screen
+    setTimeout(() => {
+      (navigation as any).navigate('Main');
+    }, 500);
+  }, [dispatch, navigation]);
+
   const handleChat = useCallback(() => {
     (navigation as any).navigate('customerChat',{
       driverId: currentBooking?.driver_id,
@@ -113,42 +222,189 @@ const Map = () => {
     }
   }, [currentStep]);
 
-  // Location functions
-  const setDefaultLocation = useCallback(() => {
-    const defaultRegion = {
-      latitude: 31.4926,
-      longitude: 74.3925,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
-    };
-    setRegion(defaultRegion);
-    setCurrentLocation({
-      latitude: 31.4926,
-      longitude: 74.3925,
-    });
-    setIsLoading(false);
+  // Location permission check for Android
+  const requestLocationPermission = useCallback(async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'This app needs access to your location to provide ride services.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('📍 Location permission granted');
+          return true;
+        } else {
+          console.log('❌ Location permission denied');
+          return false;
+        }
+      } catch (err) {
+        console.warn('❌ Error requesting location permission:', err);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions differently
   }, []);
 
-  const getCurrentLocation = useCallback(() => {
+      // Location functions - Set initial region based on priority
+    const setDefaultLocation = useCallback(() => {
+      let targetLatitude: number;
+      let targetLongitude: number;
+      
+      // Priority 1: Booking pickup location
+      if (booking?.booking?.pickup_location?.coordinates) {
+        targetLatitude = Number(booking.booking.pickup_location.coordinates[0]);
+        targetLongitude = Number(booking.booking.pickup_location.coordinates[1]);
+        console.log('🗺️ setDefaultLocation: Using booking pickup location:', { targetLatitude, targetLongitude });
+      }
+      // Priority 2: Fallback to default location (Doha, Qatar)
+      else {
+        targetLatitude = 25.3548;
+        targetLongitude = 51.1839;
+        console.log('🗺️ setDefaultLocation: Using fallback location (Doha):', { targetLatitude, targetLongitude });
+      }
+      
+      const defaultRegion = {
+        latitude: targetLatitude,
+        longitude: targetLongitude,
+        latitudeDelta: 0.18,
+        longitudeDelta: 0.18,
+      };
+      setRegion(defaultRegion);
+      setIsLoading(false);
+      console.log('🗺️ Default location set and loading finished');
+    }, [booking?.booking?.pickup_location?.coordinates]);
+
+  const getCurrentLocation = useCallback(async () => {
+    // Check permission first
+    const hasPermission = await requestLocationPermission();
+    if (!hasPermission) {
+      Alert.alert(
+        'Location Permission Required',
+        'This app needs location access to work properly. Please enable location services in your device settings.',
+        [
+          {
+            text: 'Settings',
+            onPress: () => {
+              if (Platform.OS === 'ios') {
+                Linking.openURL('app-settings:');
+              } else {
+                Linking.openURL('package:' + 'com.royal_ride');
+              }
+            }
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     Geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        const newLocation = { latitude, longitude };
-        const newRegion = {
-          latitude,
-          longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        };
+        
+        // Validate coordinates before setting them
+        if (typeof latitude === 'number' && 
+            typeof longitude === 'number' && 
+            !isNaN(latitude) && 
+            !isNaN(longitude) &&
+            latitude >= -90 && latitude <= 90 &&
+            longitude >= -180 && longitude <= 180) {
+          
+          const newLocation = { latitude, longitude };
+          const newRegion = {
+            latitude,
+            longitude,
+            latitudeDelta: 0.18,
+            longitudeDelta: 0.18,
+          };
 
-        setCurrentLocation(newLocation);
-        setRegion(newRegion);
-        setIsLoading(false);
+          setCurrentLocation(newLocation);
+          // When user manually requests location, center map on current location
+          setRegion(newRegion);
+          setLocationPermissionGranted(true);
+          setIsLoading(false);
+          console.log('📍 Current location obtained and map centered:', newLocation);
+
+          // If we also have a pickup location, fit both markers into view
+          const pickupCoordsFromRoute = booking?.booking?.pickup_location?.coordinates;
+          const pickupCoordsFromRedux = currentBooking?.booking?.pickup_location?.coordinates as any;
+          const pickupCoords = pickupCoordsFromRoute || pickupCoordsFromRedux;
+
+          if (pickupCoords && mapRef.current) {
+            // Coordinate order in app: [0] => latitude, [1] => longitude
+            const pickupLat = Number(pickupCoords[0]);
+            const pickupLng = Number(pickupCoords[1]);
+
+            if (!isNaN(pickupLat) && !isNaN(pickupLng)) {
+              const points = [
+                { latitude, longitude },
+                { latitude: pickupLat, longitude: pickupLng }
+              ];
+              const edgePadding = { top: 120, right: 60, bottom: Math.max(120, insets.bottom + 80), left: 60 } as any;
+              try {
+                mapRef.current.fitToCoordinates(points, { edgePadding, animated: true });
+                console.log('🗺️ Fitting map to current and pickup points:', points);
+              } catch (e) {
+                console.log('⚠️ fitToCoordinates error:', e);
+              }
+            }
+          }
+        } else {
+          console.log('❌ Invalid coordinates received from GPS:', { latitude, longitude });
+          setIsLoading(false);
+          Alert.alert(
+            'Invalid Location Data',
+            'Received invalid coordinates from GPS. Please try again.',
+            [{ text: 'OK' }]
+          );
+        }
       },
       (error) => {
         console.log('Location error:', error);
-        // Alert.alert('Error', 'Unable to fetch location. Using default location.');
-        setDefaultLocation();
+        setIsLoading(false);
+        // Show specific error messages based on error code
+        let errorMessage = 'Unable to fetch your current location.';
+        if (error.code === 1) {
+          errorMessage = 'Location permission denied. Please enable location services.';
+        } else if (error.code === 2) {
+          errorMessage = 'Location unavailable. Please check your device settings.';
+        }
+        
+        Alert.alert(
+          'Location Error', 
+          errorMessage,
+          [
+            {
+              text: 'Settings',
+              onPress: () => {
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('app-settings:');
+                } else {
+                  Linking.openURL('package:' + 'com.royal_ride');
+                }
+              }
+            },
+            {
+              text: 'Retry',
+              onPress: () => getCurrentLocation()
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel'
+            }
+          ]
+        );
       },
       {
         enableHighAccuracy: true,
@@ -157,12 +413,134 @@ const Map = () => {
         distanceFilter: 10,
       }
     );
-  }, [setDefaultLocation]);
+  }, [requestLocationPermission, booking, currentBooking]);
+
+  // Don't start continuous location tracking - only when button is pressed
+  // const startLocationTracking = useCallback(() => {
+  //   if (locationPermissionGranted && !locationWatcher) {
+  //     const watcher = Geolocation.watchPosition(
+  //       (position) => {
+  //       const { latitude, longitude } = position.coords;
+  //       const newLocation = { latitude, longitude };
+  //       
+  //       // Only update if location changed significantly (more than 10 meters)
+  //       if (currentLocation) {
+  //         const distance = Math.sqrt(
+  //           Math.pow(newLocation.latitude - currentLocation.latitude, 2) +
+  //           Math.pow(newLocation.longitude - currentLocation.longitude, 2)
+  //         );
+  //         
+  //         if (distance > 0.0001) { // Approximately 10 meters
+  //           setCurrentLocation(newLocation);
+  //           console.log('📍 Location updated:', newLocation);
+  //         }
+  //       } else {
+  //         setCurrentLocation(newLocation);
+  //       }
+  //     },
+  //       (error) => {
+  //         console.log('Location tracking error:', error);
+  //       },
+  //       {
+  //         enableHighAccuracy: true,
+  //         distanceFilter: 10, // Update every 10 meters
+  //         interval: 5000, // Update every 5 seconds
+  //       }
+  //     );
+  //     setLocationWatcher(watcher);
+  //     console.log('📍 Location tracking started');
+  //   }
+  // }, [locationPermissionGranted, locationWatcher, currentLocation]);
+
+  // Don't use continuous location tracking
+  // const stopLocationTracking = useCallback(() => {
+  //   if (locationWatcher) {
+  //     Geolocation.clearWatch(locationWatcher);
+  //     setLocationWatcher(null);
+  //     console.log('📍 Location tracking stopped');
+  //   }
+  // }, [locationWatcher]);
+
+  // Calculate distance between two coordinates (Haversine formula)
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }, []);
+
+  // Center map on pickup location
+  const centerOnPickupLocation = useCallback(() => {
+    if (booking?.booking?.pickup_location?.coordinates) {
+      const newRegion = {
+        latitude: Number(booking.booking.pickup_location.coordinates[0]), // Correct coordinate order
+        longitude: Number(booking.booking.pickup_location.coordinates[1]),
+        latitudeDelta: 0.18,
+        longitudeDelta: 0.18,
+      };
+      setRegion(newRegion);
+      console.log('🗺️ Map centered on pickup location:', newRegion);
+    }
+  }, [booking?.booking?.pickup_location?.coordinates]);
+
+  // Reset map to initial region (pickup location or fallback)
+  const resetToInitialRegion = useCallback(() => {
+    let targetLatitude: number;
+    let targetLongitude: number;
+    
+    // Priority 1: Booking pickup location
+    if (booking?.booking?.pickup_location?.coordinates) {
+      targetLatitude = Number(booking.booking.pickup_location.coordinates[0]);
+      targetLongitude = Number(booking.booking.pickup_location.coordinates[1]);
+      console.log('🗺️ Reset: Using booking pickup location:', { targetLatitude, targetLongitude });
+    }
+    // Priority 2: Fallback to default location (Doha, Qatar)
+    else {
+      targetLatitude = 25.3548;
+      targetLongitude = 51.1839;
+      console.log('🗺️ Reset: Using fallback location (Doha):', { targetLatitude, targetLongitude });
+    }
+    
+    const newRegion = {
+      latitude: targetLatitude,
+      longitude: targetLongitude,
+      latitudeDelta: 0.18,
+      longitudeDelta: 0.18,
+    };
+    setRegion(newRegion);
+    console.log('🗺️ Map reset to initial region:', newRegion);
+  }, [booking?.booking?.pickup_location?.coordinates]);
 
   const handleMarkerDragEnd = useCallback((event: any) => {
     const coordinate = event.nativeEvent.coordinate;
     setCurrentLocation(coordinate);
   }, []);
+
+  const handlePickupLocationDragEnd = useCallback((event: any) => {
+    const coordinate = event.nativeEvent.coordinate;
+    // Update the pickup location in the booking
+    if (currentBooking?.booking?.pickup_location?.coordinates) {
+      const updatedCoordinates = [
+        coordinate.longitude, // API expects [longitude, latitude]
+        coordinate.latitude
+      ];
+      
+      // You can emit this update via socket or API call
+      console.log('📍 Pickup location updated to:', coordinate);
+      console.log('📍 New coordinates for API:', updatedCoordinates);
+      
+      // Optionally emit the update via socket
+      // emitEvent('updatePickupLocation', {
+      //   booking_id: currentBooking.booking_id,
+      //   coordinates: updatedCoordinates
+      // });
+    }
+  }, [currentBooking]);
 
   // Socket reconnection hook
   const {
@@ -247,7 +625,24 @@ const Map = () => {
 
   // Driver location update handler
   const handleDriverLocationUpdate = useCallback((data: any) => {
-    console.log('Driver Location Update: ' + JSON.stringify(data));
+    console.log('ddddddd====' + JSON.stringify(data));
+    setDriverLocation(data);
+    
+    // Validate coordinates before setting driver location
+    if (data && 
+        typeof data.latitude === 'number' && 
+        typeof data.longitude === 'number' && 
+        !isNaN(data.latitude) && 
+        !isNaN(data.longitude) &&
+        data.latitude >= -90 && data.latitude <= 90 &&
+        data.longitude >= -180 && data.longitude <= 180) {
+      
+      console.log('✅ Valid driver coordinates received:', data);
+      setDriverLocation(data);
+    } else {
+      console.log('❌ Invalid driver coordinates received:', data);
+      console.log('Coordinates must be valid numbers within valid ranges');
+    }
     
     // if (data.latitude && data.longitude) {
     //   const newLocation = {
@@ -314,19 +709,23 @@ const Map = () => {
     setCurrentBooking(null)
     
     // Show cancellation message to user
-    Alert.alert(
-      'Ride Cancelled',
-      data.message || 'Your ride has been cancelled.',
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Navigate back to previous screen
-            (navigation as any).navigate('Main');
-          }
-        }
-      ]
-    );
+    Toast.show({
+      type: 'info',
+      text1: 'Ride Cancelled',
+      text2: data.message || 'Your ride has been cancelled.',
+      position: 'top',
+      visibilityTime: 4000,
+      onPress: () => {
+        // Navigate back to previous screen
+        (navigation as any).navigate('Main');
+      },
+      onShow: () => {
+        // Auto-navigate after toast shows
+        setTimeout(() => {
+          (navigation as any).navigate('Main');
+        }, 2000);
+      }
+    });
     
     console.log('🗑️ All booking data cleared due to cancellation');
   }, [dispatch, navigation]);
@@ -339,67 +738,61 @@ const Map = () => {
     console.log('🔍 Received booking ID:', data.booking_id);
     console.log('🔍 Status:', data.status);
     
-         // Store the status in state
-     setBookingStatus(data.status || '');
-     
-     console.log('🔍 Booking status:========>>', data.status);
-     // Test alert to see if Alert is working
-     switch (data.status) {
-       case 'driver_arrived':
-         console.log('🚗 Driver arrived case triggered');
-         Alert.alert(
-           'Driver Arrived',
-           'Your driver has arrived at the pickup location.',
-           [{ text: 'OK' }]
-         );
-         break;
-         
-       case 'started':
-         console.log('🚀 Ride started case triggered');
-         Alert.alert(
-           'Ride Started',
-           'Your ride has begun. Enjoy your journey!',
-           [{ text: 'OK' }]
-         );
-         break;
-         
-          case 'completed':
-           console.log('🎉 Ride completed case triggered - navigating to Main screen');
-           console.log('🔍 Exact status received:', data.status);
-           
-           // Clear all booking and driver state immediately
-           dispatch(clearCurrentBooking());
-           setAcceptedDriver(null);
-           setAcceptedDriverId(null);
-           setDrivers([]);
-           setDriverLocation(null);
-           setShowDirections(false);
-           setBookingStatus('');
-           setCurrentBooking(null);
-           
-           Alert.alert(
-             'Ride Completed',
-             'Your ride has been completed. Thank you for choosing our service!',
-             [
-               {
-                 text: 'OK',
-                 onPress: () => {
-                   console.log('🚀 Navigating to Main screen after ride completion');
-                   // Navigate back to previous screen
-                   (navigation as any).navigate('Main');
-                 }
-               }
-             ]
-           );
-           break;
-         
-       case 'driver_on_the_way':
-         console.log('🚗 Driver is on the way to pickup location');
-         break;
-         
-       default:
-         console.log('📊 Status updated to:', data.status, '- no specific handler');
-     }
+    // Store the status in Redux
+    dispatch(updateBookingStatus({ status: data.status || '' }));
+    
+    console.log('🔍 Booking status:========>>', data.status);
+    
+    // Update status message and icon based on status
+    switch (data.status) {
+      case 'driver_arrived':
+        console.log('🚗 Driver arrived case triggered');
+        dispatch(setStatusInfo({ 
+          message: 'Your driver has arrived at the pickup location.',
+          icon: '🚗'
+        }));
+        break;
+        
+      case 'started':
+        console.log('🚀 Ride started case triggered');
+        dispatch(setStatusInfo({ 
+          message: 'Your ride has begun. Enjoy your journey!',
+          icon: '🚀'
+        }));
+        break;
+        
+      case 'completed':
+        console.log('🎉 Ride completed case triggered - showing rating modal');
+        console.log('🔍 Exact status received:', data.status);
+        
+        // Show completion toast
+        Toast.show({
+          type: 'success',
+          text1: 'Ride Completed',
+          text2: 'Your ride has been completed. Please rate your experience!',
+          position: 'top',
+          visibilityTime: 4000,
+        });
+        
+        // Show rating modal
+        setShowRatingModal(true);
+        break;
+      
+      case 'driver_on_the_way':
+        console.log('🚗 Driver is on the way to pickup location');
+        dispatch(setStatusInfo({ 
+          message: 'The Driver is heading toward you.',
+          icon: '🚗'
+        }));
+        break;
+        
+      default:
+        console.log('📊 Status updated to:', data.status, '- no specific handler');
+        dispatch(setStatusInfo({ 
+          message: 'Status updated: ' + data.status,
+          icon: '📊'
+        }));
+    }
     
     // Update the current booking in Redux with new status
     if (currentBooking && data?.booking_id === currentBooking?.booking_id) {
@@ -437,31 +830,25 @@ const Map = () => {
           break;
           
            case 'completed':
-            console.log('🎉 Ride completed case triggered - navigating to Main screen');
+            console.log('🎉 Ride completed case triggered - showing rating modal');
             console.log('🔍 Exact status received:', data.status);
             
-            // Clear all booking and driver state immediately
-            dispatch(clearCurrentBooking());
-            setAcceptedDriver(null);
-            setAcceptedDriverId(null);
-            setDrivers([]);
-            setDriverLocation(null);
+            // Show rating modal
+            setShowRatingModal(true);
             setShowDirections(false);
             
-            Alert.alert(
-              'Ride Completed',
-              'Your ride has been completed. Thank you for choosing our service!',
-              [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    console.log('🚀 Navigating to Main screen after ride completion');
-                    // Navigate back to previous screen
-                    (navigation as any).navigate('Main');
-                  }
-                }
-              ]
-            );
+            // Show completion toast and navigate
+            Toast.show({
+              type: 'success',
+              text1: 'Ride Completed',
+              text2: 'Your ride has been completed. Thank you for choosing our service!',
+              position: 'top',
+              visibilityTime: 4000,
+              onPress: () => {
+                console.log('🚀 Navigating to Main screen after ride completion');
+                (navigation as any).navigate('Main');
+              }
+            });
             break;
           
         case 'driver_on_the_way':
@@ -479,9 +866,8 @@ const Map = () => {
   }, [currentBooking, dispatch, navigation]);
 
   useEffect(() => {
- 
-    setDefaultLocation();
-    getCurrentLocation();
+    // Don't get current location automatically - only when button is pressed
+    // getCurrentLocation();
 
     if (socketConnected) {
       console.log('🔌 Socket connected, adding event listeners...');
@@ -510,7 +896,76 @@ console.log('🔍 pickupp location:', pickupLocation);
       removeEventListener('bookingStatusUpdate', handleBookingStatusUpdate);
       removeEventListener('driverLocationUpdate', handleDriverLocationUpdate);
     };
-  }, [socketConnected, setDefaultLocation, getCurrentLocation, addEventListener, removeEventListener, handleDriverApplied, handleBookingConfirmed, handleDriverLocationUpdate]);
+  }, [socketConnected, addEventListener, removeEventListener, handleDriverApplied, handleBookingConfirmed, handleDriverLocationUpdate]);
+
+  // Set initial region: always booking pickup location first, then fallback to default
+  useEffect(() => {
+    if (!region) {
+      let targetLatitude: number;
+      let targetLongitude: number;
+      
+      // Priority 1: Booking pickup location
+      if (booking?.booking?.pickup_location?.coordinates) {
+        targetLatitude = Number(booking.booking.pickup_location.coordinates[0]);
+        targetLongitude = Number(booking.booking.pickup_location.coordinates[1]);
+        console.log('🗺️ Setting initial region to booking pickup location:', { targetLatitude, targetLongitude });
+      }
+      // Priority 2: Fallback to default location (Doha, Qatar)
+      else {
+        targetLatitude = 25.3548;
+        targetLongitude = 51.1839;
+        console.log('🗺️ Setting initial region to default location (Doha):', { targetLatitude, targetLongitude });
+      }
+      
+      const newRegion = {
+        latitude: targetLatitude,
+        longitude: targetLongitude,
+        latitudeDelta: 0.18,
+        longitudeDelta: 0.18,
+      };
+      setRegion(newRegion);
+      setIsLoading(false); // Stop loading once we have a region
+      console.log('🗺️ Initial map region set and loading finished:', newRegion);
+    }
+  }, [booking?.booking?.pickup_location?.coordinates, region]);
+
+  // Auto-restart tracking when app resumes and there's an accepted driver
+  console.log(currentBooking?.driver_id,"currentBooking?.driver_id")
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔍 Map screen focused - checking if tracking needs to restart...');
+      
+      // If we have an accepted driver and socket is connected, restart tracking
+      if (acceptedDriverId && socketConnected && currentBooking?.driver_id) {
+        console.log('🔄 Restarting driver tracking for driver:', acceptedDriverId);
+        emitEvent('startTracking', currentBooking.driver_id);
+        
+        // Also request current driver location immediately
+        emitEvent('getDriverLocation', currentBooking.driver_id);
+      } else {
+        console.log('⏸️ No need to restart tracking:', {
+          hasAcceptedDriver: !!acceptedDriverId,
+          socketConnected,
+          hasCurrentBooking: !!currentBooking?.driver_id,
+          driverId: currentBooking?.driver_id
+        });
+      }
+    }, [])
+  );
+
+  // Don't start automatic location tracking - only when button is pressed
+  // useEffect(() => {
+  //   if (locationPermissionGranted) {
+  //     startLocationTracking();
+  //   }
+  //   
+  //   // Cleanup location tracking on unmount
+  //   return () => {
+  //     stopLocationTracking();
+  //   };
+  // }, [locationPermissionGranted, startLocationTracking, stopLocationTracking]);
+
+
 
   // Set pickup and dropoff locations from booking data
   // useEffect(() => {
@@ -812,10 +1267,46 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
     },
   ];
 
+  // Show loading state only if we don't have a region yet
+  // if (isLoading && !region) {
+  //   return (
+  //     <View style={styles.loading}>
+  //       <Text style={styles.loadingText}>Loading map...</Text>
+  //       <Text style={styles.socketStatus}>Please wait while we set up your map</Text>
+  //       <AppButton
+  //         title="Force Load Map"
+  //         onPress={() => {
+  //           const fallbackRegion = {
+  //             latitude: 25.3548,
+  //             longitude: 51.1839,
+  //             latitudeDelta: 0.18,
+  //             longitudeDelta: 0.18,
+  //           };
+  //           setRegion(fallbackRegion);
+  //           setIsLoading(false);
+  //         }}
+  //         style={{ marginTop: 20 }}
+  //       />
+  //     </View>
+  //   );
+  // }
+
+  // Debug info
+  console.log('🔍 Map render state:', { 
+    isLoading, 
+    hasRegion: !!region, 
+    region, 
+    hasCurrentLocation: !!currentLocation,
+    hasBooking: !!booking?.booking?.pickup_location?.coordinates 
+  });
+
+
+
   return (
     <View style={{ flex: 1 }}>
       {/* Map */}
       <MapView
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={region || undefined}
@@ -823,31 +1314,41 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
         showsMyLocationButton={false}
         maxZoomLevel={18}
         minZoomLevel={3}
-        showsUserLocation={true}
+        // showsUserLocation={true}
         mapType="standard"
         onMapReady={() => setIsMapReady(true)}
         followsUserLocation={false}
         rotateEnabled={false}
         scrollEnabled={true}
         pitchEnabled={false}
+        onRegionChangeComplete={(newRegion) => {
+          // Update region state when user manually moves the map
+          setRegion(newRegion);
+        }}
       >
                 {/* TEST: Always show a simple direction to verify component works */}
                 {currentBooking?.booking?.pickup_location?.coordinates?.[0] && 
                  currentBooking?.booking?.pickup_location?.coordinates?.[1] &&
                  currentBooking?.booking?.dropoff_location?.coordinates?.[0] &&
-                 currentBooking?.booking?.dropoff_location?.coordinates?.[1] && (
+                 currentBooking?.booking?.dropoff_location?.coordinates?.[1] &&
+                 driverLocation && 
+                 driverLocation.coordinates &&
+                 Array.isArray(driverLocation.coordinates) &&
+                 driverLocation.coordinates.length >= 2 &&
+                 typeof driverLocation.coordinates[0] === 'number' && 
+                 typeof driverLocation.coordinates[1] === 'number' && (
                                       <MapViewDirections
                       origin={{
-                        latitude: currentLocation?.latitude || 0,
-                        longitude: currentLocation?.longitude || 0
+                        latitude: driverLocation.coordinates[0],  // [1] = latitude
+                        longitude: driverLocation.coordinates[1]  // [0] = longitude
                       }}
                     destination={{
-                      latitude:bookingStatus === 'driver_arrived' ? Number(currentBooking.booking?.dropoff_location?.coordinates[0]) :Number(currentBooking.booking.pickup_location.coordinates[0]),
-                      longitude:bookingStatus === 'driver_arrived' ? Number(currentBooking.booking?.dropoff_location?.coordinates[1]) : Number(currentBooking.booking.pickup_location.coordinates[1])
+                      latitude: bookingStatus === 'driver_on_the_way' ?  Number(currentBooking.booking.pickup_location.coordinates[0]):Number(currentBooking.booking?.dropoff_location?.coordinates[0]) ,
+                      longitude:  bookingStatus === 'driver_on_the_way' ? Number(currentBooking.booking.pickup_location.coordinates[1]) : Number(currentBooking.booking?.dropoff_location?.coordinates[1])
                     }}
                     apikey={"AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ"}
                     strokeWidth={6}
-                    strokeColor="green"
+                    strokeColor={StyleGuide.color.primary}
                     optimizeWaypoints={true}
                     precision="high"
                     timePrecision="now"
@@ -879,9 +1380,19 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
         {/* Fallback polyline for when directions are not available */}
 
           {/* Driver marker */}
-        {driverLocation && (
+        {driverLocation && 
+         driverLocation.coordinates &&
+         Array.isArray(driverLocation.coordinates) &&
+         driverLocation.coordinates.length >= 2 &&
+         typeof driverLocation.coordinates[1] === 'number' && 
+         typeof driverLocation.coordinates[0] === 'number' && 
+         !isNaN(driverLocation.coordinates[1]) && 
+         !isNaN(driverLocation.coordinates[0]) && (
           <Marker 
-            coordinate={driverLocation}
+            coordinate={{
+              latitude: driverLocation.coordinates[0],  // [1] = latitude
+              longitude: driverLocation.coordinates[1]  // [0] = longitude
+            }}
             title="Driver"
             description="Your driver's location"
           >
@@ -889,27 +1400,50 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
           </Marker>
         )}
 
-        {/* User location marker */}
-        {currentLocation && (
+        {/* Current User Location Marker - Circular like button */}
+        {currentLocation && 
+         typeof currentLocation.latitude === 'number' && 
+         typeof currentLocation.longitude === 'number' && 
+         !isNaN(currentLocation.latitude) && 
+         !isNaN(currentLocation.longitude) && (
           <Marker 
             coordinate={currentLocation}
-            onDragEnd={handleMarkerDragEnd}
-            draggable={true}
-            title="Your Location"
-            description="Drag to update pickup location"
+            title="Your Current Location"
+            description="Where you are right now"
+          >
+            {/* <View style={styles.currentLocationMarker}> */}
+              <Text style={styles.currentLocationMarkerText}>📍</Text>
+            {/* </View> */}
+          </Marker>
+        )}
+
+        {/* Pickup Location Marker */}
+        {/* {booking?.booking?.pickup_location?.coordinates && (
+          <Marker 
+            coordinate={{
+              latitude: Number(booking.booking.pickup_location.coordinates[0]), // Correct coordinate order
+              longitude: Number(booking?.booking?.pickup_location?.coordinates[1])
+            }}
+            title="Pickup Location"
+            description="Pickup location"
+            pinColor="green"
+            // draggable={true}
+            onDragEnd={handlePickupLocationDragEnd}
           >
             <Svg xml={locationPin} rest={{ height: 36, width: 42 }} />
           </Marker>
-        )}
+        )} */}
 
         {/* Destination marker */}
         {currentBooking?.booking?.dropoff_location?.coordinates &&
         <Marker 
           coordinate={{
-            latitude:bookingStatus === 'driver_arrived' ? Number(currentBooking.booking?.dropoff_location?.coordinates[0]) :Number(currentBooking.booking.pickup_location.coordinates[0]),
-            longitude:bookingStatus === 'driver_arrived' ? Number(currentBooking.booking?.dropoff_location?.coordinates[1]) : Number(currentBooking.booking.pickup_location.coordinates[1])
+            latitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(currentBooking.booking?.dropoff_location?.coordinates[0]) : Number(currentBooking.booking.pickup_location.coordinates[0]),
+            longitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(currentBooking.booking?.dropoff_location.coordinates[1]) : Number(currentBooking.booking.pickup_location.coordinates[1])
           }} 
           title="Destination"
+          description="Where you want to go"
+          pinColor="red"
         >
           <Svg xml={locationPin} rest={{ height: 36, width: 42 }} />
         </Marker>
@@ -918,355 +1452,15 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
 
 {currentBooking && (
       <TimeStatusCard
-        icon="🛺"
-       
+        icon={statusIcon}
+        title={statusMessage}
         waitingTime={currentBooking?.booking?.estimated_time_to_pickup?.toString() || "5:00"}
         waitingLabel={t('waiting_time')}
         containerStyle={{ position: 'absolute', top: 50 }}
         iconContainerStyle={{ backgroundColor: '#ffcc80' }}
       />
 )}
-      {/* Socket Status Indicator (for debugging - remove in production) */}
-      {/* <View style={styles.socketIndicator}>
-        <Text style={[styles.socketText, { color: socketConnected ? 'green' : 'red' }]}>
-          {socketConnected ? '● Connected' : '● Disconnected'}
-        </Text>
-        {isConnecting && (
-          <Text style={[styles.socketText, { color: 'orange' }]}>
-            Connecting... (Attempt {reconnectAttempts + 1})
-          </Text>
-        )}
-      </View> */}
-      
-      {/* Socket Control Buttons (for debugging - remove in production) */}
-      {/* <View style={styles.socketControls}>
-        <AppButton
-          style={styles.socketButton}
-          title="Reconnect"
-          onPress={reconnect}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#f44336' }}
-          title="Disconnect"
-          onPress={disconnect}
-        />
-       
-     
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#ff9800' }}
-          title="Clear Drivers"
-          onPress={() => setDrivers([])}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#9c27b0' }}
-          title="Test Booking Confirmed"
-          onPress={() => {
-            // Simulate booking confirmed event with actual API structure
-            const testBookingData = {
-              "booking_id": "68891cd5f248a48ed1c301e5",
-              "booking": {
-                "pickup_location": {
-                  "type": "Point",
-                  "coordinates": [31.492558, 74.3924679],
-                  "address": "Nishat Colony Lahore, Pakistan"
-                },
-                "dropoff_location": {
-                  "type": "Point",
-                  "coordinates": [31.4833597, 74.3968658],
-                  "address": "Dha Phase 1, Lahore, Pakistan"
-                },
-                "_id": "68891cd5f248a48ed1c301e5",
-                "customer_id": "687588a5042653985ad7d152",
-                "booking_type": "instant",
-                "status": "driver_on_the_way",
-                "estimated_distance_to_pickup": 0.0037840576549913784,
-                "estimated_time_to_pickup": 0,
-                "estimated_distance": 0.5611139628943507,
-                "estimated_duration": 1,
-                "price": 11.622227925788701,
-                "payment_status": "pending",
-                "candidate_drivers": ["68835d9f4f0a05cff8431019"],
-                "applicant_drivers": ["68835d9f4f0a05cff8431019"],
-                "booking_time": "2025-07-29T19:11:17.603Z",
-                "createdAt": "2025-07-29T19:11:17.606Z",
-                "updatedAt": "2025-07-29T19:11:32.365Z",
-                "__v": 1,
-                "driver_id": "68835d9f4f0a05cff8431019"
-              },
-              "driver_id": "68835d9f4f0a05cff8431019",
-              "driver": {
-                "id": "68835d9f4f0a05cff8431019",
-                "name": "Usman",
-                "profile_image": "https://royal-ride-bucket.s3.eu-north-1.amazonaws.com/1753439630260_1000352085.jpg",
-                "license_no": "1234",
-                "vehicle": {}
-              }
-            };
-            
-            // Call the handler directly to test
-            handleBookingConfirmed(testBookingData);
-            console.log('🧪 Test booking confirmed data sent:', testBookingData);
-          }}
-        />
-        <Text style={[styles.socketText, { color: 'blue', marginTop: 10 }]}>
-          Drivers Count: {drivers.length}
-        </Text>
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#ff5722' }}
-          title="Show Drivers Data"
-          onPress={() => {
-            console.log('📋 Current drivers array:', drivers);
-            drivers.forEach((driver, index) => {
-              console.log(`Driver ${index + 1}:`, {
-                id: driver.id,
-                driverId: driver.driverId,
-                driverName: driver.driverName,
-                vehicleName: driver.vehicleName,
-                vehicleModel: driver.vehicleModel,
-                vehicleType: driver.vehicleType
-              });
-            });
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#e91e63' }}
-          title="Test Accepted Driver"
-          onPress={() => {
-            // Manually set an accepted driver for testing
-            const testAcceptedDriver = {
-              id: "test-driver-123",
-              driverId: "test-driver-123",
-              driverName: "Test Driver",
-              vehicleName: "Test Vehicle",
-              vehicleModel: "Test Model",
-              vehicleRating: 4.5,
-              driverRating: 4.5,
-              price: "150",
-              currency: "QR",
-              vehicleType: "Premium",
-              timestamp: new Date().toISOString(),
-              status: "available"
-            };
-            
-            setAcceptedDriver(testAcceptedDriver);
-            setAcceptedDriverId("test-driver-123");
-            console.log('🧪 Test accepted driver set:', testAcceptedDriver);
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#9c27b0' }}
-          title="Test Socket Data"
-          onPress={() => {
-            // Simulate the exact socket data structure you mentioned
-            const testSocketData = {
-              booking_id: "6887f7c4c5ae24d3c6220d4f",
-              driver: {
-                id: "68835d9f4f0a05cff8431019",
-                phone: "9743144226500",
-                vehicle: "6856dfb60d8fce10c78b7d8e",
-                name: "John Driver", // Added name
-                rating: 4.8, // Added rating
-                vehicleType: "Premium", // Added vehicleType
-                model: "Lexus 600" // Added model
-              },
-              estimates: {
-                price: "150",
-                currency: "QR",
-                time: "5 minutes"
-              }
-            };
-            
-            // Call the handler directly to test
-            handleDriverApplied(testSocketData);
-            console.log('🧪 Test socket data sent:', testSocketData);
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#f44336' }}
-          title="Test Cancel Ride"
-          onPress={() => {
-            console.log('🧪 Testing cancel ride functionality');
-            handleCancelRide();
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#4CAF50' }}
-          title="Test Driver Location"
-          onPress={() => {
-            console.log('🧪 Testing driver location update');
-            // Simulate driver location update
-            const testDriverLocation = {
-              latitude: 31.5200,
-              longitude: 74.3500,
-              driver_id: acceptedDriverId || 'test-driver-123'
-            };
-            handleDriverLocationUpdate(testDriverLocation);
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#FF5722' }}
-          title="Test Status Update"
-          onPress={() => {
-            console.log('🧪 Testing booking status update');
-            // Simulate booking status update
-            const testStatusUpdate = {
-              booking_id: currentBooking?.booking_id || 'test-booking-123',
-              status: 'driver_arrived',
-              updated_fields: {
-                estimated_time_to_pickup: 0
-              }
-            };
-            handleBookingStatusUpdate(testStatusUpdate);
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#E91E63' }}
-          title="Test Ride Completed"
-          onPress={() => {
-            console.log('🧪 Testing ride completed status');
-            // Simulate ride completed status update
-            const testRideCompleted = {
-              booking_id: currentBooking?.booking_id || 'test-booking-123',
-              status: 'ride_completed',
-              updated_fields: {
-                completed_at: new Date().toISOString()
-              }
-            };
-            handleBookingStatusUpdate(testRideCompleted);
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#9C27B0' }}
-          title="Test Completed Status"
-          onPress={() => {
-            console.log('🧪 Testing completed status');
-            // Simulate booking status update with 'completed' status
-            const testCompleted = {
-              booking_id: currentBooking?.booking_id || 'test-booking-123',
-              status: 'completed',
-              updated_fields: {
-                completed_at: new Date().toISOString()
-              }
-            };
-            handleBookingStatusUpdate(testCompleted);
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#FF5722' }}
-          title="Emit Status Update"
-          onPress={() => {
-            console.log('🧪 Emitting bookingStatusUpdate event via socket');
-            // Emit the event via socket to test if it's received
-            emitEvent('bookingStatusUpdate', {
-              booking_id: currentBooking?.booking_id || 'test-booking-123',
-              status: 'completed',
-              updated_fields: {
-                completed_at: new Date().toISOString()
-              }
-            });
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#FF9800' }}
-          title="Show Redux Booking"
-          onPress={() => {
-            console.log('📋 Current booking in Redux:', currentBooking);
-            if (currentBooking) {
-              console.log('🔑 Booking ID:', currentBooking.booking_id);
-              console.log('👤 Driver ID:', currentBooking.driver_id);
-              console.log('🚗 Driver Name:', currentBooking.driver?.name);
-              console.log('📍 Pickup Address:', currentBooking.booking?.pickup_location?.address);
-              console.log('🎯 Dropoff Address:', currentBooking.booking?.dropoff_location?.address);
-              console.log('💰 Price:', currentBooking.booking?.price);
-              console.log('📊 Status:', currentBooking.booking?.status);
-              console.log('⏰ Estimated Duration:', currentBooking.booking?.estimated_duration);
-              console.log('📏 Estimated Distance:', currentBooking.booking?.estimated_distance);
-              console.log('🗺️ Pickup Coordinates:', currentBooking.booking?.pickup_location?.coordinates);
-              console.log('🗺️ Dropoff Coordinates:', currentBooking.booking?.dropoff_location?.coordinates);
-            } else {
-              console.log('❌ No current booking in Redux');
-            }
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#4CAF50' }}
-          title="Test Directions"
-          onPress={() => {
-            console.log('🧪 Testing directions functionality');
-            console.log('📍 Current Location:', currentLocation);
-            console.log('🚗 Driver Location:', driverLocation);
-            console.log('📋 Booking Data:', currentBooking?.booking?.pickup_location?.coordinates);
-            console.log('🎯 Has Pickup:', !!currentBooking?.booking?.pickup_location?.coordinates);
-            console.log('🎯 Has Dropoff:', !!currentBooking?.booking?.dropoff_location?.coordinates);
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#4caf50' }}
-          title="Test Create Booking"
-          onPress={async () => {
-            console.log('🧪 Testing create booking API');
-            try {
-              const bookingData = {
-                pickup_location: {
-                  latitude: 31.4926,
-                  longitude: 74.3925,
-                  address: "Test Pickup Location"
-                },
-                destination_location: {
-                  latitude: 31.6018,
-                  longitude: 74.3206,
-                  address: "Test Destination"
-                },
-                ride_type: "premium",
-                payment_method: "card"
-              };
-              const result = await createBooking(bookingData);
-              console.log('✅ Test booking created:', result);
-            } catch (error) {
-              console.error('❌ Test booking failed:', error);
-            }
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#2196f3' }}
-          title="Test Get Drivers"
-          onPress={async () => {
-            console.log('🧪 Testing get drivers API');
-            try {
-              const result = await getDrivers();
-              console.log('✅ Test drivers fetched:', result);
-            } catch (error) {
-              console.error('❌ Test get drivers failed:', error);
-            }
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#ff9800' }}
-          title="Test Get Profile"
-          onPress={async () => {
-            console.log('🧪 Testing get user profile API');
-            try {
-              const result = await getUserProfile();
-              console.log('✅ Test profile fetched:', result);
-            } catch (error) {
-              console.error('❌ Test get profile failed:', error);
-            }
-          }}
-        />
-        <AppButton
-          style={{ ...styles.socketButton, backgroundColor: '#9c27b0' }}
-          title="Test Get Wallet"
-          onPress={async () => {
-            console.log('🧪 Testing get wallet balance API');
-            try {
-              const result = await getWalletBalance();
-              console.log('✅ Test wallet balance fetched:', result);
-            } catch (error) {
-              console.error('❌ Test get wallet failed:', error);
-            }
-          }}
-        />
-      </View> */}
+   
 
                     {/* Plan Trip Cards */}
                 {/* {from === 'plan' && ( */}
@@ -1409,17 +1603,43 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
         </>
       )}
 
+      {/* Current Location Button - Circular */}
+      <AppButton
+        style={styles.currentLocationButton}
+        variant="secondary"
+        title="📍"
+        onPress={() => {
+          console.log('📍 Current location button pressed');
+          getCurrentLocation();
+        }}
+        disabled={isLoading}
+      />
+
+
+
       {/* Cancel Ride Button */}
       <AppButton
         style={{
           ...styles.cancelButton,
-          bottom: Math.max(20, insets.bottom + 10), // Use safe area bottom + 10px padding
+          bottom: Math.max(20, insets.bottom + 10), // Back to original position
         }}
         variant="secondary"
         title={ t('cancel_ride')}
         onPress={handleCancelRide}
-        loading={isCancelling}
+        loading={isLoading}
         disabled={isCancelling}
+      />
+      
+      {/* Toast Component for notifications */}
+      <Toast />
+      
+      {/* Rating Modal */}
+      <RatingModal
+        isVisible={showRatingModal}
+        onClose={handleRatingModalClose}
+        onSubmit={handleRatingSubmit}
+        driverName={currentBooking?.driver?.name || 'Driver'}
+        isLoading={isSubmittingRating}
       />
     </View>
   );
@@ -1493,6 +1713,45 @@ const styles = StyleSheet.create({
     width: '90%',
     zIndex: 1,
   },
+  currentLocationButton: {
+    position: 'absolute',
+    top: Math.max(20, 30),
+    right: 20,
+    zIndex: 1000,
+    width: 56,
+    height: 56,
+    borderRadius: 28, // Make it perfectly circular
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  currentLocationMarker: {
+    width: 56,
+    height: 56,
+    borderRadius: 28, // Same size as button
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  currentLocationMarkerText: {
+    fontSize: 24,
+    textAlign: 'center',
+  },
+
   socketIndicator: {
     position: 'absolute',
     top: 10,

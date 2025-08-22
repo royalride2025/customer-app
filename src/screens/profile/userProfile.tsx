@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   Keyboard,
+  KeyboardAvoidingView,
 } from "react-native";
 import { launchImageLibrary, launchCamera, MediaType } from 'react-native-image-picker';
 import Toast from 'react-native-toast-message';
@@ -27,6 +28,8 @@ import Svg from "../../lib/svg";
 import { lock, eye, eyeOff, cross } from "../../../assets/svgAssets";
 import { useAppSelector } from "../../redux/reduxHooks";
 import { RootState } from "../../redux/store";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useScreenHeader } from "../../lib/hooks/useScreenHeader";
 
 export default function UserProfile() {
   const [name, setName] = useState("");
@@ -49,7 +52,26 @@ export default function UserProfile() {
   const [updatingPassword, setUpdatingPassword] = useState(false); // Password update loading state
 
   const profileData = useAppSelector((state: RootState) => state.profile.data);
+  const scrollViewRef = useRef<ScrollView>(null);
 
+  // Keyboard event handlers
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      // Keyboard is shown
+    });
+    
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      // Scroll back to top when keyboard closes
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
+
+  console.log(profileData,"profileData====")
   // Fetch user profile data from Redux store
   useEffect(() => {
     if (profileData) {
@@ -228,6 +250,30 @@ export default function UserProfile() {
 
   const pickImage = useCallback(() => pickFile(false), []);
   const takePhoto = useCallback(() => pickFile(true), []);
+  
+  const handleContactSupport = useCallback(() => {
+    Alert.alert(
+      'Contact Support',
+      'Please contact our support team for assistance with your suspended account.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Email Support', 
+          onPress: () => {
+            // You can add email support logic here
+            // For now, just show a message
+            Toast.show({
+              type: 'info',
+              text1: 'Support',
+              text2: 'Please email support@royalride.com',
+              position: 'top',
+              visibilityTime: 4000,
+            });
+          }
+        }
+      ]
+    );
+  }, []);
 
   const validate = () => {
     if (!name.trim()) return "Please enter your name.";
@@ -358,10 +404,31 @@ export default function UserProfile() {
   };
 
   const isLoading = uploading || saving;
+  useScreenHeader({
+    title: "Edit Profile",
+    showBackButton: true,
+  });
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <SafeAreaView style={styles.container}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom:0,}} ref={scrollViewRef}>
       {/* <Text style={styles.header}>Edit Profile</Text> */}
+
+      {/* Account Status Indicator */}
+      {profileData?.user?.status && profileData.user.status === 'inactive' && (
+       
+          <View style={{ backgroundColor: '#e53a3a', padding: 10, borderRadius: 8,position:'absolute',top:0,width:'100%',zIndex:1000}}>
+              <Text style={{marginBottom:5,color: StyleGuide.color.white,fontFamily:StyleGuide.fontFamily.semiBold }}>⚠️ Alert</Text>
+
+            <Text style={{  fontSize: 14, color: StyleGuide.color.white,fontFamily:StyleGuide.fontFamily.medium }}>Your account has been suspended. Please contact support for assistance.</Text>
+          </View>
+        
+      )}
 
       <View style={styles.avatarSection}>
         <TouchableOpacity
@@ -516,14 +583,10 @@ export default function UserProfile() {
               ]}>Female</Text>
             </TouchableOpacity>
           </View>
+          <View style={styles.spacer} />
         </View>
 
-        <TouchableOpacity
-          onPress={togglePasswordModal}
-          style={styles.secondaryButton}
-        >
-          <Text style={styles.secondaryButtonText}>Change Password</Text>
-        </TouchableOpacity>
+       
 
         <Modal
   visible={passwordModalVisible}
@@ -550,7 +613,7 @@ export default function UserProfile() {
               <View style={styles.passwordField}>
                 <Text style={styles.passwordLabel}>Current Password</Text>
                 <View style={styles.inputPasswordContainer}>
-                  <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: 8, alignSelf: 'center' } }} />
+                  {/* <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: 8, alignSelf: 'center' } }} /> */}
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
@@ -573,7 +636,7 @@ export default function UserProfile() {
               <View style={styles.passwordField}>
                 <Text style={styles.passwordLabel}>New Password</Text>
                 <View style={styles.inputPasswordContainer}>
-                  <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: 8, alignSelf: 'center' } }} />
+                  {/* <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: 8, alignSelf: 'center' } }} /> */}
                   <TextInput
                     value={newPassword}
                     onChangeText={setNewPassword}
@@ -596,7 +659,7 @@ export default function UserProfile() {
               <View style={styles.passwordField}>
                 <Text style={styles.passwordLabel}>Confirm New Password</Text>
                 <View style={styles.inputPasswordContainer}>
-                  <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: 8, alignSelf: 'center' } }} />
+                  {/* <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: 8, alignSelf: 'center' } }} /> */}
                   <TextInput
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
@@ -640,9 +703,20 @@ export default function UserProfile() {
 </Modal>
       </View>
 
-      <View style={styles.stickyButtonContainer}>
+     
+
+      <View style={styles.spacer} />
+    </ScrollView>
+   
+    <View style={{marginBottom:40}} >
+    <TouchableOpacity
+          onPress={togglePasswordModal}
+          style={styles.secondaryButton}
+        >
+          <Text style={styles.secondaryButtonText}>Change Password</Text>
+        </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.primaryButton, isLoading && styles.disabledButton]}
+          style={[styles.primaryButton, isLoading && styles.disabledButton,{marginTop:30}]}
           onPress={onSave}
           disabled={isLoading}
           accessibilityLabel={saving ? "Saving profile" : "Save profile"}
@@ -661,18 +735,73 @@ export default function UserProfile() {
           )}
         </TouchableOpacity>
       </View>
-
-      <View style={styles.spacer} />
-    </ScrollView>
+    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     ...StyleGuide.layout.container,
-    flexGrow: 1,
-    minHeight: "100%",
-    paddingTop: 80,
+    paddingBottom:0
+   
+  },
+  statusIndicator: {
+    backgroundColor: '#FFF3CD',
+    borderColor: '#FFEAA7',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    // marginHorizontal: 20,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+   position:"absolute",
+   top:0,
+   left:0,
+   right:0,
+   zIndex:1000,
+  
+  },
+  statusIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFEAA7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statusIcon: {
+    fontSize: 20,
+  },
+  statusContent: {
+    flex: 1,
+  },
+  statusTitle: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.semiBold,
+    color: '#856404',
+    marginBottom: 4,
+  },
+  statusMessage: {
+    fontSize: 14,
+    fontFamily: StyleGuide.fontFamily.regular,
+    color: '#856404',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  contactSupportButton: {
+    backgroundColor: '#856404',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  contactSupportButtonText: {
+    color: '#FFF3CD',
+    fontSize: 14,
+    fontFamily: StyleGuide.fontFamily.medium,
   },
   header: {
     fontSize: 28,
@@ -940,6 +1069,7 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 20,
     right: 20,
+   
   },
   primaryButton: {
     backgroundColor: StyleGuide.color.primary,

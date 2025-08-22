@@ -10,8 +10,85 @@ import store, { RootState, persistor } from './src/redux/store';
 import { changeLanguage } from './i18n'; // Import the language change function
 import { useAppSelector } from './src/redux/reduxHooks';
 import socket from './src/services/socket';
-import Toast from 'react-native-toast-message';
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+import { StyleGuide } from './StyleGuide';
+import { Platform, StatusBar } from 'react-native';
 
+const toastConfig = {
+  success: (props: any) => {
+    console.log('Success toast props:', props);
+    return (
+      <BaseToast
+        {...props}
+        style={{ 
+          borderLeftColor: '#4CAF50',
+          marginTop: Platform.OS === 'ios' ? 60 : 0,
+          marginHorizontal: 20,
+          borderRadius: 8,
+          height: 60,
+          zIndex: 999999,
+          elevation: 999999,
+          backgroundColor: 'white',
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: 2,
+          },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+        }}
+        contentContainerStyle={{ paddingHorizontal: 15 }}
+        text1Style={{
+          fontSize: 14,
+          fontFamily: StyleGuide.fontFamily.medium,
+          color: '#4CAF50'
+        }}
+        text2Style={{
+          fontSize: 14,
+          fontFamily: StyleGuide.fontFamily.regular,
+          color: '#666'
+        }}
+      />
+    );
+  },
+  error: (props: any) => {
+    console.log('Error toast props:', props);
+    return (
+      <ErrorToast
+        {...props}
+        style={{ 
+          borderLeftColor: '#F44336',
+          marginTop: Platform.OS === 'ios' ? 60 :30 ,
+          marginHorizontal: 20,
+        
+          borderRadius: 8,
+          height: 60,
+          zIndex: 999999,
+          elevation: 999999,
+          backgroundColor: 'white',
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: 2,
+          },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+        }}
+        contentContainerStyle={{ paddingHorizontal: 15 }}
+        text1Style={{
+          fontSize: 14,
+          fontFamily: StyleGuide.fontFamily.medium,
+          color: '#F44336'
+        }}
+        text2Style={{
+          fontSize: 12,
+          fontFamily: StyleGuide.fontFamily.regular,
+          color: '#666'
+        }}
+      />
+    );
+  },
+};
 
 // Inner component that handles language changes
 const AppContent: React.FC = () => {
@@ -56,6 +133,11 @@ const AppContent: React.FC = () => {
   return (
     <NavigationContainer>
       <AppNavigator />
+      <Toast 
+        config={toastConfig} 
+        position="top"
+        topOffset={Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 20}
+      />
     </NavigationContainer>
   );
 };
@@ -69,12 +151,13 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <AppContent />
-        <Toast />
-      </PersistGate>
-    </Provider>
+    <>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <AppContent />
+        </PersistGate>
+      </Provider>
+    </>
   );
 };
 

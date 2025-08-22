@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Dimensions, StyleSheet, Alert, Text, Platform, Modal, TouchableOpacity, Image, Linking, ActivityIndicator, Modal as RNModal, } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
@@ -20,8 +20,8 @@ import Toast from 'react-native-toast-message';
 const logo = require('../../../assets/images/logo.png')
 
 const Home = () => {
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [region, setRegion] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [region, setRegion] = useState<{latitude: number, longitude: number, latitudeDelta: number, longitudeDelta: number} | null>(null);
   const [locationPermissionChecked, setLocationPermissionChecked] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [addresses, setAddresses] = useState<any[]>([]); // Stores fetched addresses
@@ -29,7 +29,9 @@ const Home = () => {
   const [showGPSModal, setShowGPSModal] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'enabled' | 'disabled' | 'checking'>('checking');
   const [showLocationLoader, setShowLocationLoader] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation()
+  const mapRef = useRef<MapView>(null);
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
   const user = useAppSelector((state: RootState) => state?.auth?.user);
   const currentBooking = useAppSelector((state: RootState) => state.booking.currentBooking);
@@ -37,20 +39,48 @@ const Home = () => {
 
   const profile = useAppSelector((state: RootState) => state.profile.data);
   console.log('profile========/////////', profile);
-  useEffect(() => {
-    // Directly set hardcoded location instead of requesting permissions
-    const hardcodedRegion = {
-      latitude: 31.4926,
-      longitude: 74.3925,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
-    };
-    setRegion(hardcodedRegion);
-    setCurrentLocation({
-      latitude: 31.4926,
-      longitude: 74.3925,
-    });
+
+  // Set default location to Qatar (Doha) or get current location if possible
+  const setDefaultLocation = useCallback(() => {
+    // Try to get current location first
+    Geolocation.getCurrentPosition(
+      (position) => {
+        console.log('📍 Got current location on init:', position.coords);
+        const currentRegion = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        };
+        setRegion(currentRegion);
+        setCurrentLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setIsLoading(false);
+        setLocationPermissionChecked(true);
+        console.log('🗺️ Set initial region to current location');
+      },
+      (error) => {
+        console.log('❌ Could not get current location:', error.message);
+        // Don't set hardcoded location, just show loading state
+        setIsLoading(false);
+        setLocationPermissionChecked(true);
+        console.log('🗺️ Location unavailable, map will show loading state');
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000, // 5 minutes cache
+      }
+    );
   }, []);
+
+  // Initialize with default location
+  useEffect(() => {
+    setDefaultLocation();
+  }, [setDefaultLocation]);
+
   useEffect(() => {
     console.log('Current user:', user);
     fetchProfile();
@@ -103,42 +133,12 @@ const Home = () => {
       });
     };
 
-    // const enableLocationServicesAndroid = () => {
-    //   return new Promise((resolve, reject) => {
-    //     LocationServicesDialogBox.checkLocationServicesIsEnabled({
-    //       message: "Your location services are disabled. Please enable them to use location features.",
-    //       ok: "ENABLE",
-
-    //       enableHighAccuracy: true, // true => GPS, false => NETWORK
-    //       showDialog: true, // Show the dialog
-    //       openLocationServices: true, // Auto open location settings if user clicks "ENABLE"
-    //       preventOutSideTouch: false, // Allow touching outside to dismiss
-    //       preventBackClick: false, // Allow back button to dismiss
-    //       providerListener: true // Listen for location provider changes
-    //     }).then((success) => {
-    //       console.log("Location services dialog result:", success);
-    //       resolve(success);
-    //     }).catch((error) => {
-    //       console.log("Location services dialog error:", error);
-    //       reject(error);
-    //     });
-    //   });
-    // };
-
     const handleLocationServicesDisabled = async () => {
       if (Platform.OS === 'android') {
         try {
           console.log('Showing Android location services dialog...');
-          const result = await enableLocationServicesAndroid();
-
-          if (result && (result.status === "enabled" || result.alreadyEnabled)) {
-            console.log('Location services enabled, proceeding with permission request...');
-            // Location services are now enabled, request app permission
-            await requestAppLocationPermission();
-          } else {
-            console.log('User declined to enable location services');
-            setShowGPSModal(true);
-          }
+          // For now, just show manual settings
+          showManualSettingsAlert();
         } catch (error) {
           console.log('Error with location services dialog:', error);
           // Fallback to manual settings
@@ -294,17 +294,6 @@ const Home = () => {
     const handlePermissionDenied = (result: any) => {
       console.log('App permission not granted:', result);
       setShowGPSModal(true);
-    };
-
-    const setDefaultLocation = () => {
-      const defaultCoords = {
-        latitude: 37.7749, // San Francisco as example
-        longitude: -122.4194,
-      };
-
-      console.log('Setting default location:', defaultCoords);
-      setCurrentLocation(defaultCoords);
-      setLocationPermissionChecked(true);
     };
 
     // Start the location setup process
@@ -562,14 +551,8 @@ const Home = () => {
 
   const handleContinueAnyway = () => {
     setShowGPSModal(false);
-    // Set default location if needed
-    if (!currentLocation) {
-      const defaultCoords = {
-        latitude: 37.7749,
-        longitude: -122.4194,
-      };
-      setCurrentLocation(defaultCoords);
-    }
+    // Don't set hardcoded location, let user handle it manually
+    console.log('User chose to continue without location');
   };
 
   // Check GPS status when screen is focused
@@ -615,20 +598,6 @@ const Home = () => {
     }, [])
   );
 
-  const setDefaultLocation = () => {
-    const defaultRegion = {
-      latitude: 31.4926,
-      longitude: 74.3925,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
-    };
-    // Update region and current location state
-    setRegion(defaultRegion);
-    // setCurrentLocation({
-    //   latitude: 31.4926,
-    //   longitude: 74.3925,
-    // });
-  };
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
@@ -672,15 +641,15 @@ const Home = () => {
               break;
             case 2: // POSITION_UNAVAILABLE
               console.log('Location unavailable');
-              setDefaultLocation();
+              // Don't set hardcoded location, just show error
               break;
             case 3: // TIMEOUT
               console.log('Location request timed out');
-              setDefaultLocation();
+              // Don't set hardcoded location, just show error
               break;
             default:
               console.log('Unknown location error');
-              setDefaultLocation();
+              // Don't set hardcoded location, just show error
               break;
           }
           setShowLocationLoader(false);
@@ -694,17 +663,17 @@ const Home = () => {
       );
     } catch (error) {
       console.log('Exception in getCurrentLocation:', error);
-      setDefaultLocation();
+      // Don't set hardcoded location, just log error
       setShowLocationLoader(false);
     }
   };
 
-  const userLocationfind = (lat, lng) => {
+  const userLocationfind = (lat: number, lng: number) => {
     // Add your location finding logic here
     console.log('User location updated:', lat, lng);
   };
 
-  const handleMarkerDragEnd = (event) => {
+  const handleMarkerDragEnd = (event: any) => {
     const coordinate = event.nativeEvent.coordinate;
     userLocationfind(coordinate.latitude, coordinate.longitude);
     setCurrentLocation(coordinate);
@@ -745,9 +714,12 @@ const Home = () => {
       </View>
     );
   }
-  useEffect(() => {
-    fetchAddress();  // Call the function to fetch addresses when the component mounts
-  }, [navigation]);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchAddress();
+      return () => {};
+    }, [])
+  );
 console.log('addressState',addresses)
 const handleDeleteAddress = (addressId: string) => {
   // Show confirmation alert before deleting
@@ -833,29 +805,40 @@ const handleDeleteAddress = (addressId: string) => {
         />
       </View> */}
       <MapView
-
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
-        initialRegion={region}
-        region={region}
+        initialRegion={region || undefined}
+        region={region || undefined}
         zoomEnabled={true}
         showsMyLocationButton={false}
         maxZoomLevel={20}
         minZoomLevel={8}
-        showsUserLocation={true} // This will show the blue dot for current location
+        showsUserLocation={false} // We'll use custom marker instead
         mapType="standard"
       >
-        <Marker
-          coordinate={currentLocation}
-          tracksViewChanges={true} // Set to false for better performance
-          onDragEnd={handleMarkerDragEnd}
-          draggable={true}
-          title="Your Location"
-          description="Drag to update location"
-        >
-          <Svg xml={locationPin} rest={{ height: 36, width: 42 }} />
-        </Marker>
+        {currentLocation && (
+          <Marker
+            coordinate={currentLocation}
+            tracksViewChanges={true}
+            onDragEnd={handleMarkerDragEnd}
+            draggable={true}
+            title="Your Location"
+            description="Drag to update location"
+          >
+            <Svg xml={locationPin} rest={{ height: 36, width: 42 }} />
+          </Marker>
+        )}
       </MapView>
+
+      {/* Current Location Button */}
+      <TouchableOpacity
+        style={styles.currentLocationButton}
+        onPress={getCurrentLocation}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.currentLocationButtonText}>📍</Text>
+      </TouchableOpacity>
 
       <View style={styles.bottomContent}>
         <HomeDashBoard
@@ -1077,6 +1060,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     fontFamily: StyleGuide.fontFamily.regular,
+  },
+  currentLocationButton: {
+    position: 'absolute',
+    top: 20, // Position from top instead of bottom
+    right: 20,
+    backgroundColor: StyleGuide.color.white,
+    width: 40,
+    height: 40,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  currentLocationButtonText: {
+    fontSize: 18,
+    color: 'white',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
 });

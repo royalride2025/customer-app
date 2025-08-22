@@ -126,14 +126,29 @@ console.log('route',route)
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
+
+      <View style={[styles.inputPasswordContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <Svg xml={locationBlackIcon} rest={{ height: 18, width: 18, style: { marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0, alignSelf: 'center' } }} />
+        <TextInput
+          style={[
+            styles.phoneInput,
+            {
+              writingDirection: isRTL ? 'rtl' : 'ltr',
+              textAlign: isRTL ? 'right' : 'left',
+            },
+          ]}
+          placeholder={'Label'}
+          placeholderTextColor="#999"
+          value={label}
+          onChangeText={setLabel}
+        />
+
+      </View>
       <View style={{
         flexDirection: 'row',
         justifyContent: 'center',
-        zIndex: 9999,
         alignItems: 'center',
         backgroundColor: 'white',
-        position: 'absolute',
-        alignSelf: 'center',
         borderLeftWidth: 6,
         borderRadius: 8,
         paddingHorizontal: 5,
@@ -144,21 +159,25 @@ console.log('route',route)
         borderBottomColor: StyleGuide.color.border,
         borderRightColor: StyleGuide.color.border,
         borderTopColor: StyleGuide.color.border,
-        top: SCREEN_WIDTH*0.01,
+        marginTop: 10,
       }} >
         <GooglePlacesAutocomplete
           ref={googlePlaceAutoCompleteRef}
           placeholder={'Address'}
           textInputProps={{
 
-            placeholderTextColor: '#8e8e8e',
+            placeholderTextColor: '#999',
             value: address,
             autoCorrect: false,
             onChange(e) {
               setAddress(e.nativeEvent.target)
             },
           }}
-          styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.15 } }}
+          styles={{
+            textInputContainer: { flexDirection: 'row', alignItems: 'center' },
+            textInput: { fontSize: 15, color: '#000', height: 50, paddingVertical: 0 ,fontFamily:StyleGuide.fontFamily.regular},
+            listView: { position: 'absolute', top: screenWidth * 0.15 }
+          }}
           onPress={(data, details = null) => {
             setAddress(data.description)
             if (details) {
@@ -186,12 +205,14 @@ console.log('route',route)
               style={{
                 alignItems: 'center',
                 justifyContent: 'center',
+                height: 50,
+                width: 28,
               }}>
               <Svg
                 rest={{
                   height: 18,
                   width: 18,
-                  style: { marginVertical: 10 },
+                  bottom: 3,
                 }}
                 xml={locationBlackIcon}
               />
@@ -228,23 +249,7 @@ console.log('route',route)
           fields="*"
         />
       </View>
-      <View style={[styles.inputPasswordContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Svg xml={locationBlackIcon} rest={{ height: 20, width: 20, style: { marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0, alignSelf: 'center' } }} />
-        <TextInput
-          style={[
-            styles.phoneInput,
-            {
-              writingDirection: isRTL ? 'rtl' : 'ltr',
-              textAlign: isRTL ? 'right' : 'left',
-            },
-          ]}
-          placeholder={'Lable'}
-          placeholderTextColor="#999"
-          value={label}
-          onChangeText={setLabel}
-        />
-
-      </View>
+    
 
 
 
@@ -282,7 +287,7 @@ const styles = StyleSheet.create({
   inputPasswordContainer: {
     flexDirection: 'row',
     backgroundColor: StyleGuide.color.white,
-    marginTop: screenWidth * 0.28,
+    // marginTop: screenWidth * 0.20,
     borderRadius: 8,
     marginBottom: 10,
     paddingHorizontal: 10,
@@ -293,10 +298,10 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    fontSize: screenWidth * 0.03,
-    color: '#858586',
+    fontSize: 15,
+    color: '#000',
     paddingVertical: 16,
-    fontFamily: StyleGuide.fontFamily.medium,
+    fontFamily:StyleGuide.fontFamily.regular,
   },
 
 });

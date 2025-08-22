@@ -215,7 +215,11 @@ const profileData = useAppSelector((state: RootState) => state.profile.data);
             </TouchableOpacity>
           )) : (
             <View style={styles.noDataContainer}>
+              <TouchableOpacity onPress={()=>navigation.navigate('address')}>
+              <Text style={styles.addButton}>{t('add')}</Text>
+            </TouchableOpacity>
               <Text style={styles.noDataText}>No saved locations</Text>
+              
             </View>
           )}
   </ScrollView>
@@ -234,6 +238,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: getResponsiveSize(10),
+  },
+  addButton: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.semiBold,
+    color: StyleGuide.color.primary,
   },
   userInfo: {
     flexDirection: 'row',
@@ -415,6 +424,21 @@ const styles = StyleSheet.create({
     right:3
      // Adjust the margin as needed
   },
- 
+ noDataContainer:{
+  alignItems:'center',
+  justifyContent:'center',
+  alignSelf:'center',
+  width:SCREEN_WIDTH*0.915,
+  borderWidth:1,borderColor:StyleGuide.color.lightGrey,
+  borderRadius:12,
+  paddingVertical:getResponsiveSize(10),
+  marginRight:getResponsiveSize(16),
+  marginBottom:getResponsiveSize(8),
+
+ },
+ noDataText:{
+  fontSize:getResponsiveFontSize(14),
+  textAlign:'center'
+ }
 
 });

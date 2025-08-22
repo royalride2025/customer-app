@@ -2,25 +2,26 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   StatusBar,
   Alert,
   Dimensions,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview'; // Import WebView
 import { StyleGuide } from '../../../StyleGuide';
 import { useScreenHeader } from '../../lib/hooks/useScreenHeader';
 
-const FAQ = () => {
+const PrivacyPolicy = () => {
   const [webViewVisible, setWebViewVisible] = useState(false); // Manage WebView visibility
 
   useEffect(() => {
     console.log('App component mounted');
   }, []);
+
   useScreenHeader({
-    title: 'FAQ',
+    title: 'Privacy Policy',
     showBackButton: true,
   });
   const handlePress = () => {
@@ -28,29 +29,28 @@ const FAQ = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left','right','bottom']} style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
 
-        <WebView
-          source={{ uri: 'https://app.royalride.qa/faq' }} // URL of the webpage to display
-          style={styles.webView}
-          startInLoadingState={true} // Shows loading spinner while the page is loading
-        />
-   
+      <WebView
+        source={{ uri: 'https://app.royalride.qa/privacy' }} // URL of the webpage to display
+        style={styles.webView}
+        startInLoadingState={true} // Shows loading spinner while the page is loading
+        contentInsetAdjustmentBehavior="never" // iOS: avoid extra top inset
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleGuide.layout.container,
-    
+    ...StyleGuide.layout.container
   },
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // padding: 20,
+    padding: 20,
   },
   title: {
     fontSize: 24,
@@ -76,4 +76,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FAQ;
+export default PrivacyPolicy;

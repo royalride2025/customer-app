@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   Alert,
   Dimensions,
@@ -32,6 +31,7 @@ import Toast from 'react-native-toast-message';
 import { profile, lock, eye, eyeOff } from '../../../assets/svgAssets';
 import Svg from '../../lib/svg';
 import useGoogleLogin from './components/googleLoginComponent';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const logo=require('../../../assets/images/logo.png')
 
@@ -47,6 +47,9 @@ const Signup = () => {
   const [password, setPassword] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  const [userNameError, setUserNameError] = useState<string>('');
+  const [phoneError, setPhoneError] = useState<string>('');
+  const [passwordError, setPasswordError] = useState<string>('');
 
 
 const navigation=useNavigation()
@@ -67,27 +70,48 @@ const { t, i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const { googleLogin, googleLoading, userInfo, checkSignedIn, signOut } = useGoogleLogin();
 
+  const validateUserName = (name: string): string => {
+    if (!name.trim()) return 'Username is required';
+    const trimmed = name.trim();
+    if (trimmed.length < 3) return 'Username must be at least 3 characters';
+    if (/^[0-9]/.test(trimmed)) return 'Username cannot start with a number';
+    return '';
+  };
+
+  const validatePhone = (phone: string): string => {
+    if (!phone.trim()) return 'Mobile number is required';
+    return '';
+  };
+
+  const validatePassword = (pwd: string): string => {
+    if (!pwd) return 'Password is required';
+    if (pwd.length < 6) return 'Password must be at least 6 characters';
+    return '';
+  };
+
+  const isFormValid =
+    validateUserName(userName) === '' &&
+    validatePhone(phoneNumber) === '' &&
+    validatePassword(password) === '';
+
   const handleSignUp = async () => {
-    if (!userName.trim()) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter your name' });
+    const nameErr = validateUserName(userName);
+    const phErr = validatePhone(phoneNumber);
+    const pwdErr = validatePassword(password);
+    setUserNameError(nameErr);
+    setPhoneError(phErr);
+    setPasswordError(pwdErr);
+    if (nameErr || phErr || pwdErr) {
       return;
     }
-    if (!phoneNumber.trim()) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter your mobile number' });
-      return;
-    }
-   
-    if (!password.trim()) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Please enter your password' });
-      return;
-    }
+    const trimmedName = userName.trim();
     setLoading(true);
     setError('');
     try {
       const body = {
         phone: `${selectedCountry.code.replace('+', '')}${phoneNumber}`,
         password,
-        profile: { name: userName }
+        profile: { name: trimmedName }
       };
       const response = await networkClient.post(API_ENDPOINTS.REGISTER, body);
       console.log('Signup response:', response);
@@ -136,7 +160,7 @@ const handleSocialLogin = (platform: string) => {
           <View style={styles.header}>
           <Image
             source={logo}
-            style={{width:130,height:100}}
+            style={{width:110,height:90}}
             resizeMode="contain"
           />
           </View>
@@ -156,21 +180,37 @@ const handleSocialLogin = (platform: string) => {
           placeholder={t('userName')}
           placeholderTextColor="#999"
           value={userName}
-          onChangeText={setUserName}
+          onChangeText={(text) => {
+            setUserName(text);
+            setUserNameError(validateUserName(text));
+          }}
           secureTextEntry={false}
         />
       </View>
+      {userNameError ? (
+        <Text style={{ color: 'red', fontSize: 12, marginTop: 4, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+          {userNameError}
+        </Text>
+      ) : null}
 
           <PhoneInput
             selectedCountry={selectedCountry}
             phoneNumber={phoneNumber}
-            onPhoneNumberChange={setPhoneNumber}
+            onPhoneNumberChange={(val: string) => {
+              setPhoneNumber(val);
+              setPhoneError(validatePhone(val));
+            }}
             onCountryPress={openCountryModal}
             // flexDirection={flexDirection}
             isRTL={isRTL}
           />
+          {phoneError ? (
+            <Text style={{ color: 'red', fontSize: 12, marginTop: 4, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+              {phoneError}
+            </Text>
+          ) : null}
            <View style={[styles.inputPasswordContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}> 
-        <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0, alignSelf: 'center' } }} />
+        {/* <Svg xml={lock} rest={{ height: 20, width: 20, style: { marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0, alignSelf: 'center' } }} /> */}
         <TextInput
           style={[
             styles.phoneInput,
@@ -182,19 +222,27 @@ const handleSocialLogin = (platform: string) => {
           placeholder={t("password")}
           placeholderTextColor="#999"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+            setPasswordError(validatePassword(text));
+          }}
           secureTextEntry={!showPassword}
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ alignSelf: 'center', marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }}>
           <Svg xml={showPassword ? eyeOff : eye} rest={{ height: 20, width: 20 }} />
         </TouchableOpacity>
       </View>
+      {passwordError ? (
+        <Text style={{ color: 'red', fontSize: 12, marginTop: 4, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+          {passwordError}
+        </Text>
+      ) : null}
           
 
          <AppButton
   title={t('signup')}
   onPress={handleSignUp}
-  disabled={loading}
+  disabled={loading || !isFormValid}
   loading={loading}
 />
           {error ? <Text style={{ color: 'red', textAlign: 'center', marginTop: 8 }}>{error}</Text> : null}

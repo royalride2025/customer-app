@@ -16,7 +16,7 @@ import Svg from '../../../lib/svg';
 import { currentLocationicon, inputCross, locationBlackIcon, locationIcon, locationIconOuter } from '../../../../assets/svgAssets';
 import AppButton from '../../../lib/component/AppButton';
 import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import useTranslationStyles from '../../../../locales/useTranslationStyles';
 import { useAppSelector } from '../../../redux/reduxHooks';
 import { RootState } from '../../../redux/store';
@@ -85,6 +85,14 @@ const MakeTripc = () => {
   useEffect(() => {
     fetchAddress();  // Call the function to fetch addresses when the component mounts
   }, []);
+
+  // Refresh addresses whenever the screen gains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchAddress();
+      return () => {};
+    }, [])
+  );
 console.log('addressState',addresses)
   const fetchAddress = async () => {
     setAddressLoading(true);
@@ -395,7 +403,7 @@ console.log('addressState',addresses)
           />
         </View>
       </View>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
 
 
         <View style={styles.savedAddressesContainer}>
@@ -429,7 +437,9 @@ console.log('addressState',addresses)
           </TouchableOpacity>
         ))
       ) : (
-        <Text style={styles.noAddressesText}>No addresses added yet.</Text>
+        <View style={styles.noAddressesWrap}>
+          <Text style={styles.noAddressesText}>No saved locations</Text>
+        </View>
       )}
     </>
   )
@@ -571,5 +581,12 @@ const styles = StyleSheet.create({
     color: StyleGuide.color.grey,  
     textAlign: 'center',
     marginTop: 20,
+  },
+  noAddressesWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginBottom: screenHeight*0.2,
   },
 });

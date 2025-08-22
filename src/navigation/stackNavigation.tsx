@@ -40,7 +40,7 @@ export type RootStackParamList = {
   bookRide:undefined
   airportTransfer:undefined
   forgetPassword:undefined
-  otp:undefined
+  otp:{ phone: string }
   map:undefined
   carProfile:undefined
   drawerNavigator:undefined
@@ -65,7 +65,7 @@ const AppNavigator = () => {
           <Stack.Screen options={{ headerShown: false }} name="login" component={Login} />
           <Stack.Screen options={{ headerShown: false }} name="signUp" component={Signup} />
           <Stack.Screen name="forgetPassword"  component={ForgetPassword} options={{
-            headerShown: false,
+            // headerShown: false,
             headerTitle: () => (
               <Text style={{
                 color: StyleGuide.color.black,
@@ -77,7 +77,7 @@ const AppNavigator = () => {
             ),
           }} />
           <Stack.Screen name="otp" component={Otp} options={{
-            headerShown: false,
+            // headerShown: false,
             headerTitle: () => (
               <Text style={{
                 color: StyleGuide.color.black,

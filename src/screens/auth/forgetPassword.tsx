@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   Alert,
   ScrollView,
@@ -24,6 +23,7 @@ import { RootState } from '../../redux/store';
 import networkClient from '../../../networkClient';
 import { API_ENDPOINTS } from '../../../apiEndpoints';
 import Toast from 'react-native-toast-message';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 const logo = require('../../../assets/images/logo.png')
@@ -117,10 +117,10 @@ const ForgetPassword = () => {
         keyboardShouldPersistTaps="handled"
       >
         {/* Header with Logo */}
-        <View style={[styles.header, { marginVertical: screenWidth * 0.04,  marginTop: screenHeight * 0.09, }]} >
+        <View style={[styles.header, { marginVertical: screenWidth * 0.04,  marginTop: screenHeight * 0, }]} >
           <Image
             source={logo}
-            style={[{ width: 130, height: 100 }]}
+            style={[{ width: 110, height: 90 }]}
             resizeMode="contain"
           />
         </View>
@@ -141,10 +141,10 @@ const ForgetPassword = () => {
 
         <AppButton
           style={{ marginTop: screenWidth * 0.12, width: '100%' }}
-          title={t('reset')}
+          title={'Submit'}
           onPress={handleGetOtp}
           loading={loading}
-          disabled={loading}
+          disabled={loading || !phoneNumber.trim() || phoneNumber.trim().length < 7}
         />
 
 
