@@ -46,10 +46,15 @@ const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", is
   const flatListRef = useRef(null);
   const typingAnimation = useRef(new Animated.Value(0)).current;
   const currentBooking = useAppSelector((state: RootState) => state.booking.currentBooking);
-  const driverId= currentBooking?.driver_id;
-  const bookingId= currentBooking?.booking_id;
-  const driverName= currentBooking?.driver?.name;
-  const driverImage= currentBooking?.driver?.profile_image;
+  // const driverId= currentBooking?.driver_id;
+  // const bookingId= currentBooking?.booking_id;
+  // const driverName= currentBooking?.driver?.name;
+  // const driverImage= currentBooking?.driver?.profile_image;
+
+  const driverId= currentBooking?.driver_id||currentBooking?.driver_id?._id;
+  const bookingId= currentBooking?.booking_id||currentBooking?._id;
+  const driverName= currentBooking?.driver?.name||currentBooking?.driver_profile?.name;
+  const driverImage= currentBooking?.driver?.profile_image||currentBooking?.driver_profile?.driver_img;
   // Initialize with sample messages once user is loaded
   useEffect(() => {
     if (user?.id && driverId && messages.length === 0) {

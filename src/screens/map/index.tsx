@@ -64,8 +64,7 @@ const Map = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   // const [locationWatcher, setLocationWatcher] = useState<number | null>(null);
-  
-  console.log(bookingStatus, "bookingStatus")
+  console.log(region,"region====")
   console.log(driverLocation,"//////////drivers")
   // Navigation and route
   const navigation = useNavigation();
@@ -82,13 +81,24 @@ const Map = () => {
   const statusMessage = useAppSelector((state: RootState) => state.booking.statusMessage);
   const statusIcon = useAppSelector((state: RootState) => state.booking.statusIcon);
   
+
+  console.log(bookingStatus,"bookingStatus////")
+  // Debug Redux state
+  console.log('🔍 Redux State Debug:', {
+    bookingStatus,
+    statusMessage,
+    statusIcon,
+    hasCurrentBooking: !!currentBooking,
+    currentBookingStatus: currentBooking?.booking?.status
+  });
+  
   // Safe area insets for proper button positioning
   const insets = useSafeAreaInsets();
 
   // Map ref to control camera/fit coordinates
   const mapRef = useRef<MapView | null>(null);
 
-console.log(booking,"boooooooo")
+console.log(currentBooking,"boooooooo")
   console.log('Current booking state:',  {driverId: currentBooking?.driver_id,
     bookingId: currentBooking?.booking_id,
     driverName: currentBooking?.driver?.name,
@@ -106,7 +116,7 @@ console.log(booking,"boooooooo")
       setIsSubmittingRating(true);
       
       // Get the booking ID from current booking
-      const bookingId = currentBooking?.booking_id;
+      const bookingId = currentBooking?.booking_id||currentBooking?._id;
       
       if (!bookingId) {
         Toast.show({
@@ -153,6 +163,7 @@ console.log(booking,"boooooooo")
       setShowDirections(false);
       dispatch(clearBookingStatus());
       setCurrentBooking(null);
+      dispatch(clearBookingStatus());
       
       // Navigate to Main screen
       setTimeout(() => {
@@ -187,6 +198,7 @@ console.log(booking,"boooooooo")
           setShowDirections(false);
       dispatch(clearBookingStatus());
       setCurrentBooking(null);
+      dispatch(clearBookingStatus());
     
     // Navigate to Main screen
     setTimeout(() => {
@@ -196,10 +208,10 @@ console.log(booking,"boooooooo")
 
   const handleChat = useCallback(() => {
     (navigation as any).navigate('customerChat',{
-      driverId: currentBooking?.driver_id,
-      bookingId: currentBooking?.booking_id,
-      driverName: currentBooking?.driver?.name,
-      driverImage: currentBooking?.driver?.profile_image,
+      driverId: currentBooking?.driver_id||currentBooking?.driver_id?._id,
+      bookingId: currentBooking?.booking_id||currentBooking?._id,
+      driverName: currentBooking?.driver?.name||currentBooking?.driver_profile?.name,
+      driverImage: currentBooking?.driver?.profile_image||currentBooking?.driver_profile?.driver_img,
     });
   }, [navigation]);
 
@@ -252,33 +264,33 @@ console.log(booking,"boooooooo")
   }, []);
 
       // Location functions - Set initial region based on priority
-    const setDefaultLocation = useCallback(() => {
-      let targetLatitude: number;
-      let targetLongitude: number;
+    // const setDefaultLocation = useCallback(() => {
+    //   let targetLatitude: number;
+    //   let targetLongitude: number;
       
-      // Priority 1: Booking pickup location
-      if (booking?.booking?.pickup_location?.coordinates) {
-        targetLatitude = Number(booking.booking.pickup_location.coordinates[0]);
-        targetLongitude = Number(booking.booking.pickup_location.coordinates[1]);
-        console.log('🗺️ setDefaultLocation: Using booking pickup location:', { targetLatitude, targetLongitude });
-      }
-      // Priority 2: Fallback to default location (Doha, Qatar)
-      else {
-        targetLatitude = 25.3548;
-        targetLongitude = 51.1839;
-        console.log('🗺️ setDefaultLocation: Using fallback location (Doha):', { targetLatitude, targetLongitude });
-      }
+    //   // Priority 1: Booking pickup location
+    //   if (booking?.booking?.pickup_location?.coordinates) {
+    //     targetLatitude = Number(booking.booking.pickup_location.coordinates[0]);
+    //     targetLongitude = Number(booking.booking.pickup_location.coordinates[1]);
+    //     console.log('🗺️ setDefaultLocation: Using booking pickup location:', { targetLatitude, targetLongitude });
+    //   }
+    //   // Priority 2: Fallback to default location (Doha, Qatar)
+    //   else {
+    //     targetLatitude = 25.3548;
+    //     targetLongitude = 51.1839;
+    //     console.log('🗺️ setDefaultLocation: Using fallback location (Doha):', { targetLatitude, targetLongitude });
+    //   }
       
-      const defaultRegion = {
-        latitude: targetLatitude,
-        longitude: targetLongitude,
-        latitudeDelta: 0.18,
-        longitudeDelta: 0.18,
-      };
-      setRegion(defaultRegion);
-      setIsLoading(false);
-      console.log('🗺️ Default location set and loading finished');
-    }, [booking?.booking?.pickup_location?.coordinates]);
+    //   const defaultRegion = {
+    //     latitude: targetLatitude,
+    //     longitude: targetLongitude,
+    //     latitudeDelta: 0.18,
+    //     longitudeDelta: 0.18,
+    //   };
+    //   setRegion(defaultRegion);
+    //   setIsLoading(false);
+    //   console.log('🗺️ Default location set and loading finished');
+    // }, [booking?.booking?.pickup_location?.coordinates,currentBooking?.pickup_location?.coordinates]);
 
   const getCurrentLocation = useCallback(async () => {
     // Check permission first
@@ -338,7 +350,7 @@ console.log(booking,"boooooooo")
 
           // If we also have a pickup location, fit both markers into view
           const pickupCoordsFromRoute = booking?.booking?.pickup_location?.coordinates;
-          const pickupCoordsFromRedux = currentBooking?.booking?.pickup_location?.coordinates as any;
+          const pickupCoordsFromRedux =currentBooking?.pickup_location?.coordinates|| currentBooking?.booking?.pickup_location?.coordinates as any;
           const pickupCoords = pickupCoordsFromRoute || pickupCoordsFromRedux;
 
           if (pickupCoords && mapRef.current) {
@@ -476,17 +488,17 @@ console.log(booking,"boooooooo")
 
   // Center map on pickup location
   const centerOnPickupLocation = useCallback(() => {
-    if (booking?.booking?.pickup_location?.coordinates) {
+    if (booking?.booking?.pickup_location?.coordinates||currentBooking?.pickup_location?.coordinates) {
       const newRegion = {
-        latitude: Number(booking.booking.pickup_location.coordinates[0]), // Correct coordinate order
-        longitude: Number(booking.booking.pickup_location.coordinates[1]),
+        latitude: Number(currentBooking.pickup_location.coordinates[1]), // Correct coordinate order
+        longitude: Number(currentBooking.pickup_location.coordinates[0]),
         latitudeDelta: 0.18,
         longitudeDelta: 0.18,
       };
       setRegion(newRegion);
       console.log('🗺️ Map centered on pickup location:', newRegion);
     }
-  }, [booking?.booking?.pickup_location?.coordinates]);
+  }, [booking?.booking?.pickup_location?.coordinates,currentBooking?.pickup_location?.coordinates]);
 
   // Reset map to initial region (pickup location or fallback)
   const resetToInitialRegion = useCallback(() => {
@@ -494,9 +506,9 @@ console.log(booking,"boooooooo")
     let targetLongitude: number;
     
     // Priority 1: Booking pickup location
-    if (booking?.booking?.pickup_location?.coordinates) {
-      targetLatitude = Number(booking.booking.pickup_location.coordinates[0]);
-      targetLongitude = Number(booking.booking.pickup_location.coordinates[1]);
+    if (booking?.booking?.pickup_location?.coordinates||currentBooking?.pickup_location?.coordinates) {
+      targetLatitude = Number(booking.booking.pickup_location.coordinates[0]||currentBooking.pickup_location.coordinates[1]);
+      targetLongitude = Number(booking.booking.pickup_location.coordinates[1]||currentBooking.pickup_location.coordinates[0]);
       console.log('🗺️ Reset: Using booking pickup location:', { targetLatitude, targetLongitude });
     }
     // Priority 2: Fallback to default location (Doha, Qatar)
@@ -514,7 +526,7 @@ console.log(booking,"boooooooo")
     };
     setRegion(newRegion);
     console.log('🗺️ Map reset to initial region:', newRegion);
-  }, [booking?.booking?.pickup_location?.coordinates]);
+  }, [booking?.booking?.pickup_location?.coordinates,currentBooking?.pickup_location?.coordinates]);
 
   const handleMarkerDragEnd = useCallback((event: any) => {
     const coordinate = event.nativeEvent.coordinate;
@@ -524,7 +536,7 @@ console.log(booking,"boooooooo")
   const handlePickupLocationDragEnd = useCallback((event: any) => {
     const coordinate = event.nativeEvent.coordinate;
     // Update the pickup location in the booking
-    if (currentBooking?.booking?.pickup_location?.coordinates) {
+    if (currentBooking?.booking?.pickup_location?.coordinates||currentBooking?.pickup_location?.coordinates) {
       const updatedCoordinates = [
         coordinate.longitude, // API expects [longitude, latitude]
         coordinate.latitude
@@ -625,7 +637,18 @@ console.log(booking,"boooooooo")
 
   // Driver location update handler
   const handleDriverLocationUpdate = useCallback((data: any) => {
-    console.log('ddddddd====' + JSON.stringify(data));
+    console.log('🚗🚗🚗 DRIVER LOCATION UPDATE RECEIVED 🚗🚗🚗');
+    console.log('📡 Raw data received:', JSON.stringify(data));
+    console.log('🔍 Data type:', typeof data);
+    console.log('🔍 Data structure:', {
+      hasData: !!data,
+      hasLatitude: !!(data && data.latitude),
+      hasLongitude: !!(data && data.longitude),
+      hasCoordinates: !!(data && data.coordinates),
+      dataKeys: data ? Object.keys(data) : 'null'
+    });
+    
+    // First, set the raw data for debugging
     setDriverLocation(data);
     
     // Validate coordinates before setting driver location
@@ -638,10 +661,20 @@ console.log(booking,"boooooooo")
         data.longitude >= -180 && data.longitude <= 180) {
       
       console.log('✅ Valid driver coordinates received:', data);
-      setDriverLocation(data);
+      console.log('📍 Latitude:', data.latitude, 'Longitude:', data.longitude);
+      // Don't call setDriverLocation again since we already did above
     } else {
       console.log('❌ Invalid driver coordinates received:', data);
       console.log('Coordinates must be valid numbers within valid ranges');
+      console.log('🔍 Validation details:', {
+        hasData: !!data,
+        latitudeType: data ? typeof data.latitude : 'undefined',
+        longitudeType: data ? typeof data.longitude : 'undefined',
+        latitudeValue: data?.latitude,
+        longitudeValue: data?.longitude,
+        latitudeValid: data ? (typeof data.latitude === 'number' && !isNaN(data.latitude) && data.latitude >= -90 && data.latitude <= 90) : false,
+        longitudeValid: data ? (typeof data.longitude === 'number' && !isNaN(data.longitude) && data.longitude >= -180 && data.longitude <= 180) : false
+      });
     }
     
     // if (data.latitude && data.longitude) {
@@ -680,6 +713,14 @@ console.log(booking,"boooooooo")
 
     // Store the complete booking data in Redux as received from the API
     dispatch(setCurrentBooking(data));
+    
+    // Set initial booking status when booking is confirmed
+    dispatch(updateBookingStatus({ 
+      status: data.booking?.status || 'confirmed',
+      message: 'Your ride has been confirmed!',
+      icon: '✅'
+    }));
+    
     setPickupLocation({
       latitude: Number(data.booking.pickup_location.coordinates[0]),
       longitude: Number(data.booking.pickup_location.coordinates[1])
@@ -690,6 +731,7 @@ console.log(booking,"boooooooo")
     });
     console.log('💾 Complete booking data stored in Redux:', data);
     console.log('🎉 Booking has been confirmed successfully!');
+    console.log('📊 Initial booking status set:', data.booking?.status || 'confirmed');
 
   }, [dispatch]);
 
@@ -707,7 +749,7 @@ console.log(booking,"boooooooo")
     setDriverLocation(null);
     setShowDirections(false);
     setCurrentBooking(null)
-    
+    dispatch(clearBookingStatus());
     // Show cancellation message to user
     Toast.show({
       type: 'info',
@@ -813,6 +855,13 @@ console.log(booking,"boooooooo")
       switch (data.status) {
         case 'driver_arrived':
           console.log('🚗 Driver arrived case triggered');
+          Toast.show({
+            type: 'success',
+            text1: 'Driver Arrived',
+            text2: 'Your driver has arrived at the pickup location.',
+            position: 'top',
+            visibilityTime: 4000,
+          });
           Alert.alert(
             'Driver Arrived',
             'Your driver has arrived at the pickup location.',
@@ -865,6 +914,8 @@ console.log(booking,"boooooooo")
     }
   }, [currentBooking, dispatch, navigation]);
 
+
+
   useEffect(() => {
     // Don't get current location automatically - only when button is pressed
     // getCurrentLocation();
@@ -877,8 +928,19 @@ console.log(booking,"boooooooo")
       addEventListener('bookingStatusUpdate', handleBookingStatusUpdate);
       addEventListener('driverLocationUpdate', handleDriverLocationUpdate);
       console.log('✅ Event listeners added successfully');
+      console.log('🎯 Driver location update listener added - waiting for events...');
+      console.log('🔍 Socket connection status:', {
+        isConnected: socketConnected,
+        isConnecting,
+        reconnectAttempts
+      });
     } else {
       console.log('❌ Socket not connected, cannot add event listeners');
+      console.log('🔍 Socket connection status:', {
+        isConnected: socketConnected,
+        isConnecting,
+        reconnectAttempts
+      });
     }
 console.log('🔍 pickupp location:', pickupLocation);
     console.log('✅ Accepted driver state:', acceptedDriver);
@@ -896,21 +958,44 @@ console.log('🔍 pickupp location:', pickupLocation);
       removeEventListener('bookingStatusUpdate', handleBookingStatusUpdate);
       removeEventListener('driverLocationUpdate', handleDriverLocationUpdate);
     };
-  }, [socketConnected, addEventListener, removeEventListener, handleDriverApplied, handleBookingConfirmed, handleDriverLocationUpdate]);
+  }, [socketConnected, addEventListener, removeEventListener, handleDriverApplied, handleBookingConfirmed, handleDriverLocationUpdate,currentBooking]);
 
-  // Set initial region: always booking pickup location first, then fallback to default
+    // Set initial region: prioritize driver location, then current location, then pickup location, then fallback to default
   useEffect(() => {
     if (!region) {
       let targetLatitude: number;
       let targetLongitude: number;
       
-      // Priority 1: Booking pickup location
-      if (booking?.booking?.pickup_location?.coordinates) {
-        targetLatitude = Number(booking.booking.pickup_location.coordinates[0]);
-        targetLongitude = Number(booking.booking.pickup_location.coordinates[1]);
+      // Priority 1: Driver location (if available)
+      if (driverLocation && 
+          driverLocation.coordinates && 
+          Array.isArray(driverLocation.coordinates) &&
+          driverLocation.coordinates.length >= 2 &&
+          typeof driverLocation.coordinates[1] === 'number' && 
+          typeof driverLocation.coordinates[0] === 'number' &&
+          !isNaN(driverLocation.coordinates[1]) && 
+          !isNaN(driverLocation.coordinates[0])) {
+        targetLatitude = driverLocation.coordinates[1];
+        targetLongitude = driverLocation.coordinates[0];
+        console.log('🗺️ Setting initial region to driver location:', { targetLatitude, targetLongitude });
+      }
+      // Priority 2: Current user location (if available)
+      else if (currentLocation && 
+               typeof currentLocation.latitude === 'number' && 
+               typeof currentLocation.longitude === 'number' &&
+               !isNaN(currentLocation.latitude) && 
+               !isNaN(currentLocation.longitude)) {
+        targetLatitude = currentLocation.latitude;
+        targetLongitude = currentLocation.longitude;
+        console.log('🗺️ Setting initial region to current user location:', { targetLatitude, targetLongitude });
+      }
+      // Priority 3: Booking pickup location
+      else if (booking?.booking?.pickup_location?.coordinates||currentBooking?.pickup_location?.coordinates||currentBooking?.booking?.pickup_location?.coordinates) {
+        targetLatitude = Number(booking?.booking?.pickup_location?.coordinates[0]||currentBooking?.pickup_location?.coordinates[1]||currentBooking?.booking?.pickup_location?.coordinates[0]);
+        targetLongitude = Number(booking?.booking?.pickup_location?.coordinates[1]||currentBooking?.pickup_location?.coordinates[0]||currentBooking?.booking?.pickup_location?.coordinates[1]);
         console.log('🗺️ Setting initial region to booking pickup location:', { targetLatitude, targetLongitude });
       }
-      // Priority 2: Fallback to default location (Doha, Qatar)
+      // Priority 4: Fallback to default location (Doha, Qatar)
       else {
         targetLatitude = 25.3548;
         targetLongitude = 51.1839;
@@ -926,22 +1011,75 @@ console.log('🔍 pickupp location:', pickupLocation);
       setRegion(newRegion);
       setIsLoading(false); // Stop loading once we have a region
       console.log('🗺️ Initial map region set and loading finished:', newRegion);
+      console.log('🗺️ Region details:', {
+        source: driverLocation ? 'Driver Location' : currentLocation ? 'Current Location' : 'Pickup/Fallback',
+        coordinates: [targetLatitude, targetLongitude]
+      });
     }
-  }, [booking?.booking?.pickup_location?.coordinates, region]);
+  }, [driverLocation, currentLocation, booking?.booking?.pickup_location?.coordinates, region,currentBooking]);
 
+  // Automatically get current location when map screen loads
+  useEffect(() => {
+    if (!currentLocation && !isLoading) {
+      console.log('📍 Auto-getting current location for map region...');
+      getCurrentLocation();
+    }
+  }, [currentLocation, isLoading, getCurrentLocation]);
+
+  // Update region when driver location changes (if we have an accepted driver)
+  useEffect(() => {
+    console.log('🔄 Driver location effect triggered:', {
+      hasDriverLocation: !!driverLocation,
+      driverLocation,
+      hasAcceptedDriver: !!acceptedDriverId,
+      acceptedDriverId
+    });
+    
+    if (driverLocation && 
+        driverLocation.coordinates && 
+        Array.isArray(driverLocation.coordinates) &&
+        driverLocation.coordinates.length >= 2 &&
+        typeof driverLocation.coordinates[1] === 'number' && 
+        typeof driverLocation.coordinates[0] === 'number' &&
+        !isNaN(driverLocation.coordinates[1]) && 
+        !isNaN(driverLocation.coordinates[0])) { // Removed acceptedDriverId requirement for testing
+      
+      const newRegion = {
+        latitude: driverLocation.coordinates[1], // [1] = latitude
+        longitude: driverLocation.coordinates[0], // [0] = longitude
+        latitudeDelta: 0.18,
+        longitudeDelta: 0.18,
+      };
+      setRegion(newRegion);
+      console.log('🗺️ Map region updated to driver location:', newRegion);
+    } else {
+      console.log('❌ Driver location effect conditions not met:', {
+        hasValidDriverLocation: !!(driverLocation && driverLocation.coordinates),
+        hasValidCoordinates: !!(driverLocation?.coordinates && Array.isArray(driverLocation.coordinates) && driverLocation.coordinates.length >= 2),
+        hasValidNumbers: !!(driverLocation?.coordinates && typeof driverLocation.coordinates[1] === 'number' && typeof driverLocation.coordinates[0] === 'number'),
+        hasAcceptedDriver: !!acceptedDriverId
+      });
+    }
+  }, [driverLocation, acceptedDriverId]);
+
+  // Duration timer effect
+ 
+
+  
   // Auto-restart tracking when app resumes and there's an accepted driver
   console.log(currentBooking?.driver_id,"currentBooking?.driver_id")
+  
   useFocusEffect(
     React.useCallback(() => {
       console.log('🔍 Map screen focused - checking if tracking needs to restart...');
       
       // If we have an accepted driver and socket is connected, restart tracking
-      if (acceptedDriverId && socketConnected && currentBooking?.driver_id) {
+      if (socketConnected ) {
         console.log('🔄 Restarting driver tracking for driver:', acceptedDriverId);
-        emitEvent('startTracking', currentBooking.driver_id);
+        emitEvent('startTracking', currentBooking?.driver_id||currentBooking?.driver_id?._id);
         
         // Also request current driver location immediately
-        emitEvent('getDriverLocation', currentBooking.driver_id);
+        emitEvent('getDriverLocation', currentBooking?.driver_id);
       } else {
         console.log('⏸️ No need to restart tracking:', {
           hasAcceptedDriver: !!acceptedDriverId,
@@ -950,7 +1088,7 @@ console.log('🔍 pickupp location:', pickupLocation);
           driverId: currentBooking?.driver_id
         });
       }
-    }, [])
+    }, [currentBooking])
   );
 
   // Don't start automatic location tracking - only when button is pressed
@@ -1043,7 +1181,7 @@ console.log('🔍 pickupp location:', pickupLocation);
     }
     
     // Get booking ID from route params or accepted driver
-    const currentBookingId = booking?.id || booking?.booking_id || acceptedDriver?.bookingId || currentBooking?.booking_id;
+    const currentBookingId = booking?.id || booking?.booking_id || acceptedDriver?.bookingId || currentBooking?.booking_id||currentBooking?._id;
     
     if (!currentBookingId) {
       console.error('❌ No booking ID available for cancel ride');
@@ -1089,24 +1227,25 @@ console.log('🔍 pickupp location:', pickupLocation);
               setAcceptedDriver(null);
               setAcceptedDriverId(null);
               setDrivers([]);
+              dispatch(clearBookingStatus());
               
               // Clear the current booking from Redux
               dispatch(clearCurrentBooking());
-              
+             
               // Show success message
-              Alert.alert(
-                'Ride Cancelled',
-                'Your ride has been cancelled successfully.',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      // Navigate back
-                      (navigation as any).goBack();
-                    }
-                  }
-                ]
-              );
+              // Alert.alert(
+              //   'Ride Cancelled',
+              //   'Your ride has been cancelled successfully.',
+              //   [
+              //     {
+              //       text: 'OK',
+              //       onPress: () => {
+              //         // Navigate back
+              //         (navigation as any).goBack();
+              //       }
+              //     }
+              //   ]
+              // );
               
             } catch (error: any) {
               console.error('❌ Error cancelling ride:', error);
@@ -1297,7 +1436,12 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
     hasRegion: !!region, 
     region, 
     hasCurrentLocation: !!currentLocation,
-    hasBooking: !!booking?.booking?.pickup_location?.coordinates 
+    hasBooking: !!booking?.booking?.pickup_location?.coordinates,
+    driverLocation,
+    hasDriverLocation: !!driverLocation,
+    driverLocationType: driverLocation ? typeof driverLocation : 'null',
+    driverCoordinates: driverLocation?.coordinates,
+    acceptedDriverId
   });
 
 
@@ -1327,24 +1471,15 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
         }}
       >
                 {/* TEST: Always show a simple direction to verify component works */}
-                {currentBooking?.booking?.pickup_location?.coordinates?.[0] && 
-                 currentBooking?.booking?.pickup_location?.coordinates?.[1] &&
-                 currentBooking?.booking?.dropoff_location?.coordinates?.[0] &&
-                 currentBooking?.booking?.dropoff_location?.coordinates?.[1] &&
-                 driverLocation && 
-                 driverLocation.coordinates &&
-                 Array.isArray(driverLocation.coordinates) &&
-                 driverLocation.coordinates.length >= 2 &&
-                 typeof driverLocation.coordinates[0] === 'number' && 
-                 typeof driverLocation.coordinates[1] === 'number' && (
+                {currentBooking && (
                                       <MapViewDirections
                       origin={{
-                        latitude: driverLocation.coordinates[0],  // [1] = latitude
-                        longitude: driverLocation.coordinates[1]  // [0] = longitude
+                        latitude: driverLocation?.coordinates[1],  // [1] = latitude
+                        longitude: driverLocation?.coordinates[0]  // [0] = longitude
                       }}
                     destination={{
-                      latitude: bookingStatus === 'driver_on_the_way' ?  Number(currentBooking.booking.pickup_location.coordinates[0]):Number(currentBooking.booking?.dropoff_location?.coordinates[0]) ,
-                      longitude:  bookingStatus === 'driver_on_the_way' ? Number(currentBooking.booking.pickup_location.coordinates[1]) : Number(currentBooking.booking?.dropoff_location?.coordinates[1])
+                      latitude: bookingStatus === 'driver_on_the_way' ?  Number(currentBooking?.booking?.pickup_location?.coordinates[0])||Number(currentBooking?.pickup_location?.coordinates[1]):Number(currentBooking?.booking?.dropoff_location?.coordinates[0])||Number(currentBooking?.dropoff_location?.coordinates[1]) ,
+                      longitude:  bookingStatus === 'driver_on_the_way' ? Number(currentBooking?.booking?.pickup_location?.coordinates[1])||Number(currentBooking?.pickup_location?.coordinates[0]) : Number(currentBooking?.booking?.dropoff_location?.coordinates[1])||Number(currentBooking?.dropoff_location?.coordinates[0])
                     }}
                     apikey={"AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ"}
                     strokeWidth={6}
@@ -1390,8 +1525,8 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
          !isNaN(driverLocation.coordinates[0]) && (
           <Marker 
             coordinate={{
-              latitude: driverLocation.coordinates[0],  // [1] = latitude
-              longitude: driverLocation.coordinates[1]  // [0] = longitude
+              latitude: driverLocation.coordinates[1],  // [1] = latitude
+              longitude: driverLocation.coordinates[0]  // [0] = longitude
             }}
             title="Driver"
             description="Your driver's location"
@@ -1418,11 +1553,11 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
         )}
 
         {/* Pickup Location Marker */}
-        {/* {booking?.booking?.pickup_location?.coordinates && (
+        {/* {currentBooking?.booking?.dropoff_location?.coordinates && (
           <Marker 
             coordinate={{
-              latitude: Number(booking.booking.pickup_location.coordinates[0]), // Correct coordinate order
-              longitude: Number(booking?.booking?.pickup_location?.coordinates[1])
+              latitude: Number(currentBooking?.booking?.dropoff_location?.coordinates[0]), // Correct coordinate order
+              longitude: Number(currentBooking?.booking?.dropoff_location?.coordinates[1])
             }}
             title="Pickup Location"
             description="Pickup location"
@@ -1438,8 +1573,8 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
         {currentBooking?.booking?.dropoff_location?.coordinates &&
         <Marker 
           coordinate={{
-            latitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(currentBooking.booking?.dropoff_location?.coordinates[0]) : Number(currentBooking.booking.pickup_location.coordinates[0]),
-            longitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(currentBooking.booking?.dropoff_location.coordinates[1]) : Number(currentBooking.booking.pickup_location.coordinates[1])
+            latitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(booking?.booking?.dropoff_location?.coordinates[0]||currentBooking.booking?.dropoff_location?.coordinates[0]||currentBooking.dropoff_location?.coordinates[1]) : Number(currentBooking.booking.pickup_location.coordinates[0]||currentBooking.pickup_location.coordinates[1]),
+            longitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(booking?.booking?.dropoff_location.coordinates[1]||currentBooking.booking?.dropoff_location.coordinates[1]||currentBooking.dropoff_location.coordinates[0]) : Number(currentBooking.booking.pickup_location.coordinates[1]||currentBooking.pickup_location.coordinates[0])
           }} 
           title="Destination"
           description="Where you want to go"
@@ -1452,9 +1587,12 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
 
 {currentBooking && (
       <TimeStatusCard
-        icon={statusIcon}
-        title={statusMessage}
-        waitingTime={currentBooking?.booking?.estimated_time_to_pickup?.toString() || "5:00"}
+        icon={statusIcon || '🚗'}
+        title={statusMessage || 'Waiting for driver...'}
+        waitingTime={bookingStatus==='started'?
+          currentBooking?.booking?.estimated_duration?.toString() || "5:00"
+          : 
+          currentBooking?.booking?.estimated_time_to_pickup?.toString() || "5:00"}
         waitingLabel={t('waiting_time')}
         containerStyle={{ position: 'absolute', top: 50 }}
         iconContainerStyle={{ backgroundColor: '#ffcc80' }}
@@ -1466,27 +1604,29 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
                 {/* {from === 'plan' && ( */}
                {currentBooking && (
                  <RideInfoCard
-                   driverName={currentBooking?.driver?.vehicle?.make|| "Unknown Driver"}
+                   driverName={currentBooking?.driver?.vehicle?.make||currentBooking?.driver_active_vehicle
+                    ?.car_make|| "Unknown Driver"}
                    driverRating={acceptedDriver?.driverRating || 4.5}
-                   carColor={currentBooking?.driver?.vehicle?.color || "Standard"}
-                   carModel={currentBooking?.driver?.vehicle?.model || "Unknown"}
-                   licensePlate={currentBooking?.driver?.vehicle?.license_plate || "Unknown"}
+                   carColor={currentBooking?.driver?.vehicle?.color ||currentBooking?.driver_active_vehicle?.vehicle_color || "Standard"}
+                   carModel={currentBooking?.driver?.vehicle?.model ||currentBooking?.driver_active_vehicle?.car_model || "Unknown"}
+                   licensePlate={currentBooking?.driver?.vehicle?.license_plate ||currentBooking?.driver_active_vehicle?.license_plate || "Unknown"}
                    onCallPress={() => console.log('Call pressed for:', acceptedDriver.driverName)}
                    onMessagePress={handleChat}
-                   onShowDetailsPress={() => console.log('Show details pressed for:', acceptedDriver.driverName)}
+                   onShowDetailsPress={() => console.log('Show details pressed for:', acceptedDriver?.driverName)}
                    style={{ 
                      position: 'absolute', 
                      bottom: Math.max(90, insets.bottom + 80), // Account for bottom navigation
                      width: screenWidth * 0.92, 
                      zIndex: 1000 
                    }}
-                   carImage={currentBooking?.driver?.vehicle?.vehicle_pictures[0]}
-                   profileImage={currentBooking?.driver?.profile_image}
-                   carDriverName={currentBooking?.driver?.name}
-                                       currentLocation={currentBooking?.booking?.pickup_location?.address}
-                    officeLocation={currentBooking?.booking?.dropoff_location?.address}
-                    estimatedTime={currentBooking?.booking?.estimated_duration?.toString()}
-                    distance={currentBooking?.booking?.estimated_distance?.toString()}
+                   booking_type={currentBooking?.booking?.booking_type||currentBooking?.booking_type}
+                   carImage={currentBooking?.driver?.vehicle?.vehicle_pictures[0]||currentBooking?.driver_active_vehicle?.vehicle_pictures[0]}
+                   profileImage={currentBooking?.driver?.profile_image||currentBooking?.driver_profile?.driver_img}
+                   carDriverName={currentBooking?.driver?.name||currentBooking?.driver_profile?.name}
+                   currentLocation={currentBooking?.booking?.pickup_location?.address||currentBooking?.pickup_location?.address}
+                    officeLocation={currentBooking?.booking?.dropoff_location?.address||currentBooking?.dropoff_location?.address}
+                    estimatedTime={currentBooking?.booking?.estimated_duration?.toString()||currentBooking?.estimated_duration?.toString()}
+                    distance={currentBooking?.booking?.estimated_distance?.toString()||currentBooking?.estimated_distance?.toString()}
                  />
                )}
           <FlatList
@@ -1638,7 +1778,7 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
         isVisible={showRatingModal}
         onClose={handleRatingModalClose}
         onSubmit={handleRatingSubmit}
-        driverName={currentBooking?.driver?.name || 'Driver'}
+        driverName={currentBooking?.driver?.name||currentBooking?.driver_profile?.name || 'Driver'}
         isLoading={isSubmittingRating}
       />
     </View>

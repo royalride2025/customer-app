@@ -24,7 +24,7 @@ export const API_ENDPOINTS = {
   GET_BOOKINGS: '/api/booking/list',
   CANCEL_BOOKING: (bookingId: string) => `/api/booking/${bookingId}/cancel`,
   UPDATE_BOOKING: (bookingId: string) => `/api/booking/${bookingId}`,
-  GET_CUSTOMER_BOOKINGS: (customerId: string) => `/api/booking/customer/${customerId}`,
+  GET_CUSTOMER_BOOKINGS: (customerId: string) => `/api/booking/customer/${customerId}?status=scheduled`,
   GET_CUSTOMER_REQUESTS: (customerId: string) => `/api/booking/customer/${customerId}?status=pending`,
   GET_HISTORY:`/api/booking/completed-or-cancelled`,
 

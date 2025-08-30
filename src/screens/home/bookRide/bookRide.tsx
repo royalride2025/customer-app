@@ -28,6 +28,7 @@ import { screenWidth } from '../../../utils/dimenstions';
 import Toast from 'react-native-toast-message';
 import networkClient from '../../../../networkClient';
 import { API_ENDPOINTS } from '../../../../apiEndpoints';
+import moment from 'moment';
 
 const car = require('../../../../assets/images/car.png')
 
@@ -186,11 +187,11 @@ const BookRide = () => {
     try {
       const payload = {
         booking_type: "book",
-        date: selectedTime.toISOString().split('T')[0],
-        time: selectedTime.toISOString().split('T')[1], // start time
+        date: moment(selectedTime).format('YYYY-MM-DD'),
+        time: moment(selectedTime).format('HH:mm:ss'), // start time
         pickup_coordinates: {
             type: "Point",
-            coordinates: [pickupLocationData?.latitude, pickupLocationData?.longitude],
+            coordinates: [ pickupLocationData?.longitude,pickupLocationData?.latitude],
             address: pickupLocationData?.address
     
         },

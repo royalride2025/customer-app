@@ -85,7 +85,7 @@ const TimeStatusCard: React.FC<StatusCardProps> = ({
                         timeStyle
                     ]}
                 >
-                    {waitingTime}
+                    {waitingTime} mins
                 </Text>
             </View>
         </View>
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
         width: '92%',
     },
     title: {
-        fontSize: screenWidth * 0.036, // Font size based on screen width
+        fontSize: screenWidth * 0.030, // Font size based on screen width
         fontFamily: StyleGuide.fontFamily.semiBold,
         color: StyleGuide.color.black,
         // lineHeight: 22,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
         color: StyleGuide.color.black,
     },
     time: {
-        fontSize: screenWidth * 0.05, // Larger font size for time
+        fontSize: screenWidth * 0.033, // Larger font size for time
         fontFamily: StyleGuide.fontFamily.bold,
         color: StyleGuide.color.black,
     },

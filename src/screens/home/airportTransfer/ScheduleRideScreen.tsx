@@ -14,6 +14,7 @@ import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 import Toast from 'react-native-toast-message';
 import networkClient from '../../../../networkClient';
 import { API_ENDPOINTS } from '../../../../apiEndpoints';
+import moment from 'moment';
 
 
 const delayOptions = [
@@ -79,17 +80,17 @@ console.log("fromLocation",fromLocation)
     try {
       const payload = {
      booking_type: "airport",
-    "date": activeTab==="time"?formatDateToYMD(selectedTime):formatDateToYMD(date),
-    "time": isAirportDestination?getISODateTime(date):activeTab==="time"?getISODateTime(selectedTime):"", // start time optional
+    date: activeTab==="time"?formatDateToYMD(selectedTime):formatDateToYMD(date),
+    time: isAirportDestination ? moment(date).format('YYYY-MM-DD HH:mm:ss') : (activeTab === "time" ? moment(selectedTime).format('YYYY-MM-DD HH:mm:ss') : ""), // start time optional
     pickup_coordinates: {
         type: "Point",
-        coordinates: [fromLocationData?.latitude, fromLocationData?.longitude],
+        coordinates: [fromLocationData?.longitude,fromLocationData?.latitude],
         address: fromLocationData?.address
 
     }, 
     dropoff_coordinates: {        
         type: "Point",
-        coordinates: [toLocationData?.latitude, toLocationData?.longitude],
+        coordinates: [ toLocationData?.longitude,toLocationData?.latitude],
         address: toLocationData?.address
 
     },

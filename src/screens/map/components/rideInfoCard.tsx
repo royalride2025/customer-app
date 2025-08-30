@@ -37,6 +37,7 @@ interface RideInfoCardProps {
     officeLocation?: string;
     distance?: string;
     estimatedTime?: string;
+    booking_type?: string;
     onCallPress?: () => void;
     onMessagePress?: () => void;
     onShowDetailsPress?: () => void;
@@ -60,6 +61,7 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
     officeLocation = "Zone 55 House 25 Street 873 South Muajther Doha",
     distance = "2.7km",
     estimatedTime = "1 Hour",
+    booking_type,
     onCallPress,
     onMessagePress,
     onShowDetailsPress,
@@ -92,7 +94,7 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
 
     const expandedHeight = animation.interpolate({
         inputRange: [0, 1],
-        outputRange: [0, getResponsiveSize(155)], // Increased height
+        outputRange: [0, (booking_type === 'rent' || booking_type === 'book') ? getResponsiveSize(85) : getResponsiveSize(155)], // Adjust height based on booking type
     });
 
     const opacity = animation.interpolate({
@@ -100,7 +102,7 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
         outputRange: [0, 1],
     });
 
-    const styles = createStyles(isExpanded);
+    const styles = createStyles(isExpanded, booking_type);
 
     return (
         <View style={[styles.container, style]}>
@@ -210,34 +212,37 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                         </View>
                     </View>
 
-                    <View style={[styles.locationDivider, isRTL ? { marginRight: 14 } : { marginLeft: 14 }]} />
+                    {booking_type !== 'rent' && booking_type !== 'book' && (
+                        <>
+                            <View style={[styles.locationDivider, isRTL ? { marginRight: 14 } : { marginLeft: 14 }]} />
 
-
-                    <View style={[styles.locationItem, styles.officeLocationItem,flexDirection]}>
-                        <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
-                            <Svg xml={homeBlackIcon} rest={{
-                                height: getResponsiveSize(18),
-                                width: getResponsiveSize(18)
-                            }}/>
-                        </View>
-                        <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                            <Text style={styles.locationLabel}>Destination</Text>
-                            <Text numberOfLines={2} style={[styles.locationAddress,{textAlign:isRTL?'right':'left'}]}>
-                                {officeLocation}
-                            </Text>
-                        </View>
-                        <View style={styles.distanceContainer}>
-                            <Text style={styles.distance}>{distance} km</Text>
-                            <Text style={styles.estimatedTime}>{estimatedTime} hr</Text>
-                        </View>
-                    </View>
+                            <View style={[styles.locationItem, styles.officeLocationItem,flexDirection]}>
+                                <View style={[styles.locationIcon, isRTL ? { marginLeft: 8 } : { marginRight: 12 }]}>
+                                    <Svg xml={homeBlackIcon} rest={{
+                                        height: getResponsiveSize(18),
+                                        width: getResponsiveSize(18)
+                                    }}/>
+                                </View>
+                                <View style={[styles.locationTextContainer, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                                    <Text style={styles.locationLabel}>Destination</Text>
+                                    <Text numberOfLines={2} style={[styles.locationAddress,{textAlign:isRTL?'right':'left'}]}>
+                                        {officeLocation}
+                                    </Text>
+                                </View>
+                                <View style={styles.distanceContainer}>
+                                    <Text style={styles.distance}>{distance} km</Text>
+                                    <Text style={styles.estimatedTime}>{estimatedTime} hr</Text>
+                                </View>
+                            </View>
+                        </>
+                    )}
                 </View>
             </Animated.View>
         </View>
     );
 };
 
-const createStyles = (isExpanded = false) => StyleSheet.create({
+const createStyles = (isExpanded = false, booking_type?: string) => StyleSheet.create({
     container: {
         backgroundColor: '#FFFFFF',
         borderRadius: getResponsiveSize(20),
@@ -254,6 +259,8 @@ const createStyles = (isExpanded = false) => StyleSheet.create({
         // Remove overflow hidden to prevent cutting
         maxWidth: isLargeScreen ? SCREEN_WIDTH * 0.9 : '100%',
         alignSelf: 'center',
+        // Adjust height when destination is hidden for rent/book bookings
+        minHeight: (booking_type === 'rent' || booking_type === 'book') ? getResponsiveSize(120) : undefined,
     },
     header: {
         flexDirection: 'row',

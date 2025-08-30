@@ -169,7 +169,7 @@ const AirportTransfer = () => {
             ref={googlePlaceAutoCompleteRef}
             placeholder={t('from')}
             textInputProps={{
-
+backgroundColor:'transparent',
               placeholderTextColor: '#8e8e8e',
               value: fromLocation,
               autoCorrect: false,
@@ -177,7 +177,7 @@ const AirportTransfer = () => {
                 setFromLocation(e.nativeEvent.target)
               },
             }}
-            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28 } }}
+            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28 ,elevation:1,backgroundColor:StyleGuide.color.grey } }}
             onPress={(data, details = null) => {setFromLocation(data.description)
               if (details) {
                 const { lat, lng } = details.geometry.location;
@@ -253,6 +253,7 @@ const AirportTransfer = () => {
                                 ref={googlePlaceAutoCompleteRef}
                                 placeholder={t('to')}
                                 textInputProps={{
+                                    backgroundColor:'transparent',
                                     placeholderTextColor: '#8e8e8e',
                                     value: toLocation,
                                     autoCorrect: false,
@@ -270,7 +271,7 @@ const AirportTransfer = () => {
                                         fontSize: 16,
                                         color: StyleGuide.color.black,
                                         textAlign: isRTL ? 'right' : 'left'
-                                    }, listView: { position: 'absolute', top: 50 }
+                                    }, listView: { position: 'absolute', top: 50,elevation:1,backgroundColor:StyleGuide.color.grey }
                                 }}
                                 onPress={(data, details = null) => {
                                     setToLocation(data.description)

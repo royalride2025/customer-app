@@ -4,7 +4,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import Svg from '../../lib/svg';
-import { check, locationPin } from '../../../assets/svgAssets';
+import { check, locationPin, carIcon, bookingIcon } from '../../../assets/svgAssets';
 import { StyleGuide } from '../../../StyleGuide';
 import { screenHeight } from '../../utils/dimenstions';
 import HomeDashBoard from './components/homeDashBoard';
@@ -30,6 +30,7 @@ const Home = () => {
   const [gpsStatus, setGpsStatus] = useState<'enabled' | 'disabled' | 'checking'>('checking');
   const [showLocationLoader, setShowLocationLoader] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [upcomingBookings, setUpcomingBookings] = useState([]);
   const navigation = useNavigation()
   const mapRef = useRef<MapView>(null);
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
@@ -84,7 +85,10 @@ const Home = () => {
   useEffect(() => {
     console.log('Current user:', user);
     fetchProfile();
-  }, []); // Consider adding fetchProfile to dependencies
+    if (user?.id) {
+      fetchUpcomingBookings();
+    }
+  }, [user?.id]); // Consider adding fetchProfile to dependencies
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -109,6 +113,27 @@ const Home = () => {
       console.error('Error fetching profile:', err);
     }
   }, []);
+
+  const fetchUpcomingBookings = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await networkClient.get(`${API_ENDPOINTS.GET_CUSTOMER_BOOKINGS(user?.id)}`);
+      if (response && response.data && response.data?.data) {
+        setUpcomingBookings(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching upcoming bookings:', error);
+    }
+  }, [user?.id]);
+
+  // Fetch upcoming bookings when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        fetchUpcomingBookings();
+      }
+    }, [user?.id, fetchUpcomingBookings])
+  );
 
   console.log("current====", currentLocation)
 
@@ -786,7 +811,7 @@ const handleDeleteAddress = (addressId: string) => {
       setAddressLoading(false);
     }
   };
-  console.log('user========/////////', user);
+  console.log('upcomingBookings========/////////', upcomingBookings);
   return (
     <View style={styles.container}>
       {/* <View style={{ marginBottom: 12 }}>
@@ -839,6 +864,32 @@ const handleDeleteAddress = (addressId: string) => {
       >
         <Text style={styles.currentLocationButtonText}>📍</Text>
       </TouchableOpacity>
+
+      {/* Floating Car Button */}
+      {(() => {
+        const currentTime = new Date();
+        const validBookings = upcomingBookings.filter((booking: any) => {
+          const bookingTime = new Date(booking.start_time);
+          return bookingTime <= currentTime;
+        });
+        
+        if (validBookings.length > 0) {
+          return (
+            <TouchableOpacity
+              style={styles.floatingCarButton}
+              onPress={() => navigation.navigate('Activities' as never, { activeTabfromHome: 'upcoming' })}
+              activeOpacity={0.8}
+            >
+              <Svg xml={bookingIcon} rest={{ height: 24, width: 24 }} />
+              {/* Badge */}
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{validBookings.length}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }
+        return null;
+      })()}
 
       <View style={styles.bottomContent}>
         <HomeDashBoard
@@ -1076,6 +1127,41 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+  },
+  floatingCarButton: {
+    position: 'absolute',
+    bottom: 120, // Position above the bottom content
+    right: 20,
+    backgroundColor: StyleGuide.color.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    zIndex: 1000,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FF4757',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: StyleGuide.color.white,
+  },
+  badgeText: {
+    color: StyleGuide.color.white,
+    fontSize: 10,
+    fontFamily: StyleGuide.fontFamily.bold,
   },
   currentLocationButtonText: {
     fontSize: 18,

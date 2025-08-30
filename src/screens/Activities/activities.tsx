@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import RideInfoCard from '../map/components/rideInfoCard';
 import ActivityCard from './components/activityCard';
@@ -19,7 +20,7 @@ import { RootState } from '../../redux/store';
 import useTranslationStyles from '../../../locales/useTranslationStyles';
 import networkClient from '../../../networkClient';
 import { API_ENDPOINTS } from '../../../apiEndpoints';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 interface Trip {
   id: string;
@@ -44,6 +45,19 @@ interface Trip {
   drop_location?: {
     address: string;
   };
+  // Some API responses use different shapes; make them optional to satisfy usage below
+  dropoff_location?: { address: string };
+  driver_active_vehicle?: {
+    car_make?: string;
+    car_model?: string;
+    vehicle_color?: string;
+    license_plate?: string;
+  };
+  driver_profile?: {
+    name?: string;
+    driver_img?: string;
+    vehicle?: { vehicle_pictures?: string[] };
+  };
   distance?: string;
   duration?: string;
   paymentMethod?: string;
@@ -59,7 +73,8 @@ const Activities: React.FC = () => {
   const [historyBookings, setHistoryBookings] = useState<Trip[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [requestBookings, setRequestBookings] = useState<Trip[]>([]);  // Stores the fetched request data
-  const [isRequestLoading, setIsRequestLoading] = useState(false); 
+  const [isRequestLoading, setIsRequestLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); 
   const user = useAppSelector((state: RootState) => state.auth.user);
 const navigation = useNavigation();
   const isCurrentLoading = 
@@ -71,6 +86,16 @@ const navigation = useNavigation();
     title: 'Activities',
     showBackButton: true,
   });
+
+  const route = useRoute();
+const { activeTabfromHome } = route.params || {};
+
+// Set the initial active tab
+useEffect(() => {
+  if (activeTabfromHome) {
+    setActiveTab(activeTabfromHome);
+  }
+}, [activeTabfromHome]);
   console.log('booking',bookings)
   useEffect(() => {
     // Fetch the appropriate bookings or requests based on the active tab
@@ -131,44 +156,79 @@ const navigation = useNavigation();
     }
   };
 
-  useScreenHeader({
-    title: 'My Activities',
-  });
+  // Refresh function for pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    if (!user?.id) return;
+    
+    setRefreshing(true);
+    try {
+      if (activeTab === 'upcoming') {
+        // Don't show regular loader during refresh
+        const response = await networkClient.get(`${API_ENDPOINTS.GET_CUSTOMER_BOOKINGS(user.id)}`);
+        if (response && response.data && response.data?.data) {
+          setBookings(response.data.data);
+        }
+      } else if (activeTab === 'requests') {
+        // Don't show regular loader during refresh
+        const response = await networkClient.get(`${API_ENDPOINTS.GET_CUSTOMER_REQUESTS(user.id)}`);
+        if (response && response.data && response.data?.data) {
+          setRequestBookings(response.data.data);
+        }
+      } else {
+        // Don't show regular loader during refresh
+        const response = await networkClient.get(`${API_ENDPOINTS.GET_HISTORY}`);
+        if (response && response.data && response.data?.data) {
+          setHistoryBookings(response.data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [activeTab, user?.id]);
+
+  // Avoid duplicate hook invocation; header is already set above
 
   const { flexDirection } = useTranslationStyles();
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
 
   // Render function for booking items
-  const renderBookingItem = ({ item }: { item: Trip }) => (
-    <ActivityCard
-      date={item?.start_time}
-      price={item?.price}
-      vehicleName={item?.selected_vehicle_id?.car_make ||item?.driver_active_vehicle?.car_make}
-      vehicleRating={4.9}
-      vehicleModel={item?.selected_vehicle_id?.car_model||item?.driver_active_vehicle?.car_model}
-      vehicleColor={item?.selected_vehicle_id?.vehicle_color ||item?.driver_active_vehicle?.vehicle_color}
-      licensePlate={item?.selected_vehicle_id?.license_plate ||item?.driver_active_vehicle?.license_plate}
-      driverName={item?.driver_profile?.name}
-      driverRating={item?.review?.rating}
-      pickupLocation={item?.pickup_location?.address}
-      dropLocation={item?.dropoff_location?.address}
-      distance={item?.distance}
-      estimatedTime={item?.duration}
-      paymentMethod={item?.paymentMethod}
-      onShowDetailsPress={() => console.log('Show details')}
-      bookingType={item?.booking_type}
-      status={item?.status}
-    duration={item?.duration_for_rent}
-    carImage={item?.driver_profile?.vehicle?.vehicle_pictures[0]}
-    driverImage={item?.driver_profile?.driver_img}
-    onCarPress={() => {
-      // Only navigate if selected_vehicle_id exists
-      if (item?.selected_vehicle_id) {
-        (navigation as any).navigate('carProfile', { carData: item.selected_vehicle_id });
-      }
-    }}
-    />
-  );
+  const renderBookingItem = ({ item }: { item: Trip }) => {
+    // Determine which vehicle object to use based on status
+    const isPending = item?.status === 'pending';
+    const vehicleSource = isPending ? item?.selected_vehicle_id : item?.driver_active_vehicle;
+    
+    return (
+      <ActivityCard
+        date={item?.start_time}
+        price={item?.price}
+        vehicleName={vehicleSource?.car_make || ''}
+        vehicleModel={vehicleSource?.car_model || ''}
+        vehicleColor={vehicleSource?.vehicle_color || ''}
+        licensePlate={vehicleSource?.license_plate || ''}
+        driverName={item?.driver_profile?.name}
+        driverRating={item?.review?.rating}
+        pickupLocation={item?.pickup_location?.address}
+        dropLocation={item?.dropoff_location?.address || item?.drop_location?.address}
+        distance={item?.distance}
+        estimatedTime={item?.duration}
+        onShowDetailsPress={() => console.log('Show details')}
+        bookingType={item?.booking_type}
+        status={item?.status}
+        duration={item?.duration_for_rent}
+        carImage={item?.driver_profile?.vehicle?.vehicle_pictures?.[0] as any}
+        driverImage={item?.driver_profile?.driver_img}
+        data={item} // Pass the full item data
+        onCarPress={() => {
+          // Only navigate if selected_vehicle_id exists
+          if (item?.selected_vehicle_id) {
+            (navigation as any).navigate('carProfile', { carData: item.selected_vehicle_id });
+          }
+        }}
+      />
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -209,12 +269,34 @@ const navigation = useNavigation();
             <Text style={[styles.sectionTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
               Bookings
             </Text>
-            <FlatList
-             data={activeTab === 'requests' ? requestBookings : activeTab === 'upcoming' ? bookings : historyBookings}
-              renderItem={renderBookingItem}
-              keyExtractor={(item) => item?.id?.toString()}
-              showsVerticalScrollIndicator={false}
-            />
+            {(() => {
+              const currentData = activeTab === 'requests' ? requestBookings : activeTab === 'upcoming' ? bookings : historyBookings;
+              
+              if (!currentData || currentData.length === 0) {
+                return (
+                  <View style={styles.noDataContainer}>
+                    <Text style={styles.noDataText}>No booking available</Text>
+                  </View>
+                );
+              }
+              
+              return (
+                <FlatList
+                  data={currentData}
+                  renderItem={renderBookingItem}
+                  keyExtractor={(item) => item?.id?.toString()}
+                  showsVerticalScrollIndicator={false}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                      colors={[StyleGuide.color.primary]}
+                      tintColor={StyleGuide.color.primary}
+                    />
+                  }
+                />
+              );
+            })()}
           </>
         )}
       </View>
@@ -262,6 +344,17 @@ const styles = StyleSheet.create({
     fontFamily: StyleGuide.fontFamily.bold,
     color: StyleGuide.color.black,
   marginVertical:15
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noDataText: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.grey,
   },
 });
 

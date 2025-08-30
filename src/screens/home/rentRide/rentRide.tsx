@@ -31,6 +31,7 @@ import networkClient from '../../../../networkClient';
 import { API_ENDPOINTS } from '../../../../apiEndpoints';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
+import moment from 'moment';
 
 
 const car = require('../../../../assets/images/car.png')
@@ -156,11 +157,11 @@ const RentARide = () => {
       const payload = {
         booking_type: "rent",
         booking_status: "pending",
-        start_time: selectedTime.toISOString(),
+        start_time: moment(selectedTime).format('YYYY-MM-DD hh:mm:ss'),
         duration_for_rent: selectedHours,
         pickup_coordinates: {
           type: "Point",
-          coordinates: [pickupLocationData?.latitude, pickupLocationData?.longitude],
+          coordinates: [ pickupLocationData?.longitude,pickupLocationData?.latitude],
           address: pickupLocationData?.address
         },
         "selected_vehicle_id":selectedVehicle
