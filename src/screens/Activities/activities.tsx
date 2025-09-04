@@ -21,6 +21,7 @@ import useTranslationStyles from '../../../locales/useTranslationStyles';
 import networkClient from '../../../networkClient';
 import { API_ENDPOINTS } from '../../../apiEndpoints';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 interface Trip {
   id: string;
@@ -116,7 +117,9 @@ useEffect(() => {
 
       console.log('request=====',response)
       if (response && response.data) {
-        setRequestBookings(response?.data?.data);  // Assuming "data" contains the request data
+        // Filter out instant bookings
+        const filteredData = response?.data?.data?.filter((item: any) => item?.booking_type !== 'instant') || [];
+        setRequestBookings(filteredData);
       }
     } catch (error) {
       console.error('Error fetching requests:', error);
@@ -172,7 +175,9 @@ useEffect(() => {
         // Don't show regular loader during refresh
         const response = await networkClient.get(`${API_ENDPOINTS.GET_CUSTOMER_REQUESTS(user.id)}`);
         if (response && response.data && response.data?.data) {
-          setRequestBookings(response.data.data);
+          // Filter out instant bookings for requests tab
+          const filteredData = response.data.data.filter((item: any) => item?.booking_type !== 'instant') || [];
+          setRequestBookings(filteredData);
         }
       } else {
         // Don't show regular loader during refresh
@@ -201,7 +206,7 @@ useEffect(() => {
     
     return (
       <ActivityCard
-        date={item?.start_time}
+        date={item?.start_time?item?.start_time:item?.booking_time}
         price={item?.price}
         vehicleName={vehicleSource?.car_make || ''}
         vehicleModel={vehicleSource?.car_model || ''}
@@ -272,7 +277,12 @@ useEffect(() => {
             {(() => {
               const currentData = activeTab === 'requests' ? requestBookings : activeTab === 'upcoming' ? bookings : historyBookings;
               
-              if (!currentData || currentData.length === 0) {
+              // Only filter out "instant" bookings for requests tab
+              const filteredData = activeTab === 'requests' 
+                ? currentData?.filter((item: any) => item?.booking_type !== 'instant') || []
+                : currentData;
+              
+              if (!filteredData || filteredData.length === 0) {
                 return (
                   <View style={styles.noDataContainer}>
                     <Text style={styles.noDataText}>No booking available</Text>
@@ -282,7 +292,7 @@ useEffect(() => {
               
               return (
                 <FlatList
-                  data={currentData}
+                  data={filteredData}
                   renderItem={renderBookingItem}
                   keyExtractor={(item) => item?.id?.toString()}
                   showsVerticalScrollIndicator={false}
@@ -300,6 +310,7 @@ useEffect(() => {
           </>
         )}
       </View>
+      <Toast/>
     </SafeAreaView>
   );
 };

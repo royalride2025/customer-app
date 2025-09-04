@@ -26,6 +26,7 @@ import { useSocketReconnection } from '../../lib/hooks/useSocketReconnection';
 import networkClient from '../../../networkClient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import DurationTimer from './components/durationTimer';
 
 const car = require('../../../assets/images/halfCar.png');
 
@@ -63,6 +64,9 @@ const Map = () => {
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  
+
+  
   // const [locationWatcher, setLocationWatcher] = useState<number | null>(null);
   console.log(region,"region====")
   console.log(driverLocation,"//////////drivers")
@@ -91,6 +95,8 @@ const Map = () => {
     hasCurrentBooking: !!currentBooking,
     currentBookingStatus: currentBooking?.booking?.status
   });
+
+
   
   // Safe area insets for proper button positioning
   const insets = useSafeAreaInsets();
@@ -1062,10 +1068,8 @@ console.log('🔍 pickupp location:', pickupLocation);
     }
   }, [driverLocation, acceptedDriverId]);
 
-  // Duration timer effect
- 
 
-  
+
   // Auto-restart tracking when app resumes and there's an accepted driver
   console.log(currentBooking?.driver_id,"currentBooking?.driver_id")
   
@@ -1586,18 +1590,42 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
       </MapView>
 
 {currentBooking && (
-      <TimeStatusCard
-        icon={statusIcon || '🚗'}
-        title={statusMessage || 'Waiting for driver...'}
-        waitingTime={bookingStatus==='started'?
-          currentBooking?.booking?.estimated_duration?.toString() || "5:00"
-          : 
-          currentBooking?.booking?.estimated_time_to_pickup?.toString() || "5:00"}
-        waitingLabel={t('waiting_time')}
-        containerStyle={{ position: 'absolute', top: 50 }}
-        iconContainerStyle={{ backgroundColor: '#ffcc80' }}
-      />
-)}
+      <>
+        <TimeStatusCard
+          icon={statusIcon || '🚗'}
+          title={statusMessage || 'Waiting for driver...'}
+          waitingTime={
+            bookingStatus==='started'
+              ? currentBooking?.booking?.estimated_duration?.toString() || "5:00"
+              : currentBooking?.booking?.estimated_time_to_pickup?.toString() || "5:00"
+          }
+          waitingLabel={t('waiting_time')}
+          containerStyle={{ position: 'absolute', top: 50 }}
+          iconContainerStyle={{ backgroundColor: '#ffcc80' }}
+        />
+        
+        {/* Duration Timer Component - Always render but control active state */}
+        {currentBooking?.duration_for_rent && (
+          <View style={{
+            position: 'absolute',
+            top: 120,
+            right: 20,
+            zIndex: 1000
+          }}>
+            <DurationTimer
+              key={`duration-timer-${currentBooking?.booking_id}`}
+              isActive={bookingStatus === 'driver_on_the_way'}
+              durationHours={Number(currentBooking.duration_for_rent)}
+              bookingId={currentBooking?.booking_id || 'default'}
+              onTimerExpired={() => {
+                console.log('⏰ Duration timer expired!');
+                // Handle timer expiration if needed
+              }}
+            />
+          </View>
+        )}
+      </>
+    )}
    
 
                     {/* Plan Trip Cards */}

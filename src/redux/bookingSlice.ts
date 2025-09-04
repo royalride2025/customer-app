@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface BookingData {
+  _id?: string; // Add optional _id at root level
   booking_id: string;
   booking: {
     pickup_location: {

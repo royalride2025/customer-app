@@ -8,7 +8,9 @@ import { check, locationPin, carIcon, bookingIcon } from '../../../assets/svgAss
 import { StyleGuide } from '../../../StyleGuide';
 import { screenHeight } from '../../utils/dimenstions';
 import HomeDashBoard from './components/homeDashBoard';
-import { DrawerActions, useFocusEffect, useNavigation } from '@react-navigation/native';
+import { DrawerActions, useFocusEffect, useNavigation, NavigationProp } from '@react-navigation/native';
+import type { RootStackParamList } from '../../navigation/stackNavigation';
+import type { BottomTabParamList } from '../../navigation/bottomTabsNavigator';
 import { useAppDispatch, useAppSelector } from '../../redux/reduxHooks';
 import { RootState } from '../../redux/store';
 import socketService from '../../services/socket';
@@ -31,7 +33,7 @@ const Home = () => {
   const [showLocationLoader, setShowLocationLoader] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [upcomingBookings, setUpcomingBookings] = useState([]);
-  const navigation = useNavigation()
+  const navigation = useNavigation<NavigationProp<RootStackParamList & BottomTabParamList>>()
   const mapRef = useRef<MapView>(null);
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
   const user = useAppSelector((state: RootState) => state?.auth?.user);
@@ -877,7 +879,15 @@ const handleDeleteAddress = (addressId: string) => {
           return (
             <TouchableOpacity
               style={styles.floatingCarButton}
-              onPress={() => navigation.navigate('Activities' as never, { activeTabfromHome: 'upcoming' })}
+              onPress={() => {
+                if (currentBooking) {
+                  // If there's a current booking, navigate directly to map
+                  navigation.navigate('map');
+                } else {
+                  // If no booking, go to Activities screen
+                  navigation.navigate('Activities', { activeTabfromHome: 'upcoming' });
+                }
+              }}
               activeOpacity={0.8}
             >
               <Svg xml={bookingIcon} rest={{ height: 24, width: 24 }} />

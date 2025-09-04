@@ -67,6 +67,8 @@ const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", is
     }
   }, [user?.id, driverId]);
 
+
+
   // Improved message identification function for customer side
   const isMessageFromCurrentUser = (message) => {
     const currentUserId = user?.id;
@@ -650,7 +652,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: StyleGuide.color.primary,
-    paddingTop: Platform.OS === 'ios' ? getResponsiveSize(10) : getResponsiveSize(20),
+    paddingTop: Platform.OS === 'ios' ? getResponsiveSize(10) : getResponsiveSize(25),
     paddingBottom: getResponsiveSize(15),
     paddingRight: getResponsiveSize(20),
     paddingLeft: getResponsiveSize(10),
@@ -828,11 +830,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     paddingHorizontal: getResponsiveSize(16),
     paddingTop: getResponsiveSize(12),
-    paddingBottom: getResponsiveSize(16), // Reduced from bottom safe area
+    paddingBottom: getResponsiveSize(16),
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    // marginBottom: getResponsiveSize(8),
-
   },
   inputWrapper: {
     flexDirection: 'row',

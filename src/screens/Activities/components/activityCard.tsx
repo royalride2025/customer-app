@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     Animated,
     Pressable,
+    Modal,
 } from 'react-native';
 import { StyleGuide } from '../../../../StyleGuide';
 import { screenWidth } from '../../../utils/dimenstions';
@@ -18,8 +19,10 @@ import useTranslationStyles from '../../../../locales/useTranslationStyles';
 import { RootState } from '../../../redux/store';
 import { t } from 'i18next';
 import moment from 'moment';
-import { setCurrentBooking } from '../../../redux/bookingSlice';
+import { clearBookingStatus, setCurrentBooking } from '../../../redux/bookingSlice';
+
 import { StackNavigationProp } from '@react-navigation/stack';
+import Toast from 'react-native-toast-message';
 
 // Define the navigation type
 type RootStackParamList = {
@@ -85,8 +88,10 @@ const ActivityCard: React.FC<RideInfoCardProps> = ({
     const [isExpanded, setIsExpanded] = useState(false);
     const [animation] = useState(new Animated.Value(0));
     const [expandedHeight, setExpandedHeight] = useState(0);
+    const [showModal, setShowModal] = useState(false);
     const { flexDirection, flipImage } = useTranslationStyles();
     const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+    const currentBooking = useAppSelector((state: RootState) => state.booking.currentBooking);
     const dispatch = useAppDispatch();
     const navigation = useNavigation<NavigationProp>();
 
@@ -118,14 +123,29 @@ const ActivityCard: React.FC<RideInfoCardProps> = ({
             onShowDetailsPress();
         }
     };
-
+console.log(currentBooking,"currr")
     // Handle card press for scheduled bookings
     const handleCardPress = () => {
         if (status === 'scheduled' && data) {
-            // Dispatch the setCurrentBooking action
-            dispatch(setCurrentBooking(data));
-            // Navigate to map
-            navigation.navigate('map');
+                        // Check if there's already a current booking and it's different from the clicked one
+            if (currentBooking && currentBooking._id !== data._id) {
+                console.log('🚨 Showing modal - different booking detected');
+                console.log('Current booking ID:', currentBooking._id);
+                console.log('Clicked booking ID:', data._id);
+                // Show modal instead of toast
+                setShowModal(true);
+                return;
+            }
+            
+                        // If it's the same booking or no current booking, just navigate to map
+            if (!currentBooking || currentBooking._id === data._id) {
+                navigation.navigate('map');
+                // Only set current booking if it's not already set
+                if (!currentBooking) {
+                    dispatch(setCurrentBooking(data));
+                    dispatch(clearBookingStatus());
+                }
+            }
         }
     };
 
@@ -154,12 +174,14 @@ const ActivityCard: React.FC<RideInfoCardProps> = ({
     const isTouchable = status === 'scheduled';
 
     return (
-        <TouchableOpacity 
-            style={[styles.container, style]} 
-            onPress={handleCardPress}
-            disabled={!isTouchable}
-            activeOpacity={isTouchable ? 0.7 : 1}
-        >
+        <View>
+            <TouchableOpacity 
+                style={[styles.container, style]} 
+                onPress={handleCardPress}
+                disabled={!isTouchable}
+                activeOpacity={isTouchable ? 0.7 : 1}
+            >
+              
             {/* Header Section */}
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10 }}>
                 <Text style={{ fontSize: 12, color: StyleGuide.color.grey }}>{formattedDate}<Text style={{ color: StyleGuide.color.primary, fontSize: 14 }}> | </Text>{formattedTime}</Text>
@@ -188,12 +210,14 @@ const ActivityCard: React.FC<RideInfoCardProps> = ({
                     <Text style={[styles.carDetails, { textAlign: isRTL ? 'right' : 'left' }]}>
                         {vehicleModel} ({vehicleColor}){'\n'}{t('rideInfo.licensePlate', { licensePlate })}
                     </Text>
-                    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', marginVertical: 10, alignItems: 'center', justifyContent: 'space-between' }}>
-                        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }}>
-                            <Text style={[styles.driverImageName, { textAlign: isRTL ? 'right' : 'left' }]}> {driverName}</Text>
-                            <Text style={[styles.driverRating, isRTL ? { marginRight: 7 } : { marginLeft: 4 }]}>{driverRating}{'  '}<Text style={{ fontSize: 10, textAlign: 'center', marginBottom: 2 }}>⭐</Text></Text>
+                    {status !== 'pending' && (
+                        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', marginVertical: 10, alignItems: 'center', justifyContent: 'space-between' }}>
+                            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }}>
+                                <Text style={[styles.driverImageName, { textAlign: isRTL ? 'right' : 'left' }]}> {driverName}</Text>
+                                <Text style={[styles.driverRating, isRTL ? { marginRight: 7 } : { marginLeft: 4 }]}>{driverRating}{'  '}<Text style={{ fontSize: 10, textAlign: 'center', marginBottom: 2 }}>⭐</Text></Text>
+                            </View>
                         </View>
-                    </View>
+                    )}
                 </View>
             </View>
 
@@ -265,7 +289,48 @@ const ActivityCard: React.FC<RideInfoCardProps> = ({
                     )}
                 </View>
             </Animated.View>
+              
         </TouchableOpacity>
+
+        {/* Modal for Active Booking Message */}
+        <Modal
+            visible={showModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowModal(false)}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>Active Booking</Text>
+                    <Text style={styles.modalMessage}>
+                        You already have an active booking. Please complete it first.
+                    </Text>
+                    <View style={styles.modalButtonContainer}>
+                        <TouchableOpacity
+                            style={[styles.modalButton, styles.cancelButton]}
+                            onPress={() => {
+                                setShowModal(false);
+                                // Just close modal, don't navigate
+                            }}
+                        >
+                            <Text style={[styles.modalButtonText, styles.cancelButtonText]}>Cancel</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={[styles.modalButton, styles.okButton]}
+                            onPress={() => {
+                                setShowModal(false);
+                                // Navigate to map after clicking OK
+                                navigation.navigate('map');
+                            }}
+                        >
+                            <Text style={styles.modalButtonText}>OK</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    </View>
     );
 };
 
@@ -442,6 +507,72 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: StyleGuide.color.white,
         fontFamily: StyleGuide.fontFamily.regular,
+    },
+    // Modal styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: StyleGuide.color.white,
+        borderRadius: 12,
+        padding: 20,
+        marginHorizontal: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontFamily: StyleGuide.fontFamily.bold,
+        color: StyleGuide.color.primary,
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    modalMessage: {
+        fontSize: 14,
+        fontFamily: StyleGuide.fontFamily.medium,
+        color: StyleGuide.color.grey,
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 20,
+    },
+    modalButton: {
+        paddingHorizontal: 30,
+        paddingVertical: 12,
+        borderRadius: 8,
+        minWidth: 100,
+    },
+    modalButtonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        gap: 15,
+    },
+    cancelButton: {
+        backgroundColor: StyleGuide.color.grey,
+        flex: 1,
+    },
+    okButton: {
+        backgroundColor: StyleGuide.color.primary,
+        flex: 1,
+    },
+    modalButtonText: {
+        color: StyleGuide.color.white,
+        fontSize: 16,
+        fontFamily: StyleGuide.fontFamily.semiBold,
+        textAlign: 'center',
+    },
+    cancelButtonText: {
+        color: StyleGuide.color.white,
     },
 });
 
