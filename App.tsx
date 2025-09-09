@@ -13,6 +13,7 @@ import socket from './src/services/socket';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { StyleGuide } from './StyleGuide';
 import { Platform, StatusBar } from 'react-native';
+import { useNotifications } from './src/lib/hooks/useNotifications';
 
 const toastConfig = {
   success: (props: any) => {
@@ -95,9 +96,14 @@ const AppContent: React.FC = () => {
   const language = useAppSelector((state: RootState) => state.language.language);
   const user = useAppSelector((state: RootState) => state.auth.user);
   const token = useAppSelector((state: RootState) => state.auth.token);
+  
+  // Initialize notifications
+  const { fcmToken, permissionGranted, isInitialized } = useNotifications();
 
   console.log('user========/////////', user);
   console.log('token========/////////', token);
+  console.log('FCM Token========/////////', fcmToken);
+  console.log('Notification Permission========/////////', permissionGranted);
 
   useEffect(() => {
     // Change i18n language when Redux language changes

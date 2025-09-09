@@ -8,6 +8,7 @@ import authReducer from './authSlice';
 import driverReducer from './driverSlice';
 import bookingReducer from './bookingSlice';
 import profileReducer from './profileSlice';
+import notificationReducer from './notificationSlice';
 
 const rootReducer = combineReducers({
   language: languageReducer,
@@ -15,12 +16,13 @@ const rootReducer = combineReducers({
   driver: driverReducer,
   booking: bookingReducer,
   profile: profileReducer,
+  notification: notificationReducer,
 });
 
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth', 'booking'], // Persist auth and booking slices
+  whitelist: ['auth', 'booking', 'notification'], // Persist auth, booking, and notification slices
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
