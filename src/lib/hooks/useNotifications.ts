@@ -24,6 +24,32 @@ export const useNotifications = () => {
     isInitialized,
   } = useAppSelector(state => state.notification);
 
+  // Register device with FCM token
+  const registerDevice = useCallback(async (token?: string) => {
+    const tokenToUse = token || fcmToken;
+    if (!tokenToUse) {
+      console.error('No FCM token available for device registration');
+      return false;
+    }
+    
+    console.log('Attempting to register device with token:', tokenToUse);
+    
+    try {
+      const success = await notificationService.registerDevice(tokenToUse);
+      console.log('registerDevice service call result:', success);
+      
+      if (success) {
+        console.log('Device registered successfully with FCM token');
+      } else {
+        console.error('Failed to register device with FCM token');
+      }
+      return success;
+    } catch (error) {
+      console.error('Error registering device:', error);
+      return false;
+    }
+  }, [fcmToken]);
+
   // Initialize notifications
   const initializeNotifications = useCallback(async () => {
     try {
@@ -37,6 +63,11 @@ export const useNotifications = () => {
         // Get FCM token
         const token = await notificationService.getToken();
         dispatch(setFCMToken(token));
+        
+        // Register device with FCM token
+        if (token) {
+          await registerDevice(token);
+        }
         
         // Setup notification listeners
         notificationService.setupNotificationListeners();
@@ -54,19 +85,25 @@ export const useNotifications = () => {
       console.error('Error initializing notifications:', error);
       dispatch(setInitialized(true));
     }
-  }, [dispatch]);
+  }, [dispatch, registerDevice]);
 
   // Refresh FCM token
   const refreshToken = useCallback(async () => {
     try {
       const token = await notificationService.refreshToken();
       dispatch(setFCMToken(token));
+      
+      // Register device with new token
+      if (token) {
+        await registerDevice(token);
+      }
+      
       return token;
     } catch (error) {
       console.error('Error refreshing token:', error);
       return null;
     }
-  }, [dispatch]);
+  }, [dispatch, registerDevice]);
 
   // Subscribe to topic
   const subscribeToTopic = useCallback(async (topic: string) => {
@@ -168,9 +205,18 @@ export const useNotifications = () => {
     markAllNotificationsAsRead,
     clearNotificationHistory,
     updateNotificationSettings,
+    registerDevice,
     sendTestNotification,
   };
 };
+
+
+
+
+
+
+
+
 
 
 

@@ -18,15 +18,18 @@ import AppButton from '../../../lib/component/AppButton';
 import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import useTranslationStyles from '../../../../locales/useTranslationStyles';
-import { useAppSelector } from '../../../redux/reduxHooks';
+import { useAppSelector, useAppDispatch } from '../../../redux/reduxHooks';
 import { RootState } from '../../../redux/store';
 import { t } from 'i18next';
 import { screenHeight, screenWidth } from '../../../utils/dimenstions';
-import cross from '../../../../assets/svgAssets/cross.svg';
+// removed invalid svg import
 import networkClient from '../../../../networkClient';
 import { API_ENDPOINTS } from '../../../../apiEndpoints';
 import Toast from 'react-native-toast-message';
 import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
+import { TextInput } from 'react-native';
+import { setCurrentCharge } from '../../../redux/paymentSlice';
+import TopUpModal from '../../../lib/component/TopUpModal';
 
 const MakeTripc = () => {
   const [fromLocation, setFromLocation] = useState('');
@@ -51,8 +54,14 @@ const MakeTripc = () => {
   console.log(toLocationData, "toLocationData")
   // const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [isTopUpLoading, setIsTopUpLoading] = useState(false);
+  const [topUpError, setTopUpError] = useState('');
   const { flexDirection, textAlignment } = useTranslationStyles();
   const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+  const profileData = useAppSelector((state: RootState) => state.profile.data);
+  const dispatch = useAppDispatch();
 
   // const GOOGLE_PLACES_API_KEY = 'AIzaSyDKnHa_iplWVK5q4VjxWvfp8ZlDMDtdkWY';
   const navigation = useNavigation()
@@ -161,9 +170,80 @@ console.log('addressState',addresses)
       navigation.navigate('map', { from: 'plan', booking: response?.data?.data });
 
     } catch (error: any) {
-      Toast.show({ type: 'error', text1: 'Booking failed', text2: error?.response?.data?.message || error.message });
+      const message = error?.response?.data?.message || error.message || '';
+      console.log(message, "error======")
+      // Detect insufficient credits pattern and extract minimum
+      if (typeof message === 'string' && message.toLowerCase().includes('insufficient credits')) {
+        const match = message.match(/([0-9]+\.?[0-9]*)/);
+        const min = match ? match[1] : '';
+        setTopUpAmount(min);
+        setShowTopUpModal(true);
+      } else {
+        Toast.show({ type: 'error', text1: 'Booking failed', text2: message });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const validateAmount = (value: string) => {
+    const num = parseFloat(value);
+    if (!value || isNaN(num)) return 'Please enter a valid amount';
+    if (num <= 0) return 'Amount must be greater than 0';
+    return '';
+  };
+
+  const handleConfirmTopUp = async () => {
+    const err = validateAmount(topUpAmount);
+    if (err) { setTopUpError(err); return; }
+    setIsTopUpLoading(true);
+    try {
+      setLoading(true);
+      const user = profileData?.user;
+      const profile = profileData?.profile?.customer_profile;
+      const customerData = {
+        first_name: profile?.name?.split(' ')[0] || 'John',
+        email: 'user@royalride.qa',
+        phone: {
+          country_code: '965',
+          number: user?.phone?.replace(/^\+965/, '') || '50000000'
+        }
+      };
+
+      const chargeData = {
+        amount: parseFloat(topUpAmount),
+        currency: 'KWD',
+        customer: customerData,
+        description: 'Wallet Top-up',
+        metadata: { user_id: user?._id },
+        reference: { transaction: `txn_${Date.now()}`, order: `ord_${Date.now()}` },
+        receipt: { email: true, sms: false }
+      };
+
+      const res = await networkClient.post(API_ENDPOINTS.CREATE_CHARGE, chargeData);
+      if (res.data?.transaction?.url) {
+        dispatch(setCurrentCharge({
+          id: res.data.id,
+          amount: res.data.amount,
+          currency: res.data.currency,
+          status: res.data.status,
+          transactionUrl: res.data.transaction.url,
+          createdAt: res.data.transaction.created
+        }));
+        setShowTopUpModal(false);
+        (navigation as any).navigate('PaymentWebView', {
+          paymentUrl: res.data.transaction.url,
+          amount: parseFloat(topUpAmount),
+          currency: 'KWD'
+        });
+      } else {
+        Toast.show({ type: 'error', text1: 'Payment Error', text2: 'Failed to initialize payment.' });
+      }
+    } catch (e) {
+      Toast.show({ type: 'error', text1: 'Payment Error', text2: 'Failed to initialize payment.' });
+    } finally {
+      setLoading(false);
+      setIsTopUpLoading(false);
     }
   };
   const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
@@ -224,7 +304,8 @@ console.log('addressState',addresses)
                 setFromLocation(e.nativeEvent.target)
               },
             }}
-            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.3 } }}
+            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.3,color: 'black' }, description: { color: 'black', fontSize: 16 },  // suggestion text -> green
+            predefinedPlacesDescription: { color: 'black' }  }}
             onPress={(data, details = null) => {setFromLocation(data.description)
               if (details) {
                 const { lat, lng } = details.geometry.location;
@@ -334,7 +415,8 @@ console.log('addressState',addresses)
                 fontSize: 16,
                 color: StyleGuide.color.black,
                 textAlign: isRTL ? 'right' : 'left'
-              }, listView: { position: 'absolute', top: 50 }
+              }, listView: { position: 'absolute', top: 50 }, description: { color: 'black', fontSize: 16 },  // suggestion text -> green
+            predefinedPlacesDescription: { color: 'black' } 
             }}
             onPress={(data, details = null) => {setToLocation(data.description)
               if (details) {
@@ -453,6 +535,15 @@ console.log('addressState',addresses)
         <AppButton onPress={handleNextButton} title={t('next')} loading={loading} disabled={loading} />
       </View>
       <Toast />
+      <TopUpModal
+        isVisible={showTopUpModal}
+        defaultAmount={topUpAmount}
+        currency="KWD"
+        isRTL={isRTL}
+        isLoading={isTopUpLoading}
+        onClose={() => setShowTopUpModal(false)}
+        onConfirm={(amt) => { setTopUpAmount(amt); handleConfirmTopUp(); }}
+      />
     </SafeAreaView>
   );
 };

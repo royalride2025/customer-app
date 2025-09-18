@@ -97,7 +97,7 @@ console.log('pppppp',profileData)
       </View>
 
       {/* User Profile Section */}
-      <View style={[styles.profileSection, rtlStyles.profileSection]}>
+      <View style={[styles.profileSection, {flexDirection:isRTL ? 'row-reverse' : 'row'}]}>
         {(() => {
           // Check if there's a valid image in profile data
           const profile = profileData?.profile as any;
@@ -125,14 +125,14 @@ console.log('pppppp',profileData)
             );
           }
         })()}
-        <View style={styles.userInfo}>
+        <View style={[styles.userInfo,{marginLeft:isRTL ? 5 : 0,alignItems:isRTL ? 'flex-end' : 'flex-start'}]}>
         <Text numberOfLines={1} style={[styles.userEmail,{fontSize:10,lineHeight:16}]}>
           Customer
           </Text>
           <Text numberOfLines={1} style={[styles.userName,{lineHeight:18}]}>
             {profileData?.profile?.customer_profile?.name}
           </Text>
-          <Text numberOfLines={1}  style={[styles.userEmail, rtlStyles.text,{lineHeight:18}]}>
+          <Text numberOfLines={1}  style={[styles.userEmail,{lineHeight:18}]}>
             {profileData?.user?.phone}
           </Text>
         </View>
@@ -184,7 +184,7 @@ console.log('pppppp',profileData)
             style: rtlStyles.emergencyCallIcon
           }}/>
           <Text style={[styles.emergencyCallText, rtlStyles.emergencyCallText]}>
-            Emergency Call
+            {t('drawer.emergency_call')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -216,7 +216,7 @@ const createRTLStyles = (isRTL) => StyleSheet.create({
     direction: isRTL ? 'rtl' : 'ltr',
   },
   profileSection: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
   },
   userImage: {
     marginRight: isRTL ? 0 : 10,
@@ -420,10 +420,10 @@ const DrawerNavigator = () => {
         name="Account" 
         component={UserProfile}
         options={{
-          title: 'Account Settings',
+          title: t('drawer.account_settings'),
           drawerLabel: ({ focused, color }) => (
             <Text style={{ color: focused ? color : '#666', fontSize: 14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
-              {'Account Settings'}
+              {t('drawer.account_settings')}
             </Text>
           ),
           headerShown: true,
@@ -444,14 +444,14 @@ const DrawerNavigator = () => {
           ),
         }}
       />
-       <Drawer.Screen 
+      <Drawer.Screen 
         name="FAQ" 
         component={FAQ}
         options={{
-          title: 'FAQ',
+          title: t('drawer.faq'),
           drawerLabel: ({ focused, color }) => (
             <Text style={{ color: focused ? color : '#666', fontSize: 14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
-              {'FAQ'}
+              {t('drawer.faq')}
             </Text>
           ),
           headerShown: true,
@@ -472,14 +472,14 @@ const DrawerNavigator = () => {
           ),
         }}
       />
-       <Drawer.Screen 
+      <Drawer.Screen 
         name="termAndCondition" 
         component={TermAndConditions}
         options={{
-          title: 'Term & Conditions',
+          title: t('drawer.terms'),
           drawerLabel: ({ focused, color }) => (
             <Text style={{ color: focused ? color : '#666', fontSize:  14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
-                Term & Conditions
+                {t('drawer.terms')}
             </Text>
           ),
           headerShown: true,
@@ -504,10 +504,10 @@ const DrawerNavigator = () => {
         name="privacyPolicy" 
         component={PrivacyPolicy}
         options={{
-          title: 'Privacy Policy',
+          title: t('drawer.privacy'),
           drawerLabel: ({ focused, color }) => (
             <Text style={{ color: focused ? color : '#666', fontSize:  14, fontFamily: focused ? StyleGuide.fontFamily.semiBold : StyleGuide.fontFamily.medium, textAlign: isRTL ? 'right' : 'left', marginLeft: isRTL ? 0 : 0, marginRight: isRTL ? 0 : 0, lineHeight: focused ? 16 : 18 }}>
-                Privacy Policy
+                {t('drawer.privacy')}
             </Text>
           ),
           headerShown: true,

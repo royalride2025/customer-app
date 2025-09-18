@@ -790,9 +790,9 @@ console.log(currentBooking,"boooooooo")
     dispatch(updateBookingStatus({ status: data.status || '' }));
     
     console.log('🔍 Booking status:========>>', data.status);
-    
+    console.log(bookingStatus,"bookingStatus////")
     // Update status message and icon based on status
-    switch (data.status) {
+    switch (data.status||bookingStatus) {
       case 'driver_arrived':
         console.log('🚗 Driver arrived case triggered');
         dispatch(setStatusInfo({ 
@@ -868,20 +868,20 @@ console.log(currentBooking,"boooooooo")
             position: 'top',
             visibilityTime: 4000,
           });
-          Alert.alert(
-            'Driver Arrived',
-            'Your driver has arrived at the pickup location.',
-            [{ text: 'OK' }]
-          );
+          // Alert.alert(
+          //   'Driver Arrived',
+          //   'Your driver has arrived at the pickup location.',
+          //   [{ text: 'OK' }]
+          // );
           break;
           
         case 'ride_started':
           console.log('🚀 Ride started case triggered');
-          Alert.alert(
-            'Ride Started',
-            'Your ride has begun. Enjoy your journey!',
-            [{ text: 'OK' }]
-          );
+          // Alert.alert(
+          //   'Ride Started',
+          //   'Your ride has begun. Enjoy your journey!',
+          //   [{ text: 'OK' }]
+          // );
           break;
           
            case 'completed':

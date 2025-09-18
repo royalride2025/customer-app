@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   uploadImageToServer:`/api/auth/upload-file`,
   CHANGE_PASSWORD:`/api/auth/change-password`,
   UPDATE_PROFILE:`/api/profile/customer/update-profile`,
+  REGISTER_DEVICE: '/api/auth/register-device',
   
 
   // Booking
@@ -45,6 +46,12 @@ export const API_ENDPOINTS = {
 
   // Vehicles
   GET_VEHICLES_WITH_OWNERS: '/api/list/vehicles-with-owners',
+
+  // Payment
+  CREATE_CHARGE: '/api/create-charge',
+
+  // Credits
+  CREDITS_HISTORY: (page: number = 1, limit: number = 100) => `/api/credits/history?page=${page}&limit=${limit}`,
 
 
 }; 

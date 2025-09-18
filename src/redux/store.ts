@@ -9,6 +9,7 @@ import driverReducer from './driverSlice';
 import bookingReducer from './bookingSlice';
 import profileReducer from './profileSlice';
 import notificationReducer from './notificationSlice';
+import paymentReducer from './paymentSlice';
 
 const rootReducer = combineReducers({
   language: languageReducer,
@@ -17,6 +18,7 @@ const rootReducer = combineReducers({
   booking: bookingReducer,
   profile: profileReducer,
   notification: notificationReducer,
+  payment: paymentReducer,
 });
 
 const persistConfig = {

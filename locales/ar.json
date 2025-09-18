@@ -37,7 +37,12 @@
     "wallet": "المحفظة",
     "chat": "دعم الدردشة",
     "language": "اللغة",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "account_settings": "إعدادات الحساب",
+    "faq": "الأسئلة الشائعة",
+    "terms": "الشروط والأحكام",
+    "privacy": "سياسة الخصوصية",
+    "emergency_call": "اتصال الطوارئ"
   },
   "profile": {
     "name": "عثمان فيرك",
@@ -83,12 +88,49 @@
   },
   "home": "الصفحة الرئيسية",
   "activities": "الأنشطة",
+  "Activities": "الأنشطة",
+  "requests": "الطلبات",
   "menu": "القائمة",
   "wallet": {
     "currentBalance": "الرصيد الحالي",
     "addCredits": "+ إضافة رصيد",
     "transactions": "المعاملات",
-    "invoices": "الفواتير"
+    "invoices": "الفواتير",
+    "enterAmount": "أدخل المبلغ الذي تريد إضافته إلى محفظتك"
+  },
+  "common": {
+    "cancel": "إلغاء",
+    "confirm": "تأكيد"
+  },
+  "payment": {
+    "title": "الدفع",
+    "amount": "المبلغ",
+    "selectPaymentMethod": "اختر طريقة الدفع",
+    "cardDetails": "تفاصيل البطاقة",
+    "cardholderName": "اسم حامل البطاقة",
+    "cardNumber": "رقم البطاقة",
+    "expiryDate": "تاريخ الانتهاء (شهر/سنة)",
+    "cvv": "رمز الأمان",
+    "payNow": "ادفع الآن",
+    "apple_pay": "آبل باي",
+    "card_payment": "دفع بالبطاقة",
+    "card_subtitle": "ادفع باستخدام بطاقة الخصم/الائتمان",
+    "charge_wallet": "شحن المحفظة",
+    "success": "نجح",
+    "error": "خطأ",
+    "paymentSuccessful": "تم الدفع بنجاح!",
+    "paymentFailed": "فشل الدفع. يرجى المحاولة مرة أخرى.",
+    "selectPaymentMethod": "يرجى اختيار طريقة دفع",
+    "cardholderNameRequired": "اسم حامل البطاقة مطلوب",
+    "invalidCardDetails": "يرجى التحقق من تفاصيل البطاقة",
+    "cardNumberRequired": "رقم البطاقة مطلوب",
+    "expiryDateRequired": "تاريخ الانتهاء مطلوب",
+    "cvvRequired": "رمز الأمان مطلوب",
+    "processing": "جاري المعالجة...",
+    "continue": "متابعة",
+    "visa": "فيزا",
+    "mastercard": "ماستركارد",
+    "benefit_pay": "بينيفيت باي"
   },
   "transaction": {
     "date": "التاريخ",

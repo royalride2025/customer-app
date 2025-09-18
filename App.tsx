@@ -1,6 +1,7 @@
 import 'react-native-get-random-values';
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { navigationRef } from './src/navigation/navigationRef';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import AppNavigator from './src/navigation/stackNavigation';
@@ -98,7 +99,9 @@ const AppContent: React.FC = () => {
   const token = useAppSelector((state: RootState) => state.auth.token);
   
   // Initialize notifications
-  const { fcmToken, permissionGranted, isInitialized } = useNotifications();
+  const { fcmToken, permissionGranted, isInitialized,registerDevice } = useNotifications();
+
+  
 
   console.log('user========/////////', user);
   console.log('token========/////////', token);
@@ -114,6 +117,17 @@ const AppContent: React.FC = () => {
 
  // Socket connection logic: connect after login, disconnect on logout/unmount
  useEffect(() => {
+  if (token && fcmToken && isInitialized) {
+    console.log('🔄 User logged in with FCM token, attempting device registration...');
+    registerDevice().then(success => {
+      console.log('Manual device registration result:', success);
+    });
+  }
+}, [token, fcmToken, isInitialized, registerDevice]);
+
+
+ useEffect(() => {
+ 
   if (token) {
     socket.connect(token);
     console.log('Socket connecting with token:', token);
@@ -137,7 +151,7 @@ const AppContent: React.FC = () => {
 }, [token, user]);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <AppNavigator />
       <Toast 
         config={toastConfig} 

@@ -20,7 +20,7 @@ import { StyleGuide } from '../../../../StyleGuide';
 import AppButton from '../../../lib/component/AppButton';
 import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
 import useTranslationStyles from '../../../../locales/useTranslationStyles';
-import { useAppSelector } from '../../../redux/reduxHooks';
+import { useAppSelector, useAppDispatch } from '../../../redux/reduxHooks';
 import { RootState } from '../../../redux/store';
 import { t } from 'i18next';
 import Svg from '../../../lib/svg';
@@ -32,6 +32,8 @@ import { API_ENDPOINTS } from '../../../../apiEndpoints';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import moment from 'moment';
+import TopUpModal from '../../../lib/component/TopUpModal';
+import { setCurrentCharge } from '../../../redux/paymentSlice';
 
 
 const car = require('../../../../assets/images/car.png')
@@ -101,6 +103,11 @@ const RentARide = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
   const [isBookingLoading, setIsBookingLoading] = useState(false);
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [isTopUpLoading, setIsTopUpLoading] = useState(false);
+  const dispatch = useAppDispatch();
+  const profileData = useAppSelector((state: RootState) => state.profile.data);
 
   const fetchVehicles = async () => {
     setIsVehiclesLoading(true);
@@ -176,11 +183,67 @@ const RentARide = () => {
       navigation.goBack();
 
     } catch (error: any) {
-      console.log(error, "error======")
-      Alert.alert(error?.response?.data?.message)
-      Toast.show({ type: 'error', text1: 'Booking failed', text2: error?.response?.data?.message || error.message });
+      const message = error?.response?.data?.message || error.message || '';
+      console.log(message, "====rrr====")
+      if (typeof message === 'string' && message.toLowerCase().includes('insufficient credits')) {
+        const match = message.match(/([0-9]+\.?[0-9]*)/);
+        const min = match ? match[1] : '';
+        setTopUpAmount(String(min));
+        setShowTopUpModal(true);
+      } else {
+        Toast.show({ type: 'error', text1: 'Booking failed', text2: message });
+      }
     } finally {
       setIsBookingLoading(false);
+    }
+  };
+
+  const handleConfirmTopUp = async (amount: string) => {
+    setIsTopUpLoading(true);
+    try {
+      const user = profileData?.user;
+      const profile = profileData?.profile?.customer_profile;
+      const customerData = {
+        first_name: profile?.name?.split(' ')[0] || 'John',
+        email: 'user@royalride.qa',
+        phone: {
+          country_code: '965',
+          number: user?.phone?.replace(/^\+965/, '') || '50000000'
+        }
+      };
+      const chargeData = {
+        amount: parseFloat(amount),
+        currency: 'KWD',
+        customer: customerData,
+        description: 'Wallet Top-up',
+        metadata: { user_id: user?._id },
+        reference: { transaction: `txn_${Date.now()}`, order: `ord_${Date.now()}` },
+        receipt: { email: true, sms: false }
+      };
+      console.log(chargeData, "chargeData======")
+      const res = await networkClient.post(API_ENDPOINTS.CREATE_CHARGE, chargeData);
+      if (res.data?.transaction?.url) {
+        dispatch(setCurrentCharge({
+          id: res.data.id,
+          amount: res.data.amount,
+          currency: res.data.currency,
+          status: res.data.status,
+          transactionUrl: res.data.transaction.url,
+          createdAt: res.data.transaction.created
+        }));
+        setShowTopUpModal(false);
+        (navigation as any).navigate('PaymentWebView', {
+          paymentUrl: res.data.transaction.url,
+          amount: parseFloat(amount),
+          currency: 'KWD'
+        });
+      } else {
+        Toast.show({ type: 'error', text1: 'Payment Error', text2: 'Failed to initialize payment.' });
+      }
+    } catch (e) {
+      Toast.show({ type: 'error', text1: 'Payment Error', text2: 'Failed to initialize payment.' });
+    } finally {
+      setIsTopUpLoading(false);
     }
   };
 
@@ -224,7 +287,7 @@ const RentARide = () => {
               setPickupLocation(e.nativeEvent.target)
             },
           }}
-          styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28 } }}
+          styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28,elevation:1 },description: { color: 'black', fontSize: 16 } }}
           onPress={(data, details = null) => {
             setPickupLocation(data.description)
             if (details) {
@@ -261,6 +324,15 @@ const RentARide = () => {
                 }}
                 xml={locationBlackIcon}
               />
+      <TopUpModal
+        isVisible={showTopUpModal}
+        defaultAmount={topUpAmount}
+        currency="KWD"
+        isRTL={isRTL}
+        isLoading={isTopUpLoading}
+        onClose={() => setShowTopUpModal(false)}
+        onConfirm={handleConfirmTopUp}
+      />
             </View>
           )}
           renderRightButton={() =>
