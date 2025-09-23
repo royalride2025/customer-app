@@ -62,6 +62,7 @@ console.log('credits-------', credits)
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  console.log(transactions,"transactions/////")
   const handleGoBack = () => {
     // Handle back navigation
     console.log('Go back');
@@ -364,7 +365,11 @@ const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
                     <Text style={[styles.transactionDate, textAlignment]}>
                       {item.date} | {item.time}
                     </Text>
-                    <Text style={[styles.transactionAmount, textAlignment]}>{item.amount}</Text>
+                    <Text style={[
+                      styles.transactionAmount, 
+                      textAlignment,
+                      item.amount.includes('-') && styles.negativeAmount
+                    ]}>{item.amount}</Text>
                   </View>
                   <TouchableOpacity
                     style={styles.downloadButton}
@@ -585,6 +590,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily:StyleGuide.fontFamily.semiBold,
     color:StyleGuide.color.primary,
+  },
+  negativeAmount: {
+    color: 'red',
   },
   downloadButton: {
     padding: 8,

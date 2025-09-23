@@ -24,6 +24,7 @@ import { RootState } from '../../redux/store';
 import { setCurrentBooking, updateCurrentBooking, clearCurrentBooking, updateBookingStatus, clearBookingStatus, setStatusInfo } from '../../redux/bookingSlice';
 import { useSocketReconnection } from '../../lib/hooks/useSocketReconnection';
 import networkClient from '../../../networkClient';
+import { API_ENDPOINTS } from '../../../apiEndpoints';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import DurationTimer from './components/durationTimer';
@@ -85,6 +86,7 @@ const Map = () => {
   const statusMessage = useAppSelector((state: RootState) => state.booking.statusMessage);
   const statusIcon = useAppSelector((state: RootState) => state.booking.statusIcon);
   
+  console.log(currentBooking,"currentBooking/////")
 
   console.log(bookingStatus,"bookingStatus////")
   // Debug Redux state
@@ -822,6 +824,11 @@ console.log(currentBooking,"boooooooo")
           visibilityTime: 4000,
         });
         
+        // Transfer credits for completed booking
+        if (currentBooking) {
+          transferCredits(currentBooking);
+        }
+        
         // Show rating modal
         setShowRatingModal(true);
         break;
@@ -918,9 +925,67 @@ console.log(currentBooking,"boooooooo")
       console.log('⚠️ Current booking exists:', !!currentBooking);
       console.log('⚠️ IDs match:', data.booking_id === currentBooking?.booking_id);
     }
-  }, [currentBooking, dispatch, navigation]);
+  }, [currentBooking, dispatch, navigation,]);
 
-
+  // Credits transfer function
+  const transferCredits = useCallback(async (bookingData: any) => {
+    try {
+      console.log('💰 Starting credits transfer for completed booking...');
+      
+      // Extract required data from booking
+      const customerId = bookingData?.booking?.customer_id;
+      const driverId = bookingData?.booking?.driver_id || bookingData?.driver_id;
+      const bookingId = bookingData?.booking_id || bookingData?.booking?._id;
+      const amount = bookingData?.booking?.price?.toString() || '0';
+      
+      // Validate required fields
+      if (!customerId || !driverId || !bookingId) {
+        console.error('❌ Missing required data for credits transfer:', {
+          customerId,
+          driverId,
+          bookingId,
+          amount
+        });
+        return;
+      }
+      
+      const payload = {
+        customerId,
+        driverId,
+        bookingId,
+        amount
+      };
+      
+      console.log('💰 Credits transfer payload:', payload);
+      
+      const response = await networkClient.post(API_ENDPOINTS.CREDITS_TRANSFER, payload);
+      
+      console.log('✅ Credits transfer successful:', response.data);
+      
+      // Show success message
+      Toast.show({
+        type: 'success',
+        text1: 'Payment Processed',
+        text2: 'Credits have been transferred successfully!',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Credits transfer failed:', error);
+      
+      const errorMessage = error?.response?.data?.message || error.message || 'Failed to transfer credits';
+      
+      // Show error message
+      Toast.show({
+        type: 'error',
+        text1: 'Payment Error',
+        text2: errorMessage,
+        position: 'top',
+        visibilityTime: 4000,
+      });
+    }
+  }, []);
 
   useEffect(() => {
     // Don't get current location automatically - only when button is pressed

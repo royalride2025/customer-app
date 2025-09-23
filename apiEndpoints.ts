@@ -52,6 +52,7 @@ export const API_ENDPOINTS = {
 
   // Credits
   CREDITS_HISTORY: (page: number = 1, limit: number = 100) => `/api/credits/history?page=${page}&limit=${limit}`,
+  CREDITS_TRANSFER: '/api/credits/transfer',
 
 
 }; 

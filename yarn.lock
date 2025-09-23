@@ -2059,9 +2059,9 @@
   resolved "https://registry.npmjs.org/@react-native-community/slider/-/slider-4.5.7.tgz"
   integrity sha512-WMDDZjNF2Bd8M8TrSqKf5xhM9ikdfCHtSPur64Ow3bB/OVrKufUQZ59NmYdNZNeGPvcHHTsafuYTY8zfZfbchQ==
 
-"@react-native-firebase/app@^23.3.0":
+"@react-native-firebase/app@^23.3.1":
   version "23.3.1"
-  resolved "https://registry.npmjs.org/@react-native-firebase/app/-/app-23.3.1.tgz"
+  resolved "https://registry.yarnpkg.com/@react-native-firebase/app/-/app-23.3.1.tgz#5e00d7c8975b0faa824b227c5edd95abcb77083e"
   integrity sha512-OKhrVFHkEfQEcYPQ+heetj1IgEpS9gTTr+2ZArSYDPPqv347rq1SCDsQHCfJdrpMLcFrpH9aH4uyAhFhfjM+tA==
   dependencies:
     firebase "12.2.1"

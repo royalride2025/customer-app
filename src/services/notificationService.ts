@@ -223,37 +223,37 @@ class NotificationService {
     const fullMessage = `${body}\n\n📋 Notification Data:\n${dataString}`;
     
     // Show alert dialog with notification data
-    Alert.alert(
-      `🔔 ${title}`,
-      fullMessage,
-      [
-        {
-          text: 'Dismiss',
-          style: 'cancel',
-          onPress: () => console.log('📱 Notification dismissed')
-        },
-        {
-          text: 'View Details',
-          onPress: () => {
-            console.log('📱 Notification data viewed');
-            this.showDetailedDataAlert(data);
-          },
-        },
-        {
-          text: 'Handle',
-          onPress: () => {
-            console.log('📱 Notification handled');
-            if (data) {
-              this.handleNotificationTap({ data });
-            }
-          },
-        },
-      ],
-      { 
-        cancelable: true,
-        onDismiss: () => console.log('📱 Notification dismissed by user')
-      }
-    );
+    // Alert.alert(
+    //   `🔔 ${title}`,
+    //   fullMessage,
+    //   [
+    //     {
+    //       text: 'Dismiss',
+    //       style: 'cancel',
+    //       onPress: () => console.log('📱 Notification dismissed')
+    //     },
+    //     {
+    //       text: 'View Details',
+    //       onPress: () => {
+    //         console.log('📱 Notification data viewed');
+    //         this.showDetailedDataAlert(data);
+    //       },
+    //     },
+    //     {
+    //       text: 'Handle',
+    //       onPress: () => {
+    //         console.log('📱 Notification handled');
+    //         if (data) {
+    //           this.handleNotificationTap({ data });
+    //         }
+    //       },
+    //     },
+    //   ],
+    //   { 
+    //     cancelable: true,
+    //     onDismiss: () => console.log('📱 Notification dismissed by user')
+    //   }
+    // );
   }
 
   /**
@@ -381,7 +381,7 @@ class NotificationService {
           store.dispatch(updateBookingStatus({ status, message }));
          
            // Optionally show a concise UI alert
-           Alert.alert('Booking Update', message);
+          //  Alert.alert('Booking Update', message);
            return;
          }
          if (notificationType === 'BOOKING_CANCELLED') {
@@ -408,10 +408,10 @@ class NotificationService {
          }
 
          // Fallback debug alert for other types
-         Alert.alert(
-           normalized?.title || 'Notification',
-           normalized?.message || 'You have a new message'
-         );
+        //  Alert.alert(
+        //    normalized?.title || 'Notification',
+        //    normalized?.message || 'You have a new message'
+        //  );
 
         // OPTION 2: Your custom notification processing (comment out if testing with Option 1)
         /*
@@ -495,9 +495,9 @@ class NotificationService {
     }
 
     // Quick UX signal
-    if (message) {
-      try { Alert.alert('Booking Update', message); } catch {}
-    }
+    // if (message) {
+    //   try { Alert.alert('Booking Update', message); } catch {}
+    // }
 
     // Ensure user lands on the map to see live status
     try { navigate('map'); } catch (e) { console.log('Navigation to map failed:', e); }
@@ -516,7 +516,8 @@ class NotificationService {
       console.log('Error handling booking cancellation:', e);
     }
 
-    try { Alert.alert('Booking Cancelled', reason); } catch {}
+    // try { Alert.alert('Booking Cancelled', reason); }
+    //  catch {}
     try { navigate('map'); } catch (e) { console.log('Navigation to map failed:', e); }
   }
 
