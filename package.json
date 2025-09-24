@@ -44,7 +44,7 @@
     "react-native-maps-directions": "^1.9.0",
     "react-native-permissions": "^5.4.1",
     "react-native-progress-circle": "^2.1.0",
-    "react-native-reanimated": "^3.18.0",
+    "react-native-reanimated": "^3.15.4",
     "react-native-restart": "^0.0.27",
     "react-native-safe-area-context": "^5.4.1",
     "react-native-screens": "^4.11.1",
