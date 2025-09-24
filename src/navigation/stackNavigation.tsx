@@ -19,6 +19,8 @@ import Transactions from '../screens/trasaction';
 
 import CustomerClientChat from '../screens/customerChat';
 import PaymentReceipt from '../screens/paymentReciept';
+import PaymentWebView from '../screens/payment/PaymentWebView';
+
 import ScheduleRideScreen from '../screens/home/airportTransfer/ScheduleRideScreen';
 
 import { Text } from 'react-native';
@@ -50,12 +52,25 @@ export type RootStackParamList = {
   customerChat:undefined
   ScheduleRide: undefined;
   address:undefined
+  Payment: {
+    amount: number;
+    currency?: string;
+    description?: string;
+  }
+  PaymentWebView: {
+    paymentUrl: string;
+    amount: number;
+    currency: string;
+  }
+  PaymentDemo: undefined
+  PaymentDebug: undefined
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
   const token = useSelector((state: RootState) => state.auth.token);
+  const isRTL = useSelector((state: RootState) => state.language.isRTL);
 
   return (
     <Stack.Navigator >
@@ -95,8 +110,10 @@ const AppNavigator = () => {
           <Stack.Screen name="makeTrip" component={MakeTrip} />
           <Stack.Screen name="transaction" component={Transactions} />
           <Stack.Screen name="address" component={ManageAddress} />
+         
 
           <Stack.Screen options={{ headerShown: false }} name="paymentReceipt" component={PaymentReceipt} />
+          <Stack.Screen options={{ headerShown: false }} name="PaymentWebView" component={PaymentWebView} />
           <Stack.Screen options={{ headerShown: false }} name="customerChat" component={CustomerClientChat} />
           <Stack.Screen name="ScheduleRide" component={ScheduleRideScreen} />
           <Stack.Screen name="rentRide" component={RentRide} />

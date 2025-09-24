@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "453162729515",
+    "project_id": "rr-notifications-8d964",
+    "storage_bucket": "rr-notifications-8d964.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:453162729515:android:9469f6eb91f1de807eea6e",
+        "android_client_info": {
+          "package_name": "com.royal_ride"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAY4PFSoVOUiwqdRdl5EdbjXsWSpW2k_oY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+
+
+
+
+
+
+
+
+
+

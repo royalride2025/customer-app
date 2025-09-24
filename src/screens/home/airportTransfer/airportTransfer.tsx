@@ -21,6 +21,7 @@ import { RootState } from '../../../redux/store';
 import { t } from 'i18next';
 import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 import { screenWidth } from '../../../utils/dimenstions';
+ 
 
 const airports = [
     {
@@ -61,6 +62,7 @@ const AirportTransfer = () => {
     const [focusedInput, setFocusedInput] = useState('from'); // Track which input is focused
     const { flexDirection, textAlignment } = useTranslationStyles();
     const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+ 
 
     const navigation = useNavigation();
     const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
@@ -177,7 +179,9 @@ backgroundColor:'transparent',
                 setFromLocation(e.nativeEvent.target)
               },
             }}
-            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28 ,elevation:1,backgroundColor:StyleGuide.color.grey } }}
+            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, 
+            listView: { position: 'absolute', top: screenWidth * 0.28 ,elevation:1,backgroundColor:StyleGuide.color.grey },
+            description: { color: 'black', fontSize: 16 } }}
             onPress={(data, details = null) => {setFromLocation(data.description)
               if (details) {
                 const { lat, lng } = details.geometry.location;
@@ -271,7 +275,8 @@ backgroundColor:'transparent',
                                         fontSize: 16,
                                         color: StyleGuide.color.black,
                                         textAlign: isRTL ? 'right' : 'left'
-                                    }, listView: { position: 'absolute', top: 50,elevation:1,backgroundColor:StyleGuide.color.grey }
+                                    }, listView: { position: 'absolute', top: 50,elevation:1,backgroundColor:StyleGuide.color.grey },
+                                    description: { color: 'black', fontSize: 16 }
                                 }}
                                 onPress={(data, details = null) => {
                                     setToLocation(data.description)
@@ -379,6 +384,8 @@ backgroundColor:'transparent',
             <View style={styles.buttonContainer}>
                 <AppButton onPress={handleNextButton} title={t('next')} disabled={isButtonDisabled} />
             </View>
+            
+            
         </SafeAreaView>
     );
 };

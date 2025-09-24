@@ -222,7 +222,7 @@ console.log(currentBooking,"currr")
             </View>
 
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', paddingLeft: isRTL ? 0 : 20, alignItems: 'center' }}>
-                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }}>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center',marginRight:isRTL ? 20 : 0 }}>
                     <Svg xml={Cash} rest={{ height: 16, width: 16 }} />
                     <Text style={[isRTL ? { marginRight: 10 } : { marginLeft: 10 }, { fontFamily: StyleGuide.fontFamily.semiBold, color: StyleGuide.color.black }]}>{
                         typeof price === 'number' ? price.toFixed(2) : String(price ?? '')

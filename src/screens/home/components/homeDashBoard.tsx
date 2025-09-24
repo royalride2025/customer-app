@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: getResponsiveFontSize(16),
     fontFamily: StyleGuide.fontFamily.semiBold,
-    color: StyleGuide.fontFamily.black,
+    color: StyleGuide.color.black,
     lineHeight:getResponsiveFontSize(16),
   },
   coinsContainer: {
@@ -438,7 +438,9 @@ const styles = StyleSheet.create({
  },
  noDataText:{
   fontSize:getResponsiveFontSize(14),
-  textAlign:'center'
+  textAlign:'center',
+  color:StyleGuide.color.grey,
+  fontFamily:StyleGuide.fontFamily.medium,
  }
 
 });

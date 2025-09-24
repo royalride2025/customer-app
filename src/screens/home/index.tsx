@@ -62,6 +62,10 @@ const Home = () => {
         });
         setIsLoading(false);
         setLocationPermissionChecked(true);
+        // Smoothly animate to the initial region when available
+        if (mapRef.current) {
+          mapRef.current.animateToRegion(currentRegion, 600);
+        }
         console.log('🗺️ Set initial region to current location');
       },
       (error) => {
@@ -653,6 +657,10 @@ const Home = () => {
 
           setCurrentLocation(newLocation);
           setRegion(newRegion);
+          // Animate to the fetched region for immediate feedback
+          if (mapRef.current) {
+            mapRef.current.animateToRegion(newRegion, 600);
+          }
           setShowLocationLoader(false);
         },
         (error) => {
@@ -706,41 +714,7 @@ const Home = () => {
     setCurrentLocation(coordinate);
   };
 
-  if (showGPSModal) {
-    return (
-      <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1, paddingHorizontal: 30 }}>
-        <View style={styles.gpsIconContainer}>
-          <Text style={styles.gpsIcon}>📍</Text>
-        </View>
-        {
-          !showLocationLoader ?
-            <>
-              <Text style={styles.gpsModalTitle}>GPS is Turned Off</Text>
-              <Text style={styles.gpsModalMessage}>
-                Location services are required for this app to work properly. Please enable GPS to continue.
-              </Text>
-            </> :
-            <>
-              <ActivityIndicator color={StyleGuide.color.primary} size={50} />
-            </>
-        }
-
-        {
-          !showLocationLoader && (
-            <View style={styles.gpsModalButtons}>
-              <AppButton
-                title="Enable GPS"
-                onPress={handleOpenSettings}
-                style={{ flex: 1, marginRight: 8 }}
-              />
-
-            </View>
-          )
-        }
-
-      </View>
-    );
-  }
+ 
   useFocusEffect(
     React.useCallback(() => {
       fetchAddress();

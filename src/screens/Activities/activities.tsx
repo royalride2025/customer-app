@@ -84,7 +84,7 @@ const navigation = useNavigation();
   isHistoryLoading;
 
   useScreenHeader({
-    title: 'Activities',
+    title: (t('Activities')),
     showBackButton: true,
   });
 
@@ -245,7 +245,7 @@ useEffect(() => {
           onPress={() => setActiveTab('requests')}
         >
           <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>
-            Request
+            {t('requests')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity

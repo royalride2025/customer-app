@@ -1,6 +1,7 @@
 import 'react-native-get-random-values';
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { navigationRef } from './src/navigation/navigationRef';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import AppNavigator from './src/navigation/stackNavigation';
@@ -13,6 +14,7 @@ import socket from './src/services/socket';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { StyleGuide } from './StyleGuide';
 import { Platform, StatusBar } from 'react-native';
+import { useNotifications } from './src/lib/hooks/useNotifications';
 
 const toastConfig = {
   success: (props: any) => {
@@ -95,9 +97,16 @@ const AppContent: React.FC = () => {
   const language = useAppSelector((state: RootState) => state.language.language);
   const user = useAppSelector((state: RootState) => state.auth.user);
   const token = useAppSelector((state: RootState) => state.auth.token);
+  
+  // Initialize notifications
+  const { fcmToken, permissionGranted, isInitialized,registerDevice } = useNotifications();
+
+  
 
   console.log('user========/////////', user);
   console.log('token========/////////', token);
+  console.log('FCM Token========/////////', fcmToken);
+  console.log('Notification Permission========/////////', permissionGranted);
 
   useEffect(() => {
     // Change i18n language when Redux language changes
@@ -108,6 +117,17 @@ const AppContent: React.FC = () => {
 
  // Socket connection logic: connect after login, disconnect on logout/unmount
  useEffect(() => {
+  if (token && fcmToken && isInitialized) {
+    console.log('🔄 User logged in with FCM token, attempting device registration...');
+    registerDevice().then(success => {
+      console.log('Manual device registration result:', success);
+    });
+  }
+}, [token, fcmToken, isInitialized, registerDevice]);
+
+
+ useEffect(() => {
+ 
   if (token) {
     socket.connect(token);
     console.log('Socket connecting with token:', token);
@@ -131,7 +151,7 @@ const AppContent: React.FC = () => {
 }, [token, user]);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <AppNavigator />
       <Toast 
         config={toastConfig} 

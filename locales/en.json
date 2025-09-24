@@ -39,7 +39,12 @@
     "wallet": "Wallet",
     "chat": "Chat Support",
     "language": "Language",
-    "logout": "Logout"
+    "logout": "Logout",
+    "account_settings": "Account Settings",
+    "faq": "FAQ",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy",
+    "emergency_call": "Emergency Call"
   },
   "profile": {
     "name": "Usman Virk",
@@ -85,12 +90,49 @@
   },
   "home": "Home",
   "activities": "Activities",
+  "Activities": "Activities",
+  "requests": "Requests",
   "menu": "Menu",
   "wallet": {
     "currentBalance": "Current Balance",
     "addCredits": "+ Add Credits",
     "transactions": "Transactions",
-    "invoices": "Invoices"
+    "invoices": "Invoices",
+    "enterAmount": "Enter the amount you want to add to your wallet"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "payment": {
+    "title": "Payment",
+    "amount": "Amount",
+    "selectPaymentMethod": "Select Payment Method",
+    "cardDetails": "Card Details",
+    "cardholderName": "Cardholder Name",
+    "cardNumber": "Card Number",
+    "expiryDate": "Expiry Date (MM/YY)",
+    "cvv": "CVV",
+    "payNow": "Pay Now",
+    "apple_pay": "Apple Pay",
+    "card_payment": "Card Payment",
+    "card_subtitle": "Pay with your debit/credit card",
+    "charge_wallet": "Charge Wallet",
+    "success": "Success",
+    "error": "Error",
+    "paymentSuccessful": "Payment completed successfully!",
+    "paymentFailed": "Payment failed. Please try again.",
+    "selectPaymentMethod": "Please select a payment method",
+    "cardholderNameRequired": "Cardholder name is required",
+    "invalidCardDetails": "Please check your card details",
+    "cardNumberRequired": "Card number is required",
+    "expiryDateRequired": "Expiry date is required",
+    "cvvRequired": "CVV is required",
+    "processing": "Processing...",
+    "continue": "Continue",
+    "visa": "Visa",
+    "mastercard": "Mastercard",
+    "benefit_pay": "Benefit Pay"
   },
   "transaction": {
     "date": "Date",
