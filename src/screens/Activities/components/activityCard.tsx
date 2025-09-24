@@ -204,7 +204,7 @@ console.log(currentBooking,"currr")
                 <View style={styles.driverInfo}>
                     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center' }}>
                         <Text numberOfLines={1} style={[styles.driverName, { textAlign: isRTL ? 'right' : 'left' }]}>{vehicleName}</Text>
-                        <Text style={styles.rating}>{'5.5'} <Text style={{ fontSize: 10, textAlign: isRTL ? 'left' : 'right', marginBottom: 2 }}>⭐</Text></Text>
+                        {/* <Text style={styles.rating}>{'5.5'} <Text style={{ fontSize: 10, textAlign: isRTL ? 'left' : 'right', marginBottom: 2 }}>⭐</Text></Text> */}
                     </View>
 
                     <Text style={[styles.carDetails, { textAlign: isRTL ? 'right' : 'left' }]}>
