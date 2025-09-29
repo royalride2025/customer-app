@@ -76,7 +76,7 @@ const Map = () => {
   const route = useRoute();
   const { from } = (route.params as any) || {};
   const { booking } = (route.params as any) || {};
-
+console.log(booking,"booking=====//////")
   // Redux selectors and dispatch
   const dispatch = useAppDispatch();
   const { flexDirection } = useTranslationStyles();
@@ -105,6 +105,10 @@ const Map = () => {
 
   // Map ref to control camera/fit coordinates
   const mapRef = useRef<MapView | null>(null);
+
+  // Serialize and de-stale location requests
+  const locationRequestCounterRef = useRef(0);
+  const locationRequestInFlightRef = useRef(false);
 
 console.log(currentBooking,"boooooooo")
   console.log('Current booking state:',  {driverId: currentBooking?.driver_id,
@@ -301,36 +305,26 @@ console.log(currentBooking,"boooooooo")
     // }, [booking?.booking?.pickup_location?.coordinates,currentBooking?.pickup_location?.coordinates]);
 
   const getCurrentLocation = useCallback(async () => {
+    if (locationRequestInFlightRef.current) {
+      return;
+    }
+    locationRequestInFlightRef.current = true;
+    const requestId = ++locationRequestCounterRef.current;
     // Check permission first
     const hasPermission = await requestLocationPermission();
     if (!hasPermission) {
-      Alert.alert(
-        'Location Permission Required',
-        'This app needs location access to work properly. Please enable location services in your device settings.',
-        [
-          {
-            text: 'Settings',
-            onPress: () => {
-              if (Platform.OS === 'ios') {
-                Linking.openURL('app-settings:');
-              } else {
-                Linking.openURL('package:' + 'com.royal_ride');
-              }
-            }
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel'
-          }
-        ]
-      );
+      console.log('Location permission not granted. Skipping getCurrentLocation.');
       setIsLoading(false);
+      locationRequestInFlightRef.current = false;
       return;
     }
 
     setIsLoading(true);
     Geolocation.getCurrentPosition(
       (position) => {
+        if (requestId !== locationRequestCounterRef.current) {
+          return; // stale
+        }
         const { latitude, longitude } = position.coords;
         
         // Validate coordinates before setting them
@@ -354,6 +348,7 @@ console.log(currentBooking,"boooooooo")
           setRegion(newRegion);
           setLocationPermissionGranted(true);
           setIsLoading(false);
+          locationRequestInFlightRef.current = false;
           console.log('📍 Current location obtained and map centered:', newLocation);
 
           // If we also have a pickup location, fit both markers into view
@@ -383,16 +378,17 @@ console.log(currentBooking,"boooooooo")
         } else {
           console.log('❌ Invalid coordinates received from GPS:', { latitude, longitude });
           setIsLoading(false);
-          Alert.alert(
-            'Invalid Location Data',
-            'Received invalid coordinates from GPS. Please try again.',
-            [{ text: 'OK' }]
-          );
+          locationRequestInFlightRef.current = false;
+          // No alert desired
         }
       },
       (error) => {
+        if (requestId !== locationRequestCounterRef.current) {
+          return; // stale
+        }
         console.log('Location error:', error);
         setIsLoading(false);
+        locationRequestInFlightRef.current = false;
         // Show specific error messages based on error code
         let errorMessage = 'Unable to fetch your current location.';
         if (error.code === 1) {
@@ -400,37 +396,13 @@ console.log(currentBooking,"boooooooo")
         } else if (error.code === 2) {
           errorMessage = 'Location unavailable. Please check your device settings.';
         }
-        
-        Alert.alert(
-          'Location Error', 
-          errorMessage,
-          [
-            {
-              text: 'Settings',
-              onPress: () => {
-                if (Platform.OS === 'ios') {
-                  Linking.openURL('app-settings:');
-                } else {
-                  Linking.openURL('package:' + 'com.royal_ride');
-                }
-              }
-            },
-            {
-              text: 'Retry',
-              onPress: () => getCurrentLocation()
-            },
-            {
-              text: 'Cancel',
-              style: 'cancel'
-            }
-          ]
-        );
+        console.log('Location error message suppressed:', errorMessage);
       },
       {
         enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 1000,
-        distanceFilter: 10,
+        timeout: 30000,
+        maximumAge: 5000,
+        distanceFilter: 0,
       }
     );
   }, [requestLocationPermission, booking, currentBooking]);
@@ -482,17 +454,7 @@ console.log(currentBooking,"boooooooo")
   // }, [locationWatcher]);
 
   // Calculate distance between two coordinates (Haversine formula)
-  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }, []);
+
 
   // Center map on pickup location
   const centerOnPickupLocation = useCallback(() => {
@@ -1062,8 +1024,8 @@ console.log('🔍 pickupp location:', pickupLocation);
       }
       // Priority 3: Booking pickup location
       else if (booking?.booking?.pickup_location?.coordinates||currentBooking?.pickup_location?.coordinates||currentBooking?.booking?.pickup_location?.coordinates) {
-        targetLatitude = Number(booking?.booking?.pickup_location?.coordinates[0]||currentBooking?.pickup_location?.coordinates[1]||currentBooking?.booking?.pickup_location?.coordinates[0]);
-        targetLongitude = Number(booking?.booking?.pickup_location?.coordinates[1]||currentBooking?.pickup_location?.coordinates[0]||currentBooking?.booking?.pickup_location?.coordinates[1]);
+        targetLatitude = Number(booking?.booking?.pickup_location?.coordinates[1]||currentBooking?.pickup_location?.coordinates[1]||currentBooking?.booking?.pickup_location?.coordinates[1]);
+        targetLongitude = Number(booking?.booking?.pickup_location?.coordinates[0]||currentBooking?.pickup_location?.coordinates[0]||currentBooking?.booking?.pickup_location?.coordinates[0]);
         console.log('🗺️ Setting initial region to booking pickup location:', { targetLatitude, targetLongitude });
       }
       // Priority 4: Fallback to default location (Doha, Qatar)
@@ -1547,8 +1509,8 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
                         longitude: driverLocation?.coordinates[0]  // [0] = longitude
                       }}
                     destination={{
-                      latitude: bookingStatus === 'driver_on_the_way' ?  Number(currentBooking?.booking?.pickup_location?.coordinates[0])||Number(currentBooking?.pickup_location?.coordinates[1]):Number(currentBooking?.booking?.dropoff_location?.coordinates[0])||Number(currentBooking?.dropoff_location?.coordinates[1]) ,
-                      longitude:  bookingStatus === 'driver_on_the_way' ? Number(currentBooking?.booking?.pickup_location?.coordinates[1])||Number(currentBooking?.pickup_location?.coordinates[0]) : Number(currentBooking?.booking?.dropoff_location?.coordinates[1])||Number(currentBooking?.dropoff_location?.coordinates[0])
+                      latitude: bookingStatus === 'driver_on_the_way' ?  Number(currentBooking?.booking?.pickup_location?.coordinates[1])||Number(currentBooking?.pickup_location?.coordinates[1]):Number(currentBooking?.booking?.dropoff_location?.coordinates[1])||Number(currentBooking?.dropoff_location?.coordinates[1]) ,
+                      longitude:  bookingStatus === 'driver_on_the_way' ? Number(currentBooking?.booking?.pickup_location?.coordinates[0])||Number(currentBooking?.pickup_location?.coordinates[0]) : Number(currentBooking?.booking?.dropoff_location?.coordinates[0])||Number(currentBooking?.dropoff_location?.coordinates[0])
                     }}
                     apikey={"AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ"}
                     strokeWidth={6}
@@ -1642,8 +1604,8 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
         {currentBooking?.booking?.dropoff_location?.coordinates &&
         <Marker 
           coordinate={{
-            latitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(booking?.booking?.dropoff_location?.coordinates[0]||currentBooking.booking?.dropoff_location?.coordinates[0]||currentBooking.dropoff_location?.coordinates[1]) : Number(currentBooking.booking.pickup_location.coordinates[0]||currentBooking.pickup_location.coordinates[1]),
-            longitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(booking?.booking?.dropoff_location.coordinates[1]||currentBooking.booking?.dropoff_location.coordinates[1]||currentBooking.dropoff_location.coordinates[0]) : Number(currentBooking.booking.pickup_location.coordinates[1]||currentBooking.pickup_location.coordinates[0])
+            latitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(booking?.booking?.dropoff_location?.coordinates[1]||currentBooking.booking?.dropoff_location?.coordinates[1]||currentBooking.dropoff_location?.coordinates[1]) : Number(currentBooking.booking.pickup_location.coordinates[1]||currentBooking.pickup_location.coordinates[1]),
+            longitude: (bookingStatus === 'started' || bookingStatus === 'completed' || bookingStatus === 'driver_arrived') ? Number(booking?.booking?.dropoff_location.coordinates[0]||currentBooking.booking?.dropoff_location.coordinates[0]||currentBooking.dropoff_location.coordinates[0]) : Number(currentBooking.booking.pickup_location.coordinates[0]||currentBooking.pickup_location.coordinates[0])
           }} 
           title="Destination"
           description="Where you want to go"

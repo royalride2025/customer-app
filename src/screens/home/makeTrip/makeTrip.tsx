@@ -153,12 +153,12 @@ console.log('addressState',addresses)
         booking_type: 'instant',
         pickup_location: {
           type: 'Point',
-          coordinates: [ fromLocationData.latitude,fromLocationData.longitude],
+          coordinates: [ fromLocationData.longitude,fromLocationData.latitude],
           address: fromLocationData.address,
         },
         dropoff_location: {
           type: 'Point',
-          coordinates: [ toLocationData.latitude,toLocationData.longitude],
+          coordinates: [ toLocationData.longitude,toLocationData.latitude],
           address: toLocationData.address,
         },
       };
