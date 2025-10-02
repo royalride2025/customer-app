@@ -4,6 +4,7 @@ import React_RCTAppDelegate
 import ReactAppDependencyProvider
 import Firebase
 import UserNotifications
+import GoogleMaps
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -18,6 +19,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   ) -> Bool {
     // Configure Firebase
     FirebaseApp.configure()
+    
+    // Initialize Google Maps with API Key from Info.plist
+    GMSServices.provideAPIKey("AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ")
+
     
     // Configure notifications
     UNUserNotificationCenter.current().delegate = self

@@ -2,10 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-<key>NSLocationWhenInUseUsageDescription</key>
-<string>This app needs access to location to find requests around you.</string>
-<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>This app needs access to location to find requests around you.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to location to find requests around you.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs access to location to find requests around you.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to camera to take profile photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to photo library to select profile photos.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>This app needs permission to send you notifications about ride updates.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -60,5 +66,7 @@
 		<string>Montserrat-SemiBold.ttf</string>
 		<string>Montserrat-Thin.ttf</string>
 	</array>
+	<key>GMSApiKey</key>
+	<string>AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ</string>
 </dict>
 </plist>

@@ -1,7 +1,7 @@
 import { Alert, FlatList, Pressable, StyleSheet, Text, View, Linking, Platform, PermissionsAndroid } from 'react-native';
 import Toast from 'react-native-toast-message';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import Svg from '../../lib/svg';
 import { atmCard, carSvg, locationPin, rightIcon } from '../../../assets/svgAssets';
@@ -1520,7 +1520,7 @@ if (currentBooking?.booking?.pickup_location?.coordinates) {
       {/* Map */}
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
+        provider={PROVIDER_DEFAULT}
         style={styles.map}
         region={region || undefined}
         zoomEnabled={true}

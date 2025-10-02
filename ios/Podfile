@@ -29,7 +29,13 @@ target 'Royal_ride' do
   )
 
   # Ensure CocoaPods can resolve the generated spec shipped with react-native-maps
-  pod 'react-native-maps-generated', :path => '../node_modules/react-native-maps'
+  pod 'react-native-maps', :path => '../node_modules/react-native-maps'
+  # Google Maps iOS SDKs required when using PROVIDER_GOOGLE
+  pod 'GoogleMaps'
+  pod 'Google-Maps-iOS-Utils'
+  
+  # React Native Permissions - Auto-linked by react-native-permissions
+ 
 
   post_install do |installer|
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202

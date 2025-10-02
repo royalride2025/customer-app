@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Dimensions, StyleSheet, Alert, Text, Platform, Modal, TouchableOpacity, Image, Linking, ActivityIndicator, Modal as RNModal, } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import Svg from '../../lib/svg';
@@ -42,6 +42,13 @@ const Home = () => {
 
   const profile = useAppSelector((state: RootState) => state.profile.data);
   console.log('profile========/////////', profile);
+
+  const dohaRegion = {
+    latitude: 25.276987,       
+    longitude: 51.520008,
+    latitudeDelta: 0.1,        
+    longitudeDelta: 0.1,
+  };
 
   // Set default location to Qatar (Doha) or get current location if possible
   const setDefaultLocation = useCallback(() => {
@@ -807,10 +814,10 @@ const handleDeleteAddress = (addressId: string) => {
       </View> */}
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
+        provider={PROVIDER_DEFAULT}
         style={styles.map}
-        initialRegion={region || undefined}
-        region={region || undefined}
+        initialRegion={region || dohaRegion}
+        region={region || dohaRegion}
         zoomEnabled={true}
         showsMyLocationButton={false}
         maxZoomLevel={20}
