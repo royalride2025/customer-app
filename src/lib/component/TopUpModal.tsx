@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import BottomModal from './BottomModal';
 import { StyleGuide } from '../../../StyleGuide';
+import { t } from 'i18next';
 
 type TopUpModalProps = {
   isVisible: boolean;
@@ -58,8 +59,8 @@ const TopUpModal: React.FC<TopUpModalProps> = ({
 
   return (
     <BottomModal isVisible={isVisible} onClose={onClose} style={{}} contentStyle={{}}>
-      <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
-      <Text style={[styles.subtitle, { textAlign: isRTL ? 'right' : 'left' }]}>{subtitle}</Text>
+      <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]}>{t('topUpModal.title')}</Text>
+      <Text style={[styles.subtitle, { textAlign: isRTL ? 'right' : 'left' }]}>{t('topUpModal.subtitle')}</Text>
 
       <View style={styles.inputContainer}>
         <TextInput
@@ -72,7 +73,7 @@ const TopUpModal: React.FC<TopUpModalProps> = ({
           returnKeyType="done"
           onSubmitEditing={handleConfirm}
         />
-        <Text style={[styles.currency, { textAlign: isRTL ? 'right' : 'left' }]}>{currency}</Text>
+        <Text style={[styles.currency, { textAlign: isRTL ? 'right' : 'left' }]}>{t('topUpModal.currency')}</Text>
       </View>
 
       {!!error && (
@@ -81,13 +82,13 @@ const TopUpModal: React.FC<TopUpModalProps> = ({
 
       <View style={styles.buttonsRow}>
         <TouchableOpacity style={[styles.button, styles.cancel]} onPress={onClose} disabled={isLoading}>
-          <Text style={styles.cancelText}>{cancelLabel}</Text>
+          <Text style={styles.cancelText}>{t('topUpModal.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.confirm]} onPress={handleConfirm} disabled={isLoading}>
           {isLoading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Text style={styles.confirmText}>{confirmLabel}</Text>
+            <Text style={styles.confirmText}>{t('topUpModal.confirm')}</Text>
           )}
         </TouchableOpacity>
       </View>

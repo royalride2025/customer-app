@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  SafeAreaView,
   StatusBar,
   Image,
   Appearance,
@@ -34,6 +33,7 @@ import { useNavigation } from '@react-navigation/native';
 import moment from 'moment';
 import TopUpModal from '../../../lib/component/TopUpModal';
 import { setCurrentCharge } from '../../../redux/paymentSlice';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 const car = require('../../../../assets/images/car.png')

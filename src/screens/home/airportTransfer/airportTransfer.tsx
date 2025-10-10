@@ -4,7 +4,6 @@ import {
     Text,
     TouchableOpacity,
     StyleSheet,
-    SafeAreaView,
     StatusBar,
     ScrollView,
 } from 'react-native';
@@ -21,6 +20,7 @@ import { RootState } from '../../../redux/store';
 import { t } from 'i18next';
 import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 import { screenWidth } from '../../../utils/dimenstions';
+import { SafeAreaView } from 'react-native-safe-area-context';
  
 
 const airports = [
@@ -28,7 +28,7 @@ const airports = [
         id: 1,
         name: 'Hamad International Airport',
         address: 'Hamad International Airport, Doha, Qatar',
-        distance: '15.2 km',
+        // distance: '15.2 km',
         latitude: 25.2730,  // Add actual coordinates
         longitude: 51.6081,
     },
@@ -36,7 +36,7 @@ const airports = [
         id: 2,
         name: 'Doha International Airport',
         address: 'Doha International Airport, Doha, Qatar',
-        distance: '12.8 km',
+        // distance: '12.8 km',
         latitude: 25.2611,  // Add actual coordinates
         longitude: 51.5651,
     },

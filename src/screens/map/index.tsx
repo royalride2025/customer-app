@@ -383,11 +383,11 @@ console.log(currentBooking,"boooooooo")
         } else {
           console.log('❌ Invalid coordinates received from GPS:', { latitude, longitude });
           setIsLoading(false);
-          Alert.alert(
-            'Invalid Location Data',
-            'Received invalid coordinates from GPS. Please try again.',
-            [{ text: 'OK' }]
-          );
+          // Alert.alert(
+          //   'Invalid Location Data',
+          //   'Received invalid coordinates from GPS. Please try again.',
+          //   [{ text: 'OK' }]
+          // );
         }
       },
       (error) => {
@@ -1254,7 +1254,7 @@ console.log('🔍 pickupp location:', pickupLocation);
     
     if (!currentBookingId) {
       console.error('❌ No booking ID available for cancel ride');
-      Alert.alert('Error', 'No booking found to cancel');
+      // Alert.alert('Error', 'No booking found to cancel');
       return;
     }
 

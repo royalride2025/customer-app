@@ -28,9 +28,10 @@ const toastConfig = {
           marginHorizontal: 20,
           borderRadius: 8,
           height: 60,
-          zIndex: 999999,
+          // zIndex: 999999,
           elevation: 999999,
           backgroundColor: 'white',
+          
           shadowColor: '#000',
           shadowOffset: {
             width: 0,

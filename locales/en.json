@@ -79,6 +79,7 @@
   "airport_destination": "Airport destination",
   "airports": "Airports",
   "savedLocations": "Saved and recent locations",
+  "no_saved_locations": "No saved locations",
   "locations": {
     "work": "Work",
     "home": "Home",
@@ -232,7 +233,14 @@
   "flight_number_required": "Flight number",
   "flight_number_required_error": "Flight number is required",
   "flight_info_helps_terminal": "Providing your flight number helps us assign the correct terminal.",
-  "airport_pickup_exclusive_perks": "Airport pickup exclusive perks"
- 
-
+  "airport_pickup_exclusive_perks": "Airport pickup exclusive perks",
+  "enter4DigitOtp": "Enter 4 digit OTP",
+  "topUpModal": {
+    "title": "Charge Wallet",
+    "subtitle": "Enter the amount you want to add to your wallet",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "currency": "QR"
+  },
+  "co_saved": "CO.\nSaved"
 }

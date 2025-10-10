@@ -124,7 +124,7 @@ const profileData = useAppSelector((state: RootState) => state.profile.data);
               <Text style={styles.coinsLabel}>kg</Text>
             </View> */}
           <View style={styles.savedBadge}>
-            <Text style={styles.savedText}>CO.{'\n'}Saved</Text>
+            <Text style={styles.savedText}>{t('co_saved')}</Text>
           </View>
           <Svg xml={greenLeave} rest={{ height: 45, width: 22 }} />
         </View>
@@ -218,7 +218,7 @@ const profileData = useAppSelector((state: RootState) => state.profile.data);
               <TouchableOpacity onPress={()=>navigation.navigate('address')}>
               <Text style={styles.addButton}>{t('add')}</Text>
             </TouchableOpacity>
-              <Text style={styles.noDataText}>No saved locations</Text>
+              <Text style={styles.noDataText}>{t('no_saved_locations')}</Text>
               
             </View>
           )}

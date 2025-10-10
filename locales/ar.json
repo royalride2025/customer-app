@@ -229,5 +229,15 @@
   "schedule_ride": "جدولة الرحلة",
   "flight_number_required": "رقم الرحلة",
   "flight_number_required_error": "رقم الرحلة مطلوب",
-  "flight_info_helps_terminal": "توفير رقم الرحلة يساعدنا في تحديد الصالة الصحيحة."
+  "flight_info_helps_terminal": "توفير رقم الرحلة يساعدنا في تحديد الصالة الصحيحة.",
+  "enter4DigitOtp": "أدخل رمز التحقق المكون من 4 أرقام",
+  "topUpModal": {
+    "title": "شحن المحفظة",
+    "subtitle": "أدخل المبلغ الذي تريد إضافته إلى محفظتك",
+    "confirm": "تأكيد",
+    "cancel": "إلغاء",
+    "currency": "ر.ق"
+  },
+  "no_saved_locations": "لا توجد مواقع محفوظة",
+  "co_saved": "CO.\nتم التوفير"
 }

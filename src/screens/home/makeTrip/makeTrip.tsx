@@ -4,11 +4,12 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
+ 
   StatusBar,
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import { StyleGuide } from '../../../../StyleGuide';
@@ -30,6 +31,7 @@ import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 import { TextInput } from 'react-native';
 import { setCurrentCharge } from '../../../redux/paymentSlice';
 import TopUpModal from '../../../lib/component/TopUpModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const MakeTripc = () => {
   const [fromLocation, setFromLocation] = useState('');
@@ -170,7 +172,7 @@ console.log('addressState',addresses)
       navigation.navigate('map', { from: 'plan', booking: response?.data?.data });
 
     } catch (error: any) {
-      const message = error?.response?.data?.message || error.message || '';
+      const message = error?.response?.data.error || error.message || '';
       console.log(message, "error======")
       // Detect insufficient credits pattern and extract minimum
       if (typeof message === 'string' && message.toLowerCase().includes('insufficient credits')) {
@@ -251,8 +253,10 @@ console.log('addressState',addresses)
   console.log(fromLocation, "fromLocation")
 
   return (
+    <>
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
+    <Toast />
       <View
         style={{
           backgroundColor: 'transparent',
@@ -263,8 +267,8 @@ console.log('addressState',addresses)
           // paddingVertical: 8,
           position: 'absolute',
           alignSelf: 'center',
-          top: 2,
-          zIndex: 9999,
+          top: -1,
+          zIndex: 0,
           width: '100%',
         }}
       >
@@ -286,6 +290,7 @@ console.log('addressState',addresses)
           borderBottomLeftRadius: 1,
           marginLeft: 0,
           paddingLeft: 4,
+       
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)', // optional shadow
         }}>
           <GooglePlacesAutocomplete
@@ -304,7 +309,7 @@ console.log('addressState',addresses)
                 setFromLocation(e.nativeEvent.target)
               },
             }}
-            styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.3,color: 'black' }, description: { color: 'black', fontSize: 16 },  // suggestion text -> green
+            styles={{ textInput: { fontSize: 16, color: 'black', height: 50,textAlign: isRTL ? 'right' : 'left' }, listView: { position: 'absolute', top: screenWidth * 0.3,color: 'black' }, description: { color: 'black', fontSize: 16 },  // suggestion text -> green
             predefinedPlacesDescription: { color: 'black' }  }}
             onPress={(data, details = null) => {setFromLocation(data.description)
               if (details) {
@@ -346,7 +351,7 @@ console.log('addressState',addresses)
               </View>
             )}
             renderRightButton={() =>
-              fromLocation ? (
+              fromLocation &&Platform.OS === 'android' ? (
                 <TouchableOpacity
                   onPress={() => {
                     setFromLocation('');
@@ -415,8 +420,9 @@ console.log('addressState',addresses)
                 fontSize: 16,
                 color: StyleGuide.color.black,
                 textAlign: isRTL ? 'right' : 'left'
-              }, listView: { position: 'absolute', top: 50 }, description: { color: 'black', fontSize: 16 },  // suggestion text -> green
-            predefinedPlacesDescription: { color: 'black' } 
+              }, listView: { position: 'absolute', top: 50 }, description: { color: 'black', fontSize: 16, }, 
+            predefinedPlacesDescription: { color: 'black' }, 
+            
             }}
             onPress={(data, details = null) => {setToLocation(data.description)
               if (details) {
@@ -454,7 +460,7 @@ console.log('addressState',addresses)
               </View>
             )}
             renderRightButton={() =>
-              toLocation ? (
+              toLocation &&Platform.OS === 'android' ? (
                 <TouchableOpacity
                   onPress={() => {
                     setToLocation('');
@@ -520,7 +526,7 @@ console.log('addressState',addresses)
         ))
       ) : (
         <View style={styles.noAddressesWrap}>
-          <Text style={styles.noAddressesText}>No saved locations</Text>
+          <Text style={styles.noAddressesText}>{t('no_saved_locations')}</Text>
         </View>
       )}
     </>
@@ -545,6 +551,7 @@ console.log('addressState',addresses)
         onConfirm={(amt) => { setTopUpAmount(amt); handleConfirmTopUp(); }}
       />
     </SafeAreaView>
+    </>
   );
 };
 
@@ -562,7 +569,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
-  content: { flex: 1, marginTop: SCREEN_WIDTH * 0.36 },
+  content: { flex: 1, marginTop: SCREEN_WIDTH * 0.36,zIndex:-2},
   locationContainer: {
     backgroundColor: StyleGuide.color.white,
     borderRadius: 12,

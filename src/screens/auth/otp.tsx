@@ -190,7 +190,7 @@ const Otp = () => {
                     textAlign: isRTL ? 'right' : 'left',
                   },
                 ]}
-                placeholder={"Enter 4 digit OTP"}
+                placeholder={t('enter4DigitOtp')}
                 placeholderTextColor="#999"
                 value={value}
                 onChangeText={setValue}
@@ -243,7 +243,7 @@ const Otp = () => {
                     flex: 1,
                   },
                 ]}
-                placeholder={"Confirm Password"}
+                placeholder={t("confirmPassword")}
                 placeholderTextColor="#999"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}

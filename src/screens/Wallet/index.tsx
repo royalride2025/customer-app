@@ -280,7 +280,7 @@ console.log('credits-------', credits)
     }
   };
 useScreenHeader({
-    title:'Wallet'
+    title:t('drawer.wallet')
 })
 const navigation=useNavigation()
 const { flexDirection, marginRightOrLeft ,textAlignment} = useTranslationStyles();

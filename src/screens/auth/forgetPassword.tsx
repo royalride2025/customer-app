@@ -68,7 +68,7 @@ const ForgetPassword = () => {
       console.log('otppppbody',body)
       const response = await networkClient.post(API_ENDPOINTS.GET_OTP, body);
       console.log('Signup response:', response);
-      Toast.show({ type: 'success', text1: 'Success', text2: 'Account created successfully!' });
+      // Toast.show({ type: 'success', text1: 'Success', text2: 'Account created successfully!' });
       setTimeout(() => {
         navigation.navigate('otp',{phone:`${selectedCountry.code.replace('+', '')}${phoneNumber}`})
       }, 500);
@@ -76,7 +76,7 @@ const ForgetPassword = () => {
     } catch (err: any) {
       const message = err?.response?.data?.message || err.message || 'Signup failed';
       setError(message);
-      Toast.show({ type: 'error', text1: 'Error', text2: message });
+      // Toast.show({ type: 'error', text1: 'Error', text2: message });
       console.log('Signup error:', err);
     } finally {
       setLoading(false);
@@ -141,7 +141,7 @@ const ForgetPassword = () => {
 
         <AppButton
           style={{ marginTop: screenWidth * 0.12, width: '100%' }}
-          title={'Submit'}
+          title={t("submit")}
           onPress={handleGetOtp}
           loading={loading}
           disabled={loading || !phoneNumber.trim() || phoneNumber.trim().length < 7}
