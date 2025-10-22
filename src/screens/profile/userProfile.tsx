@@ -30,14 +30,16 @@ import { useAppSelector } from "../../redux/reduxHooks";
 import { RootState } from "../../redux/store";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useScreenHeader } from "../../lib/hooks/useScreenHeader";
+import { useNavigation } from '@react-navigation/native';
+import { shouldShowVerificationPrompt } from '../../utils/verificationUtils';
 
 export default function UserProfile() {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("Male"); // Set Male as default
-  const [imageUri, setImageUri] = useState(null);
-  const [imageUrl, setImageUrl] = useState(null); // Server image URL
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null); // Server image URL
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [date, setDate] = useState(new Date());
@@ -52,7 +54,9 @@ export default function UserProfile() {
   const [updatingPassword, setUpdatingPassword] = useState(false); // Password update loading state
 
   const profileData = useAppSelector((state: RootState) => state.profile.data);
+  const authUser = useAppSelector((state: RootState) => state.auth.user);
   const scrollViewRef = useRef<ScrollView>(null);
+  const navigation = useNavigation();
 
   // Keyboard event handlers
   useEffect(() => {
@@ -89,7 +93,12 @@ export default function UserProfile() {
           
           // Handle image with validation
           const profileImg = customerProfile.profile_img;
-          if (profileImg && profileImg !== '' && profileImg !== 'null' && profileImg !== 'undefined') {
+          if (profileImg && 
+              profileImg !== '' && 
+              profileImg !== 'null' && 
+              profileImg !== 'undefined' &&
+              typeof profileImg === 'string' &&
+              profileImg.trim() !== '') {
             setImageUrl(profileImg);
             setImageUri(profileImg);
           } else {
@@ -105,7 +114,12 @@ export default function UserProfile() {
           
           // Handle image with validation
           const profileImg = profile?.driver_img || profile?.profile_img;
-          if (profileImg && profileImg !== '' && profileImg !== 'null' && profileImg !== 'undefined') {
+          if (profileImg && 
+              profileImg !== '' && 
+              profileImg !== 'null' && 
+              profileImg !== 'undefined' &&
+              typeof profileImg === 'string' &&
+              profileImg.trim() !== '') {
             setImageUrl(profileImg);
             setImageUri(profileImg);
           } else {
@@ -153,7 +167,7 @@ export default function UserProfile() {
     }
   };
 
-  const uploadImageToServer = async (asset) => {
+  const uploadImageToServer = async (asset: any) => {
     try {
       const formData = new FormData();
       formData.append('file', {
@@ -169,8 +183,8 @@ export default function UserProfile() {
       console.log('File upload response:', response.data);
       return response.data;
     } catch (uploadError) {
-      console.log('Upload error:', uploadError?.message);
-      throw new Error(uploadError?.message || 'Could not upload file.');
+      console.log('Upload error:', (uploadError as any)?.message);
+      throw new Error((uploadError as any)?.message || 'Could not upload file.');
     }
   };
 
@@ -194,7 +208,7 @@ export default function UserProfile() {
         includeBase64: false,
         maxHeight: 2000,
         maxWidth: 2000,
-        quality: 0.7,
+        quality: 0.7 as any,
       };
 
       const launcher = useCamera ? launchCamera : launchImageLibrary;
@@ -229,14 +243,14 @@ export default function UserProfile() {
           return;
         }
 
-        setImageUri(asset.uri);
+        setImageUri(asset.uri || null);
 
         try {
           const uploadResult = await uploadImageToServer(asset);
           setImageUrl(uploadResult.url);
           Toast.show({ type: 'success', text1: 'Success', text2: 'Profile photo uploaded successfully!' });
         } catch (uploadError) {
-          Toast.show({ type: 'error', text1: 'Upload Failed', text2: uploadError.message });
+          Toast.show({ type: 'error', text1: 'Upload Failed', text2: (uploadError as any).message });
           setImageUri(null);
         } finally {
           setUploading(false);
@@ -274,6 +288,21 @@ export default function UserProfile() {
       ]
     );
   }, []);
+
+  const handleVerifyPhone = useCallback(() => {
+    if (authUser?.phone) {
+      (navigation as any).navigate('verifyOtp', { 
+        phone: authUser.phone,
+        isFromSignup: false 
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Phone number not found. Please contact support.',
+      });
+    }
+  }, [authUser?.phone, navigation]);
 
   const validate = () => {
     if (!name.trim()) return "Please enter your name.";
@@ -321,10 +350,10 @@ export default function UserProfile() {
         // Use relative path instead of full URL
         const response = await networkClient.put(API_ENDPOINTS.UPDATE_PROFILE, payload);
         console.log('Profile update response:', response);
-      Toast.show({ type: 'success', text1: 'Success', text2: 'Profile updated successfully!' });
+      Toast.show({ type: 'success', text1: 'Success', text2: response?.data?.message  });
     } catch (error) {
       console.log('Save profile error:', error);
-      Toast.show({ type: 'error', text1: 'Error', text2: error?.message || 'Failed to save profile. Please try again.' });
+      Toast.show({ type: 'error', text1: 'Error', text2: (error as any)?.message || 'Failed to save profile. Please try again.' });
     } finally {
       setSaving(false);
     }
@@ -396,7 +425,7 @@ export default function UserProfile() {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error?.message || 'Failed to update password.',
+        text2: (error as any)?.message || 'Failed to update password.',
       });
     } finally {
       setUpdatingPassword(false);
@@ -430,6 +459,24 @@ export default function UserProfile() {
         
       )}
 
+      {/* Phone Verification Status */}
+      {profileData?.user && shouldShowVerificationPrompt(profileData.user) && (
+        <View style={styles.verificationIndicator}>
+          <View style={styles.verificationContent}>
+            <Text style={styles.verificationTitle}>📱 Phone Verification Required</Text>
+            <Text style={styles.verificationMessage}>
+              Your phone number is not verified. Please verify your phone number to access all features.
+            </Text>
+            <TouchableOpacity 
+              style={styles.verifyButton}
+              onPress={handleVerifyPhone}
+            >
+              <Text style={styles.verifyButtonText}>Verify Phone Number</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       <View style={styles.avatarSection}>
         <TouchableOpacity
           style={[styles.avatar, uploading && styles.avatarLoading]}
@@ -439,22 +486,28 @@ export default function UserProfile() {
           accessibilityHint="Tap to change profile photo"
         >
           {(() => {
-            // Check if there's a valid image in profile data
-            const profile = profileData?.profile as any;
-            const hasValidImage = profile?.customer_profile?.profile_img && 
-                                 profile.customer_profile.profile_img !== '' && 
-                                 profile.customer_profile.profile_img !== 'null' && 
-                                 profile.customer_profile.profile_img !== 'undefined';
+            // Check if there's a valid image to display
+            const hasValidImage = imageUri || imageUrl;
             
-            if (hasValidImage && imageUri) {
+            if (hasValidImage) {
+              // Use imageUri for newly selected images, fallback to imageUrl for server images
+              const imageSource = imageUri || imageUrl;
               return (
                 <>
-                  <Image source={{ uri: imageUri }} style={styles.avatarImage} />
-                                {uploading && (
-                <View style={styles.uploadingOverlay}>
-                  <ActivityIndicator size="small" color={StyleGuide.color.primary} />
-                </View>
-              )}
+                  <Image 
+                    source={{ uri: imageSource! }} 
+                    style={styles.avatarImage}
+                    onError={() => {
+                      // If image fails to load, reset the image state
+                      setImageUri(null);
+                      setImageUrl(null);
+                    }}
+                  />
+                  {uploading && (
+                    <View style={styles.uploadingOverlay}>
+                      <ActivityIndicator size="small" color={StyleGuide.color.primary} />
+                    </View>
+                  )}
                 </>
               );
             } else {
@@ -1101,5 +1154,43 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 40,
+  },
+  verificationIndicator: {
+    backgroundColor: '#FFF3CD',
+    borderColor: '#FFEAA7',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    marginHorizontal: 20,
+    marginTop: 20,
+  },
+  verificationContent: {
+    flex: 1,
+  },
+  verificationTitle: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.semiBold,
+    color: '#856404',
+    marginBottom: 4,
+  },
+  verificationMessage: {
+    fontSize: 14,
+    fontFamily: StyleGuide.fontFamily.regular,
+    color: '#856404',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  verifyButton: {
+    backgroundColor: '#856404',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  verifyButtonText: {
+    color: '#FFF3CD',
+    fontSize: 14,
+    fontFamily: StyleGuide.fontFamily.medium,
   },
 });

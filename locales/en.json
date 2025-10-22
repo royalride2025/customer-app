@@ -26,6 +26,11 @@
   "enterOtpInstructions": "Enter the 4-digit code sent to your mobile number to verify your account.",
   "submit": "Submit",
   "otpVerification": "OTP Verification",
+  "verifyPhoneNumber": "Verify Phone Number",
+  "verify": "Verify",
+  "enter4DigitOtp": "Enter 4-digit OTP",
+  "enterOtpInstructionsForGoogle": "Enter your phone number and the 4-digit code sent to verify your account.",
+  "enterYourPhoneNumber": "Enter Your Phone Number",
   "by_flight_arrival": "By Flight Arrival",
   "by_time": "By Time",
   "header":{

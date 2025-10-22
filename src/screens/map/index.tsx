@@ -401,30 +401,30 @@ console.log(currentBooking,"boooooooo")
           errorMessage = 'Location unavailable. Please check your device settings.';
         }
         
-        Alert.alert(
-          'Location Error', 
-          errorMessage,
-          [
-            {
-              text: 'Settings',
-              onPress: () => {
-                if (Platform.OS === 'ios') {
-                  Linking.openURL('app-settings:');
-                } else {
-                  Linking.openURL('package:' + 'com.royal_ride');
-                }
-              }
-            },
-            {
-              text: 'Retry',
-              onPress: () => getCurrentLocation()
-            },
-            {
-              text: 'Cancel',
-              style: 'cancel'
-            }
-          ]
-        );
+        // Alert.alert(
+        //   'Location Error', 
+        //   errorMessage,
+        //   [
+        //     {
+        //       text: 'Settings',
+        //       onPress: () => {
+        //         if (Platform.OS === 'ios') {
+        //           Linking.openURL('app-settings:');
+        //         } else {
+        //           Linking.openURL('package:' + 'com.royal_ride');
+        //         }
+        //       }
+        //     },
+        //     {
+        //       text: 'Retry',
+        //       onPress: () => getCurrentLocation()
+        //     },
+        //     {
+        //       text: 'Cancel',
+        //       style: 'cancel'
+        //     }
+        //   ]
+        // );
       },
       {
         enableHighAccuracy: true,

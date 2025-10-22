@@ -28,6 +28,8 @@ import { useAppSelector, useAppDispatch } from '../redux/reduxHooks';
 import { RootState } from '../redux/store';
 import { clearToken } from '../redux/authSlice';
 import { setLanguage } from '../redux/languageSlice';
+import { clearProfile } from '../redux/profileSlice';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { changeLanguage } from '../../i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import UserProfile from '../screens/profile/userProfile';
@@ -58,16 +60,37 @@ console.log('pppppp',profileData)
         },
         {
           text: "Logout",
-          onPress: () => {
-            // Close the drawer properly
-            if (props.navigation && props.navigation.closeDrawer) {
-              props.navigation.closeDrawer();
-            }
-            // Clear the token to trigger logout
-            dispatch(clearToken());
-            // Navigate to login screen after logout
-            if (props.navigation && props.navigation.navigate) {
-              props.navigation.navigate('login');
+          onPress: async () => {
+            try {
+              // Close the drawer properly
+              if (props.navigation && props.navigation.closeDrawer) {
+                props.navigation.closeDrawer();
+              }
+              
+              // Clear Google sign-in state
+              try {
+                await GoogleSignin.signOut();
+                console.log('Google sign-out successful');
+              } catch (error) {
+                console.log('Google sign-out error:', error);
+              }
+              
+              // Clear the token and profile data to trigger logout
+              dispatch(clearToken());
+              dispatch(clearProfile());
+              
+              // Navigate to login screen after logout
+              if (props.navigation && props.navigation.navigate) {
+                props.navigation.navigate('login');
+              }
+            } catch (error) {
+              console.error('Logout error:', error);
+              // Still clear token and profile data and navigate even if Google sign-out fails
+              dispatch(clearToken());
+              dispatch(clearProfile());
+              if (props.navigation && props.navigation.navigate) {
+                props.navigation.navigate('login');
+              }
             }
           }
         }

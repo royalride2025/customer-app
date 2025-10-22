@@ -1,9 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { clearProfile } from './profileSlice';
 
 interface UserInfo {
   id: string;
   role: string;
   phone: string;
+  is_verified?: boolean;
 }
 
 interface AuthState {

@@ -351,7 +351,7 @@ console.log("isAirportDestination",isAirportDestination)
         <Svg xml={airportTransferIcon} rest={{ height: 18, width: 18, style: isRTL ? { marginLeft: 8 } : { marginRight: 8 } }} />
         <View>
           <Text style={[styles.perksTitle, textAlignment]}>{'Airport Dropoff Perks'}</Text>
-          <Text style={[styles.perksLink, textAlignment]} onPress={() => Linking.openURL('https://www.blacklane.com/en/airport-transfer/')}>{'Learn More RoyalRide'}</Text>
+          <Text style={[styles.perksLink, textAlignment]} onPress={() => Linking.openURL('https://app.royalride.qa')}>{'Learn More RoyalRide'}</Text>
         </View>
       </View>
       <Modal

@@ -155,12 +155,12 @@ console.log('addressState',addresses)
         booking_type: 'instant',
         pickup_location: {
           type: 'Point',
-          coordinates: [ fromLocationData.latitude,fromLocationData.longitude],
+          coordinates: [ fromLocationData.longitude,fromLocationData.latitude],
           address: fromLocationData.address,
         },
         dropoff_location: {
           type: 'Point',
-          coordinates: [ toLocationData.latitude,toLocationData.longitude],
+          coordinates: [ toLocationData.longitude,toLocationData.latitude],
           address: toLocationData.address,
         },
       };
@@ -172,8 +172,8 @@ console.log('addressState',addresses)
       navigation.navigate('map', { from: 'plan', booking: response?.data?.data });
 
     } catch (error: any) {
-      const message = error?.response?.data.error || error.message || '';
-      console.log(message, "error======")
+      const message = error?.response?.data.message || error.message || '';
+      console.log(error?.response?.data, "error======")
       // Detect insufficient credits pattern and extract minimum
       if (typeof message === 'string' && message.toLowerCase().includes('insufficient credits')) {
         const match = message.match(/([0-9]+\.?[0-9]*)/);

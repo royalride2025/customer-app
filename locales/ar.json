@@ -26,6 +26,11 @@
   "enterOtpInstructions": "أدخل الرمز المكون من 4 أرقام المرسل إلى رقم هاتفك المحمول للتحقق من حسابك.",
   "submit": "إرسال",
   "otpVerification": "التحقق من الرمز (OTP)",
+  "verifyPhoneNumber": "تحقق من رقم الهاتف",
+  "verify": "تحقق",
+  "enter4DigitOtp": "أدخل الرمز المكون من 4 أرقام",
+  "enterOtpInstructionsForGoogle": "أدخل رقم هاتفك والرمز المكون من 4 أرقام المرسل للتحقق من حسابك.",
+  "enterYourPhoneNumber": "أدخل رقم هاتفك",
   "header": {
     "rent_ride": "استئجار الرحلة",
     "plan_your_ride": "خطط لرحلتك",

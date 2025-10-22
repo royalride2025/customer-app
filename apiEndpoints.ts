@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   CHANGE_PASSWORD:`/api/auth/change-password`,
   UPDATE_PROFILE:`/api/profile/customer/update-profile`,
   REGISTER_DEVICE: '/api/auth/register-device',
+  NEW_VERIFY_OTP:'api/auth/verify-otp-and-verify',
   
 
   // Booking

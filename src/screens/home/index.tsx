@@ -50,6 +50,21 @@ const Home = () => {
     longitudeDelta: 0.1,
   };
 
+  useEffect(() => {
+    // Wait for user data to load from Redux
+    if (profile !== null && profile !== undefined) {
+     
+      
+      // Check verification status once data is available
+      if (profile?.user.is_verified === false) {
+        // Navigate to OTP screen if not verified
+        navigation.navigate('verifyOtp', {
+          // s
+        });
+      }
+    }
+  }, [profile, navigation]);
+
   // Set default location to Qatar (Doha) or get current location if possible
   const setDefaultLocation = useCallback(() => {
     // Try to get current location first
@@ -95,13 +110,30 @@ const Home = () => {
     setDefaultLocation();
   }, [setDefaultLocation]);
 
-  useEffect(() => {
-    console.log('Current user:', user);
+
+useFocusEffect(
+  useCallback(() => {
+    console.log('Screen focused, fetching profile & upcoming bookings...');
     fetchProfile();
+
     if (user?.id) {
       fetchUpcomingBookings();
     }
-  }, [user?.id]); // Consider adding fetchProfile to dependencies
+
+    // Optional cleanup when screen is unfocused
+    return () => {
+      console.log('Screen unfocused — cleanup if needed');
+    };
+  }, [user?.id])
+);
+
+  // useEffect(() => {
+  //   console.log('Current user:', user);
+  //   fetchProfile();
+  //   if (user?.id) {
+  //     fetchUpcomingBookings();
+  //   }
+  // }, [user?.id]); // Consider adding fetchProfile to dependencies
 
   const fetchProfile = useCallback(async () => {
     try {

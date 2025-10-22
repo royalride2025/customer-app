@@ -12,6 +12,7 @@ import BookRide from '../screens/home/bookRide/bookRide';
 import AirportTransfer from '../screens/home/airportTransfer/airportTransfer';
 import ForgetPassword from '../screens/auth/forgetPassword';
 import Otp from '../screens/auth/otp';
+import VerifyOtp from '../screens/auth/verifyOtp';
 import Map from '../screens/map';
 import CarProfile from '../screens/profile/carProfile';
 import DrawerNavigator from './drawerNavigator';
@@ -43,6 +44,7 @@ export type RootStackParamList = {
   airportTransfer:undefined
   forgetPassword:undefined
   otp:{ phone: string }
+  verifyOtp:{ phone: string; isFromSignup?: boolean }
   map:undefined
   carProfile:undefined
   drawerNavigator:undefined
@@ -103,6 +105,25 @@ const AppNavigator = () => {
               </Text>
             ),
           }} />
+          <Stack.Screen name="verifyOtp" component={VerifyOtp} options={{
+            headerShown: true,
+            headerStyle: {
+              backgroundColor: '#f8f8f8',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            },
+            headerShadowVisible: false,
+            headerTitle: () => (
+              <Text style={{
+                color: '#333',
+                fontSize: 18,
+                fontFamily: StyleGuide.fontFamily.bold,
+              }}>
+                {t('verifyPhoneNumber')}
+              </Text>
+            ),
+          }} />
         </>
       ) : (
         <>
@@ -121,6 +142,25 @@ const AppNavigator = () => {
           <Stack.Screen name="airportTransfer" component={AirportTransfer} />
           <Stack.Screen name="carProfile" component={CarProfile} />
           <Stack.Screen options={{ headerShown: false }} name="map" component={Map} />
+          <Stack.Screen name="verifyOtp" component={VerifyOtp} options={{
+            headerShown: true,
+            headerStyle: {
+              backgroundColor: '#f8f8f8',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 0,
+            },
+            headerShadowVisible: false,
+            headerTitle: () => (
+              <Text style={{
+                color: '#333',
+                fontSize: 18,
+                fontFamily: StyleGuide.fontFamily.bold,
+              }}>
+                {t('verifyPhoneNumber')}
+              </Text>
+            ),
+          }} />
         </>
       )}
     </Stack.Navigator>
