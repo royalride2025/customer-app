@@ -40,6 +40,24 @@ const Home = () => {
   const currentBooking = useAppSelector((state: RootState) => state.booking.currentBooking);
   const dispatch = useAppDispatch();
 
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+// Add this effect to stop tracking after marker renders
+useEffect(() => {
+  if (currentLocation && tracksViewChanges) {
+    // Stop tracking view changes after a short delay
+    const timeout = setTimeout(() => {
+      setTracksViewChanges(false);
+    }, 100);
+    return () => clearTimeout(timeout);
+  }
+}, [currentLocation, tracksViewChanges]);
+
+// Reset tracking when location changes
+useEffect(() => {
+  setTracksViewChanges(true);
+}, [currentLocation]);
+
   const profile = useAppSelector((state: RootState) => state.profile.data);
   console.log('profile========/////////', profile);
 
@@ -49,6 +67,8 @@ const Home = () => {
     latitudeDelta: 0.1,        
     longitudeDelta: 0.1,
   };
+
+
 
   useEffect(() => {
     // Wait for user data to load from Redux
@@ -163,6 +183,7 @@ useFocusEffect(
     if (!user?.id) return;
     try {
       const response = await networkClient.get(`${API_ENDPOINTS.GET_CUSTOMER_BOOKINGS(user?.id)}`);
+      console.log('response========/////////', response);
       if (response && response.data && response.data?.data) {
         setUpcomingBookings(response.data.data);
       }
@@ -860,7 +881,7 @@ const handleDeleteAddress = (addressId: string) => {
         {currentLocation && (
           <Marker
             coordinate={currentLocation}
-            tracksViewChanges={true}
+            tracksViewChanges={tracksViewChanges}
             onDragEnd={handleMarkerDragEnd}
             draggable={true}
             title="Your Location"
@@ -885,9 +906,9 @@ const handleDeleteAddress = (addressId: string) => {
         const currentTime = new Date();
         const validBookings = upcomingBookings.filter((booking: any) => {
           const bookingTime = new Date(booking.start_time);
-          return bookingTime <= currentTime;
+          return bookingTime >= currentTime;
         });
-        
+        console.log('validBookings========/////////', validBookings);
         if (validBookings.length > 0) {
           return (
             <TouchableOpacity
