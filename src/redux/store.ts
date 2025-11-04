@@ -10,6 +10,7 @@ import bookingReducer from './bookingSlice';
 import profileReducer from './profileSlice';
 import notificationReducer from './notificationSlice';
 import paymentReducer from './paymentSlice';
+import messageReducer from './messageSlice';
 
 const rootReducer = combineReducers({
   language: languageReducer,
@@ -19,6 +20,7 @@ const rootReducer = combineReducers({
   profile: profileReducer,
   notification: notificationReducer,
   payment: paymentReducer,
+  message: messageReducer,
 });
 
 const persistConfig = {

@@ -44,11 +44,12 @@ type VerifyOtpRouteParams = {
 const CELL_COUNT = 4;
 const logo = require('../../../assets/images/logo.png');
 
-const VerifyOtp = () => {
+const VerifyAfterlogin = () => {
   const [value, setValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [initialOtpSent, setInitialOtpSent] = useState(false);
   
   // Phone number state for Google users
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -78,14 +79,6 @@ const VerifyOtp = () => {
   console.log("isFromSignup---", isFromSignup);
   console.log("isGoogleUser---", isGoogleUser);
 
-  // Initialize phone number for Google users
-  useEffect(() => {
-    if (isGoogleUser && !phone) {
-      // Google user without phone number
-      console.log("Google user without phone number");
-    }
-  }, [isGoogleUser, phone]);
-
   const validatePhone = (phone: string): string => {
     if (!phone.trim()) return 'Mobile number is required';
     return '';
@@ -114,10 +107,60 @@ const VerifyOtp = () => {
     }
   }, [countdown]);
 
-  // Start countdown when component mounts
+  // AUTO SEND OTP when component mounts
   useEffect(() => {
-    setCountdown(60); // 60 seconds countdown
-  }, []);
+    const sendInitialOtp = async () => {
+      // Skip if already sent or if Google user without phone
+      if (initialOtpSent || (isGoogleUser && !phone && !profile?.user?.phone)) {
+        return;
+      }
+
+      setInitialOtpSent(true);
+      
+      // Determine which phone to use
+      const phoneToUse = phone || profile?.user?.phone;
+      
+      if (!phoneToUse) {
+        console.log('No phone number available to send OTP');
+        return;
+      }
+
+      try {
+        const body = {
+          phone: phoneToUse,
+        };
+        
+        console.log('Auto-sending OTP to:', phoneToUse);
+        const response = await networkClient.post(API_ENDPOINTS.GET_OTP_SIGN_UP, body);
+        console.log('Auto OTP send response:', response);
+        
+        Toast.show({ 
+          type: 'success', 
+          text1: 'OTP Sent', 
+          text2: 'Verification code sent to your phone number' 
+        });
+        
+        // Start countdown
+        setCountdown(60);
+        
+      } catch (err: any) {
+        console.log('Auto OTP send error:', err);
+        const message = err?.response?.data?.message || err.message || 'Failed to send OTP';
+        Toast.show({ 
+          type: 'error', 
+          text1: 'Error', 
+          text2: message 
+        });
+      }
+    };
+
+    // Add a small delay before sending OTP (500ms)
+    const timer = setTimeout(() => {
+      sendInitialOtp();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [phone, profile?.user?.phone, isGoogleUser, initialOtpSent]);
 
   // Handle hardware back button for Android
   useFocusEffect(
@@ -157,8 +200,8 @@ const VerifyOtp = () => {
     }
 
     // For Google users without phone number, validate phone input
-    let phoneToUse = phone;
-    if (isGoogleUser && !phone) {
+    let phoneToUse = phone || profile?.user?.phone;
+    if (isGoogleUser && !phone && !profile?.user?.phone) {
       const phoneErr = validatePhone(phoneNumber);
       setPhoneError(phoneErr);
       if (phoneErr) {
@@ -176,7 +219,7 @@ const VerifyOtp = () => {
 
     try {
       const body = {
-        phone: phoneToUse||`${profile?.user.phone}`,
+        phone: phoneToUse,
         otp: value,
       };
       
@@ -191,22 +234,15 @@ const VerifyOtp = () => {
           text2: response?.data?.message || 'Phone number verified successfully!' 
         });
         
-        // Update user verification status in Redux if available
-        // if (response.data.user) {
-        //   dispatch(updateUser({ is_verified: true }));
-
-        //   dispatch(setUser({ ...response.data.user, is_verified: true }));
-        // }
+        // Update Redux state to mark user as verified
+        if (profile) {
+          dispatch(updateUser({ 
+            ...profile.user, 
+            is_verified: true 
+          }));
+        }
         
-        setTimeout(() => {
-          if (isFromSignup) {
-            // Navigate to login after successful verification from signup
-            (navigation as any).navigate('login');
-          } else {
-            // Navigate back to profile or main screen if from profile
-            (navigation as any).goBack();
-          }
-        }, 1500);
+        navigation.goBack();
       }
     } catch (err: any) {
       console.log('OTP verification error:', err);
@@ -228,8 +264,8 @@ const VerifyOtp = () => {
     }
 
     // For Google users without phone number, validate phone input
-    let phoneToUse = phone;
-    if (isGoogleUser && !phone) {
+    let phoneToUse = phone || profile?.user?.phone;
+    if (isGoogleUser && !phone && !profile?.user?.phone) {
       const phoneErr = validatePhone(phoneNumber);
       setPhoneError(phoneErr);
       if (phoneErr) {
@@ -240,7 +276,7 @@ const VerifyOtp = () => {
         });
         return;
       }
-      phoneToUse = `${selectedCountry.code}${phoneNumber}`||`${selectedCountry.code}${profile?.user.phone}`;
+      phoneToUse = `${selectedCountry.code.replace('+', '')}${phoneNumber}`;
     }
 
     setResendLoading(true);
@@ -274,13 +310,7 @@ const VerifyOtp = () => {
 
   // Handle back button navigation
   const handleBackPress = () => {
-    if (isFromSignup) {
-      // If from signup, go back to login
-      (navigation as any).navigate('login');
-    } else {
-      // If from profile or other screens, go back
-      (navigation as any).navigate('Main' );
-    }
+    navigation.goBack();
   };
 
   // Configure screen header with custom back button functionality
@@ -348,7 +378,7 @@ const VerifyOtp = () => {
           <Text style={styles.instructions}>
             {isGoogleUser && !phone 
               ? t('enterOtpInstructionsForGoogle') 
-              : `${t('enterOtpInstructions')} ${phone || ''}`
+              : `${t('enterOtpInstructions')} ${phone || profile?.user?.phone || ''}`
             }
           </Text>
           
@@ -479,4 +509,4 @@ const verifyOtpStyles = StyleSheet.create({
   },
 });
 
-export default VerifyOtp;
+export default VerifyAfterlogin;

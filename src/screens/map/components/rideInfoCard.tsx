@@ -8,6 +8,7 @@ import {
     Animated,
     Pressable,
     Dimensions,
+    Linking,
 } from 'react-native';
 import { StyleGuide } from '../../../../StyleGuide';
 import { screenWidth } from '../../../utils/dimenstions';
@@ -25,6 +26,7 @@ import useTranslationStyles from '../../../../locales/useTranslationStyles';
 import { RootState } from '../../../redux/store';
 import { useAppSelector } from '../../../redux/reduxHooks';
 import { t } from 'i18next';
+import MessageBadge from '../../../lib/component/MessageBadge';
 
 interface RideInfoCardProps {
     driverName?: string;
@@ -45,6 +47,7 @@ interface RideInfoCardProps {
     carImage?: string;
     profileImage?: string;
     carDriverName?: string;
+    chatId?: string;
 }
 
 const car = require('../../../../assets/images/car1.png');
@@ -68,12 +71,23 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
     carImage,
     profileImage,
     carDriverName,
+    chatId,
     style,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [animation] = useState(new Animated.Value(0));
     const { flexDirection,flipImage } = useTranslationStyles();
     const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
+    
+    // const handleCall = () => {
+    //     const emergencyNumber = "112";  // Example emergency number, change if needed
+    //     Linking.openURL(`tel:${emergencyNumber}`)
+    //       .catch(err => console.error("Failed to open dialer", err));
+    //   };// Get message state for badge
+    const messageState = useAppSelector((state: RootState) => state.message);
+   
+    const chatMessageInfo = chatId ? messageState.unreadMessages[chatId] : null;
+    const hasNewMessages = chatMessageInfo?.hasNewMessages || false;
     const toggleExpanded = () => {
         const toValue = isExpanded ? 0 : 1;
 
@@ -164,6 +178,16 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                                 activeOpacity={0.7}
                             >
                                 <Text style={styles.actionButtonText}>💬</Text>
+                                {
+                                    hasNewMessages && (
+                                        <MessageBadge 
+                                            count={hasNewMessages}
+                                            size={getResponsiveSize(10)}
+                                            color={StyleGuide.color.primary}
+                                            textColor={StyleGuide.color.white}
+                                        />
+                                    )
+                                }
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -361,6 +385,7 @@ const createStyles = (isExpanded = false, booking_type?: string) => StyleSheet.c
         justifyContent: 'center',
         alignItems: 'center',
         // backgroundColor: 'rgba(0,0,0,0.05)',
+        position: 'relative',
     },
     actionButtonText: {
         fontSize: getResponsiveFontSize(14),

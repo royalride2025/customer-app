@@ -30,6 +30,7 @@ import { StyleGuide } from '../../StyleGuide';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import ManageAddress from '../screens/address';
+import VerifyAfterlogin from '../screens/auth/verifyAfterlogin';
 
 
 // Define the types for the navigator
@@ -132,7 +133,7 @@ const AppNavigator = () => {
           <Stack.Screen name="transaction" component={Transactions} />
           <Stack.Screen name="address" component={ManageAddress} />
          
-
+        <Stack.Screen name="verifyAfterlogin" component={VerifyAfterlogin} />
           <Stack.Screen options={{ headerShown: false }} name="paymentReceipt" component={PaymentReceipt} />
           <Stack.Screen options={{ headerShown: false }} name="PaymentWebView" component={PaymentWebView} />
           <Stack.Screen options={{ headerShown: false }} name="customerChat" component={CustomerClientChat} />
@@ -142,7 +143,7 @@ const AppNavigator = () => {
           <Stack.Screen name="airportTransfer" component={AirportTransfer} />
           <Stack.Screen name="carProfile" component={CarProfile} />
           <Stack.Screen options={{ headerShown: false }} name="map" component={Map} />
-          <Stack.Screen name="verifyOtp" component={VerifyOtp} options={{
+          {/* <Stack.Screen name="verifyOtp" component={VerifyOtp} options={{
             headerShown: true,
             headerStyle: {
               backgroundColor: '#f8f8f8',
@@ -160,7 +161,7 @@ const AppNavigator = () => {
                 {t('verifyPhoneNumber')}
               </Text>
             ),
-          }} />
+          }} /> */}
         </>
       )}
     </Stack.Navigator>

@@ -22,12 +22,14 @@ import useTranslationStyles from '../../../locales/useTranslationStyles';
 import { useAppSelector, useAppDispatch } from '../../redux/reduxHooks';
 import { RootState } from '../../redux/store';
 import { setCurrentBooking, updateCurrentBooking, clearCurrentBooking, updateBookingStatus, clearBookingStatus, setStatusInfo } from '../../redux/bookingSlice';
+import { addUnreadMessage, setChatOpen } from '../../redux/messageSlice';
 import { useSocketReconnection } from '../../lib/hooks/useSocketReconnection';
 import networkClient from '../../../networkClient';
 import { API_ENDPOINTS } from '../../../apiEndpoints';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import DurationTimer from './components/durationTimer';
+import socketService from '../../services/socket';
 
 const car = require('../../../assets/images/halfCar.png');
 
@@ -86,6 +88,8 @@ const Map = () => {
   const bookingStatus = useAppSelector((state: RootState) => state.booking.bookingStatus);
   const statusMessage = useAppSelector((state: RootState) => state.booking.statusMessage);
   const statusIcon = useAppSelector((state: RootState) => state.booking.statusIcon);
+  const user = useAppSelector((state: RootState) => state.auth.user);
+  const messageState = useAppSelector((state: RootState) => state.message);
 
   console.log(currentBooking, "currentBooking/////")
 
@@ -218,13 +222,20 @@ const Map = () => {
   }, [dispatch, navigation]);
 
   const handleChat = useCallback(() => {
+    const chatId = currentBooking?.driver_id || currentBooking?.driver_id?._id;
+    
+    // Mark chat as open to clear unread messages
+    if (chatId) {
+      dispatch(setChatOpen({ isOpen: true, chatId }));
+    }
+    
     (navigation as any).navigate('customerChat', {
-      driverId: currentBooking?.driver_id || currentBooking?.driver_id?._id,
+      driverId: chatId,
       bookingId: currentBooking?.booking_id || currentBooking?._id,
       driverName: currentBooking?.driver?.name || currentBooking?.driver_profile?.name,
       driverImage: currentBooking?.driver?.profile_image || currentBooking?.driver_profile?.driver_img,
     });
-  }, [navigation]);
+  }, [navigation, dispatch, currentBooking]);
 
   const toggleModal = useCallback(() => {
     setModalVisible(!isModalVisible);
@@ -647,6 +658,54 @@ const Map = () => {
     console.log('💾 Driver data saved:', driverData);
   }, []);
 
+  // New message handler for badge (using socketService)
+  const handleNewMessageForBadge = useCallback((data: any) => {
+    console.log('📨 New message received for badge (socketService):', data);
+    
+    // Only add to unread count if the message is not from current user
+    const messageSenderId = data.senderId || data.sender_id;
+    const currentUserId = user?.id;
+    const chatId = currentBooking?.driver_id || currentBooking?.driver_id?._id;
+    
+    if (messageSenderId !== currentUserId && chatId && !messageState.isChatOpen) {
+      dispatch(addUnreadMessage({ 
+        chatId, 
+        messageId: data.messageId || data.id || `msg_${Date.now()}` 
+      }));
+      console.log('📨 Badge updated for new message from:', messageSenderId);
+    } else {
+      console.log('📨 Message not counted for badge:', {
+        isFromCurrentUser: messageSenderId === currentUserId,
+        chatId,
+        isChatOpen: messageState.isChatOpen
+      });
+    }
+  }, [dispatch, currentBooking, user, messageState.isChatOpen]);
+
+  // New message handler for badge (using useSocketReconnection)
+  const handleNewMessage = useCallback((data: any) => {
+    console.log('📨 New message received for badge (useSocketReconnection):', data);
+    
+    // Only add to unread count if the message is not from current user
+    const messageSenderId = data.senderId || data.sender_id;
+    const currentUserId = user?.id;
+    const chatId = currentBooking?.driver_id || currentBooking?.driver_id?._id;
+    
+    if (messageSenderId !== currentUserId && chatId && !messageState.isChatOpen) {
+      dispatch(addUnreadMessage({ 
+        chatId, 
+        messageId: data.messageId || data.id || `msg_${Date.now()}` 
+      }));
+      console.log('📨 Badge updated for new message from:', messageSenderId);
+    } else {
+      console.log('📨 Message not counted for badge:', {
+        isFromCurrentUser: messageSenderId === currentUserId,
+        chatId,
+        isChatOpen: messageState.isChatOpen
+      });
+    }
+  }, [dispatch, currentBooking, user, messageState.isChatOpen]);
+
   // Driver location update handler
   const handleDriverLocationUpdate = useCallback((data: any) => {
     console.log('🚗🚗🚗 DRIVER LOCATION UPDATE RECEIVED 🚗🚗🚗');
@@ -1002,6 +1061,7 @@ const Map = () => {
       addEventListener('bookingCancelled', handleBookingCancelled);
       addEventListener('bookingStatusUpdate', handleBookingStatusUpdate);
       addEventListener('driverLocationUpdate', handleDriverLocationUpdate);
+      addEventListener('newMessage', handleNewMessage);
       console.log('✅ Event listeners added successfully');
       console.log('🎯 Driver location update listener added - waiting for events...');
       console.log('🔍 Socket connection status:', {
@@ -1017,6 +1077,11 @@ const Map = () => {
         reconnectAttempts
       });
     }
+
+    // Also listen to socketService for newMessage events (same as customer chat)
+    console.log('🔌 Adding socketService listener for newMessage...');
+    socketService.on('newMessage', handleNewMessageForBadge);
+
     console.log('🔍 pickupp location:', pickupLocation);
     console.log('✅ Accepted driver state:', acceptedDriver);
     if (acceptedDriver) {
@@ -1025,6 +1090,7 @@ const Map = () => {
       console.log('🚗 Vehicle type:', acceptedDriver.vehicleType);
       console.log('🔢 Vehicle model:', acceptedDriver.vehicleModel);
     }
+    
     // Cleanup function
     return () => {
       removeEventListener('driverApplied', handleDriverApplied);
@@ -1032,8 +1098,10 @@ const Map = () => {
       removeEventListener('bookingCancelled', handleBookingCancelled);
       removeEventListener('bookingStatusUpdate', handleBookingStatusUpdate);
       removeEventListener('driverLocationUpdate', handleDriverLocationUpdate);
+      removeEventListener('newMessage', handleNewMessage);
+      socketService.off('newMessage', handleNewMessageForBadge);
     };
-  }, [socketConnected, addEventListener, removeEventListener, handleDriverApplied, handleBookingConfirmed, handleDriverLocationUpdate, currentBooking]);
+  }, [socketConnected, addEventListener, removeEventListener, handleDriverApplied, handleBookingConfirmed, handleDriverLocationUpdate, handleNewMessage, handleNewMessageForBadge, currentBooking]);
 
   // Set initial region: prioritize driver location, then current location, then pickup location, then fallback to default
   useEffect(() => {
@@ -1710,7 +1778,11 @@ const Map = () => {
           carColor={currentBooking?.driver?.vehicle?.color || currentBooking?.driver_active_vehicle?.vehicle_color || "Standard"}
           carModel={currentBooking?.driver?.vehicle?.model || currentBooking?.driver_active_vehicle?.car_model || "Unknown"}
           licensePlate={currentBooking?.driver?.vehicle?.license_plate || currentBooking?.driver_active_vehicle?.license_plate || "Unknown"}
-          onCallPress={() => console.log('Call pressed for:', acceptedDriver.driverName)}
+          onCallPress={() => {
+            const emergencyNumber = "";  // Example emergency number, change if needed
+            Linking.openURL(`tel:${emergencyNumber}`)
+              .catch(err => console.error("Failed to open dialer", err));
+          }}
           onMessagePress={handleChat}
           onShowDetailsPress={() => console.log('Show details pressed for:', acceptedDriver?.driverName)}
           style={{
@@ -1727,6 +1799,7 @@ const Map = () => {
           officeLocation={currentBooking?.booking?.dropoff_location?.address || currentBooking?.dropoff_location?.address}
           estimatedTime={currentBooking?.booking?.estimated_duration?.toString() || currentBooking?.estimated_duration?.toString()}
           distance={currentBooking?.booking?.estimated_distance?.toString() || currentBooking?.estimated_distance?.toString()}
+          chatId={currentBooking?.driver_id || currentBooking?.driver_id?._id}
         />
       )}
       <FlatList

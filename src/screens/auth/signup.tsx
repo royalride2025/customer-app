@@ -94,44 +94,62 @@ const { t, i18n } = useTranslation();
     validatePhone(phoneNumber) === '' &&
     validatePassword(password) === '';
 
-  const handleSignUp = async () => {
-    const nameErr = validateUserName(userName);
-    const phErr = validatePhone(phoneNumber);
-    const pwdErr = validatePassword(password);
-    setUserNameError(nameErr);
-    setPhoneError(phErr);
-    setPasswordError(pwdErr);
-    if (nameErr || phErr || pwdErr) {
-      return;
-    }
-    const trimmedName = userName.trim();
-    setLoading(true);
-    setError('');
-    try {
-      const body = {
-        phone: `${selectedCountry.code.replace('+', '')}${phoneNumber}`,
-        password,
-        profile: { name: trimmedName }
-      };
-      const response = await networkClient.post(API_ENDPOINTS.REGISTER, body);
-      console.log('Signup response:', response);
-      Toast.show({ type: 'success', text1: 'Success', text2: 'Account created successfully! Please verify your phone number.' });
-      setTimeout(() => {
-        (navigation as any).navigate('verifyOtp', { 
-          phone: `${selectedCountry.code.replace('+', '')}${phoneNumber}`,
-          isFromSignup: true 
+    const handleSignUp = async () => {
+      const nameErr = validateUserName(userName);
+      const phErr = validatePhone(phoneNumber);
+      const pwdErr = validatePassword(password);
+      setUserNameError(nameErr);
+      setPhoneError(phErr);
+      setPasswordError(pwdErr);
+      if (nameErr || phErr || pwdErr) {
+        return;
+      }
+      const trimmedName = userName.trim();
+      setLoading(true);
+      setError('');
+      try {
+        const fullPhone = `${selectedCountry.code.replace('+', '')}${phoneNumber}`;
+        const body = {
+          phone: fullPhone,
+          password,
+          profile: { name: trimmedName }
+        };
+        
+        // Step 1: Register the user
+        const response = await networkClient.post(API_ENDPOINTS.REGISTER, body);
+        console.log('Signup response:', response);
+        
+        // Step 2: Send OTP immediately after successful registration
+        try {
+          await networkClient.post(API_ENDPOINTS.GET_OTP_SIGN_UP, { phone: fullPhone });
+          console.log('OTP sent successfully');
+        } catch (otpErr) {
+          console.log('OTP send error (non-critical):', otpErr);
+          // Continue anyway - user can use resend button
+        }
+        
+        Toast.show({ 
+          type: 'success', 
+          text1: 'Success', 
+          text2: 'Account created! Please check your phone for OTP.' 
         });
-      }, 1200);
-      // Optionally navigate to login or main screen
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err.message || 'Signup failed';
-      setError(message);
-      Toast.show({ type: 'error', text1: 'Error', text2: message });
-      console.log('Signup error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        
+        setTimeout(() => {
+          (navigation as any).navigate('verifyOtp', { 
+            phone: fullPhone,
+            isFromSignup: true 
+          });
+        }, 1200);
+        
+      } catch (err: any) {
+        const message = err?.response?.data?.message || err.message || 'Signup failed';
+        setError(message);
+        Toast.show({ type: 'error', text1: 'Error', text2: message });
+        console.log('Signup error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
  
 
 const handleSocialLogin = (platform: string) => {

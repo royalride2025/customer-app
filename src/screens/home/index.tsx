@@ -42,6 +42,18 @@ const Home = () => {
 
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
+  useEffect(() => {
+    // Re-render every minute to update the time check
+    const interval = setInterval(() => {
+      // Force a state update to trigger re-render
+      setCurrentTime(new Date());
+    }, 60000); // Every 60 seconds
+  
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Use currentTime state instead
+  const [currentTime, setCurrentTime] = useState(new Date());
 // Add this effect to stop tracking after marker renders
 useEffect(() => {
   if (currentLocation && tracksViewChanges) {
@@ -69,22 +81,23 @@ useEffect(() => {
   };
 
 
+  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
-    // Wait for user data to load from Redux
-    if (profile !== null && profile !== undefined) {
+    if (profile ) {
      
-      
-      // Check verification status once data is available
-      if (profile?.user.is_verified === false) {
-        // Navigate to OTP screen if not verified
-        navigation.navigate('verifyOtp', {
-          // s
-        });
+      if (profile?.user?.is_verified === false) {
+        // Wait 1.5 seconds before navigating
+        setTimeout(() => {
+          navigation.navigate('verifyAfterlogin', {
+            phone: profile?.user?.phone,
+            
+         
+          });
+        }, 2000); // 1.5 seconds delay
       }
     }
-  }, [profile, navigation]);
-
+  }, [profile]);
   // Set default location to Qatar (Doha) or get current location if possible
   const setDefaultLocation = useCallback(() => {
     // Try to get current location first
@@ -903,7 +916,7 @@ const handleDeleteAddress = (addressId: string) => {
 
       {/* Floating Car Button */}
       {(() => {
-        const currentTime = new Date();
+       
         const validBookings = upcomingBookings.filter((booking: any) => {
           const bookingTime = new Date(booking.start_time);
           return bookingTime >= currentTime;

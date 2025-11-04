@@ -24,37 +24,35 @@ import {
 import Svg from '../../lib/svg';
 import { backArrow, sendIcon } from '../../../assets/svgAssets';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useAppSelector } from '../../redux/reduxHooks';
+import { useAppSelector, useAppDispatch } from '../../redux/reduxHooks';
 import { RootState } from '../../redux/store';
 import socketService from '../../services/socket';
+import { setChatOpen, markChatAsRead } from '../../redux/messageSlice';
 
 const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", isClientOnline = true }) => {
   const user = useAppSelector((state: RootState) => state?.auth?.user);
+  const dispatch = useAppDispatch();
   const route = useRoute();
   const navigation = useNavigation();
-  // const { driverId, bookingId, driverName, driverImage } = (route.params as any) || {};
-  console.log('routes',route)
-  console.log("Customer chat params:", { driverId, bookingId, driverName, driverImage });
-  console.log('👤 Current customer user:', user);
-  
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [userStatus, setUserStatus] = useState(null);
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList>(null);
   const typingAnimation = useRef(new Animated.Value(0)).current;
   const currentBooking = useAppSelector((state: RootState) => state.booking.currentBooking);
-  // const driverId= currentBooking?.driver_id;
-  // const bookingId= currentBooking?.booking_id;
-  // const driverName= currentBooking?.driver?.name;
-  // const driverImage= currentBooking?.driver?.profile_image;
-
+  
   const driverId= currentBooking?.driver_id||currentBooking?.driver_id?._id;
   const bookingId= currentBooking?.booking_id||currentBooking?._id;
   const driverName= currentBooking?.driver?.name||currentBooking?.driver_profile?.name;
   const driverImage= currentBooking?.driver?.profile_image||currentBooking?.driver_profile?.driver_img;
+  
+  // const { driverId, bookingId, driverName, driverImage } = (route.params as any) || {};
+  console.log('routes',route)
+  console.log("Customer chat params:", { driverId, bookingId, driverName, driverImage });
+  console.log('👤 Current customer user:', user);
   // Initialize with sample messages once user is loaded
   useEffect(() => {
     if (user?.id && driverId && messages.length === 0) {
@@ -67,10 +65,27 @@ const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", is
     }
   }, [user?.id, driverId]);
 
+  // Mark chat as open when component mounts and closed when unmounts
+  useEffect(() => {
+    const chatId = driverId;
+    
+    if (chatId) {
+      // Mark chat as open
+      dispatch(setChatOpen({ isOpen: true, chatId }));
+      console.log('💬 Chat marked as open:', chatId);
+      
+      // Cleanup function to mark chat as closed when component unmounts
+      return () => {
+        dispatch(setChatOpen({ isOpen: false, chatId: null }));
+        console.log('💬 Chat marked as closed');
+      };
+    }
+  }, [dispatch, driverId]);
+
 
 
   // Improved message identification function for customer side
-  const isMessageFromCurrentUser = (message) => {
+  const isMessageFromCurrentUser = (message: any) => {
     const currentUserId = user?.id;
     
     if (!currentUserId) {
@@ -206,6 +221,12 @@ const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", is
           );
         }
         return;
+      }
+      
+      // Since chat is open, mark this message as read immediately to prevent badge updates
+      if (driverId) {
+        dispatch(markChatAsRead(driverId));
+        console.log('📨 Message marked as read since chat is open');
       }
       
       // Improved sender type determination for non-current user messages
@@ -405,12 +426,12 @@ const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", is
     }, 100);
   };
 
-  const formatTime = (timestamp) => {
+  const formatTime = (timestamp: any) => {
     return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   // Enhanced render message with better debugging for customer
-  const renderMessage = ({ item }) => {
+  const renderMessage = ({ item }: { item: any }) => {
     const isFromCurrentUser = isMessageFromCurrentUser(item);
     
     console.log('🎨 Customer rendering message:', {
@@ -595,7 +616,7 @@ const CustomerClientChat = ({ clientName = "Usman Virk", clientAvatar = "US", is
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -20}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : undefined}
       >
         {/* Messages */}
         <FlatList

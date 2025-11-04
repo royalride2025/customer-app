@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
   GET_PROFILE: `/api/auth/profile`,
   GOOGLE_AUTH: '/api/auth/google-mobile',
   GET_OTP:`/api/auth/forget-password-phone`,
+  GET_OTP_SIGN_UP:`/api/auth/send-otp-during-registration`,
   RESET_PASSWORD:`/api/auth/reset-password-phone`,
   uploadImageToServer:`/api/auth/upload-file`,
   CHANGE_PASSWORD:`/api/auth/change-password`,
