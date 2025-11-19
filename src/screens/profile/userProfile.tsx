@@ -26,12 +26,15 @@ import { API_ENDPOINTS } from "../../../apiEndpoints";
 import moment from "moment";
 import Svg from "../../lib/svg";
 import { lock, eye, eyeOff, cross } from "../../../assets/svgAssets";
-import { useAppSelector } from "../../redux/reduxHooks";
+import { useAppSelector, useAppDispatch } from "../../redux/reduxHooks";
 import { RootState } from "../../redux/store";
+import { clearToken } from "../../redux/authSlice";
+import { clearProfile } from "../../redux/profileSlice";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useScreenHeader } from "../../lib/hooks/useScreenHeader";
 import { useNavigation } from '@react-navigation/native';
 import { shouldShowVerificationPrompt } from '../../utils/verificationUtils';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function UserProfile() {
   const [name, setName] = useState("");
@@ -52,9 +55,12 @@ export default function UserProfile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [updatingPassword, setUpdatingPassword] = useState(false); // Password update loading state
+  const [deletingAccount, setDeletingAccount] = useState(false); // Delete account loading state
 
   const profileData = useAppSelector((state: RootState) => state.profile.data);
   const authUser = useAppSelector((state: RootState) => state.auth.user);
+  const currentBooking = useAppSelector((state: RootState) => state.booking.currentBooking);
+  const dispatch = useAppDispatch();
   const scrollViewRef = useRef<ScrollView>(null);
   const navigation = useNavigation();
 
@@ -432,6 +438,120 @@ export default function UserProfile() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    // Check if there are any active or upcoming bookings
+    if (currentBooking) {
+      Alert.alert(
+        "Cannot Delete Account",
+        "You have an active booking. Please complete or cancel your current booking before deleting your account.",
+        [{ text: "OK", style: "default" }]
+      );
+      return;
+    }
+
+    // Check for upcoming and pending bookings
+    if (!authUser?.id) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'User information not found.',
+      });
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      // Check for scheduled bookings (upcoming)
+      const scheduledResponse = await networkClient.get(`${API_ENDPOINTS.GET_CUSTOMER_BOOKINGS(authUser.id)}`);
+      const scheduledBookings = scheduledResponse?.data?.data || [];
+      
+      // Check for pending bookings (requests)
+      const pendingResponse = await networkClient.get(`${API_ENDPOINTS.GET_CUSTOMER_REQUESTS(authUser.id)}`);
+      const pendingBookings = pendingResponse?.data?.data || [];
+      
+      // Filter out instant bookings from pending
+      const filteredPendingBookings = pendingBookings.filter((item: any) => item?.booking_type !== 'instant');
+
+      if (scheduledBookings.length > 0 || filteredPendingBookings.length > 0) {
+        setDeletingAccount(false);
+        Alert.alert(
+          "Cannot Delete Account",
+          "You have upcoming or pending bookings. Please complete or cancel all your bookings before deleting your account.",
+          [{ text: "OK", style: "default" }]
+        );
+        return;
+      }
+
+      // If no bookings, proceed with deletion confirmation
+      Alert.alert(
+        "Delete Account",
+        "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => setDeletingAccount(false)
+          },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                if (!authUser?.id) {
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'User ID not found.',
+                  });
+                  setDeletingAccount(false);
+                  return;
+                }
+                const response = await networkClient.delete(API_ENDPOINTS.DELETE_ACCOUNT(authUser.id));
+                
+                Toast.show({
+                  type: 'success',
+                  text1: 'Success',
+                  text2: 'Your account has been deleted successfully.',
+                });
+
+                // Clear Google sign-in state
+                try {
+                  await GoogleSignin.signOut();
+                  console.log('Google sign-out successful');
+                } catch (error) {
+                  console.log('Google sign-out error:', error);
+                }
+                
+                // Clear the token and profile data to trigger logout
+                dispatch(clearToken());
+                dispatch(clearProfile());
+                
+                // Navigate to login screen after account deletion
+                (navigation as any).navigate('login');
+              } catch (error) {
+                console.log('Error deleting account:', error);
+                Toast.show({
+                  type: 'error',
+                  text1: 'Error',
+                  text2: (error as any)?.response?.data?.message || (error as any)?.message || 'Failed to delete account. Please try again.',
+                });
+                setDeletingAccount(false);
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.log('Error checking bookings:', error);
+      setDeletingAccount(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to check bookings. Please try again.',
+      });
+    }
+  };
+
   const isLoading = uploading || saving;
   useScreenHeader({
     title: "Edit Profile",
@@ -769,6 +889,22 @@ export default function UserProfile() {
           <Text style={styles.secondaryButtonText}>Change Password</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          onPress={handleDeleteAccount}
+          style={[styles.deleteButton, deletingAccount && styles.disabledButton]}
+          disabled={deletingAccount || isLoading}
+        >
+          {deletingAccount ? (
+            <View style={styles.buttonLoadingContainer}>
+              <ActivityIndicator size="small" color={StyleGuide.color.white} />
+              <Text style={[styles.deleteButtonText, styles.buttonLoadingText]}>
+                Deleting...
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.deleteButtonText}>Delete Account</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.primaryButton, isLoading && styles.disabledButton,{marginTop:30}]}
           onPress={onSave}
           disabled={isLoading}
@@ -1027,6 +1163,19 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: StyleGuide.color.primary,
+    fontFamily: StyleGuide.fontFamily.semiBold,
+    fontSize: 16,
+  },
+  deleteButton: {
+    backgroundColor: '#e53a3a',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  deleteButtonText: {
+    color: StyleGuide.color.white,
     fontFamily: StyleGuide.fontFamily.semiBold,
     fontSize: 16,
   },

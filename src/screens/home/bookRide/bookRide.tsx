@@ -28,6 +28,7 @@ import Toast from 'react-native-toast-message';
 import networkClient from '../../../../networkClient';
 import { API_ENDPOINTS } from '../../../../apiEndpoints';
 import moment from 'moment';
+import { CURRENCY } from '../../../constant/currency';
 import TopUpModal from '../../../lib/component/TopUpModal';
 import { setCurrentCharge } from '../../../redux/paymentSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -245,7 +246,7 @@ const BookRide = () => {
       };
       const chargeData = {
         amount: parseFloat(amount),
-        currency: 'KWD',
+        currency: CURRENCY,
         customer: customerData,
         description: 'Wallet Top-up',
         metadata: { user_id: user?._id },
@@ -267,7 +268,7 @@ const BookRide = () => {
         (navigation as any).navigate('PaymentWebView', {
           paymentUrl: res.data.transaction.url,
           amount: parseFloat(amount),
-          currency: 'KWD'
+          currency: CURRENCY
         });
       } else {
         Toast.show({ type: 'error', text1: 'Payment Error', text2: 'Failed to initialize payment.' });
@@ -473,7 +474,7 @@ const BookRide = () => {
       <TopUpModal
         isVisible={showTopUpModal}
         defaultAmount={topUpAmount}
-        currency="KWD"
+        currency={CURRENCY}
         isRTL={isRTL}
         isLoading={isTopUpLoading}
         onClose={() => setShowTopUpModal(false)}

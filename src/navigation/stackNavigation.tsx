@@ -17,11 +17,9 @@ import Map from '../screens/map';
 import CarProfile from '../screens/profile/carProfile';
 import DrawerNavigator from './drawerNavigator';
 import Transactions from '../screens/trasaction';
-
 import CustomerClientChat from '../screens/customerChat';
 import PaymentReceipt from '../screens/paymentReciept';
 import PaymentWebView from '../screens/payment/PaymentWebView';
-
 import ScheduleRideScreen from '../screens/home/airportTransfer/ScheduleRideScreen';
 
 import { Text } from 'react-native';

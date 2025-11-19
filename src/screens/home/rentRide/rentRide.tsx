@@ -28,6 +28,7 @@ import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
 import { screenWidth } from '../../../utils/dimenstions';
 import networkClient from '../../../../networkClient';
 import { API_ENDPOINTS } from '../../../../apiEndpoints';
+import { CURRENCY } from '../../../constant/currency';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import moment from 'moment';
@@ -213,7 +214,7 @@ const RentARide = () => {
       };
       const chargeData = {
         amount: parseFloat(amount),
-        currency: 'KWD',
+        currency: CURRENCY,
         customer: customerData,
         description: 'Wallet Top-up',
         metadata: { user_id: user?._id },
@@ -235,7 +236,7 @@ const RentARide = () => {
         (navigation as any).navigate('PaymentWebView', {
           paymentUrl: res.data.transaction.url,
           amount: parseFloat(amount),
-          currency: 'KWD'
+          currency: CURRENCY
         });
       } else {
         Toast.show({ type: 'error', text1: 'Payment Error', text2: 'Failed to initialize payment.' });
@@ -327,7 +328,7 @@ const RentARide = () => {
       <TopUpModal
         isVisible={showTopUpModal}
         defaultAmount={topUpAmount}
-        currency="KWD"
+        currency={CURRENCY}
         isRTL={isRTL}
         isLoading={isTopUpLoading}
         onClose={() => setShowTopUpModal(false)}

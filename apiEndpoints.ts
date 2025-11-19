@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   RESET_PASSWORD:`/api/auth/reset-password-phone`,
   uploadImageToServer:`/api/auth/upload-file`,
   CHANGE_PASSWORD:`/api/auth/change-password`,
+  DELETE_ACCOUNT: (userId: string) => `/api/auth/delete/user/${userId}`,
   UPDATE_PROFILE:`/api/profile/customer/update-profile`,
   REGISTER_DEVICE: '/api/auth/register-device',
   NEW_VERIFY_OTP:'api/auth/verify-otp-and-verify',

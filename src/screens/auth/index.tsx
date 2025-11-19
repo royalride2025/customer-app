@@ -109,6 +109,7 @@ const Login = () => {
         Toast.show({ type: 'error', text1: 'Login Failed', text2: 'Invalid response from server.' });
       }
     } catch (error: any) {
+      console.log('error',error)
       const message = error?.response?.data?.message || error.message || 'Login failed';
       Toast.show({ type: 'error', text1: 'Login Failed', text2: message });
     } finally {

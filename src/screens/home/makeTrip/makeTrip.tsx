@@ -28,6 +28,7 @@ import networkClient from '../../../../networkClient';
 import { API_ENDPOINTS } from '../../../../apiEndpoints';
 import Toast from 'react-native-toast-message';
 import { SCREEN_WIDTH } from '../../../lib/responsiveStyles';
+import { CURRENCY } from '../../../constant/currency';
 import { TextInput } from 'react-native';
 import { setCurrentCharge } from '../../../redux/paymentSlice';
 import TopUpModal from '../../../lib/component/TopUpModal';
@@ -214,7 +215,7 @@ console.log('addressState',addresses)
 
       const chargeData = {
         amount: parseFloat(topUpAmount),
-        currency: 'KWD',
+        currency: CURRENCY,
         customer: customerData,
         description: 'Wallet Top-up',
         metadata: { user_id: user?._id },
@@ -236,7 +237,7 @@ console.log('addressState',addresses)
         (navigation as any).navigate('PaymentWebView', {
           paymentUrl: res.data.transaction.url,
           amount: parseFloat(topUpAmount),
-          currency: 'KWD'
+          currency: CURRENCY
         });
       } else {
         Toast.show({ type: 'error', text1: 'Payment Error', text2: 'Failed to initialize payment.' });
@@ -544,7 +545,7 @@ console.log('addressState',addresses)
       <TopUpModal
         isVisible={showTopUpModal}
         defaultAmount={topUpAmount}
-        currency="KWD"
+        currency={CURRENCY}
         isRTL={isRTL}
         isLoading={isTopUpLoading}
         onClose={() => setShowTopUpModal(false)}

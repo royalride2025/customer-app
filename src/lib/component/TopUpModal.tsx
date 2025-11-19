@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator 
 import BottomModal from './BottomModal';
 import { StyleGuide } from '../../../StyleGuide';
 import { t } from 'i18next';
+import { CURRENCY } from '../../constant/currency';
 
 type TopUpModalProps = {
   isVisible: boolean;
@@ -21,7 +22,7 @@ type TopUpModalProps = {
 const TopUpModal: React.FC<TopUpModalProps> = ({
   isVisible,
   defaultAmount,
-  currency = 'KWD',
+  currency = CURRENCY,
   title = 'Add Credits',
   subtitle = 'Enter amount to top up',
   confirmLabel = 'Confirm',

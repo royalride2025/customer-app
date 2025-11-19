@@ -8,6 +8,7 @@ import {
     ScrollView,
 } from 'react-native';
 import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
+import Toast from 'react-native-toast-message';
 import { StyleGuide } from '../../../../StyleGuide';
 import Svg from '../../../lib/svg';
 import { currentLocationicon, inputCross, locationBlackIcon, locationIcon, swap } from '../../../../assets/svgAssets';
@@ -31,15 +32,15 @@ const airports = [
         // distance: '15.2 km',
         latitude: 25.2730,  // Add actual coordinates
         longitude: 51.6081,
-    },
-    {
-        id: 2,
-        name: 'Doha International Airport',
-        address: 'Doha International Airport, Doha, Qatar',
-        // distance: '12.8 km',
-        latitude: 25.2611,  // Add actual coordinates
-        longitude: 51.5651,
-    },
+    }
+    // {
+    //     id: 2,
+    //     name: 'Doha International Airport',
+    //     address: 'Doha International Airport, Doha, Qatar',
+    //     // distance: '12.8 km',
+    //     latitude: 25.2611,  // Add actual coordinates
+    //     longitude: 51.5651,
+    // },
 ];
 
 
@@ -144,12 +145,44 @@ const AirportTransfer = () => {
     // Check if both from and to location addresses are empty
     const isButtonDisabled = !fromLocationData.address || !toLocationData.address;
 
+    // Function to check if a location is an airport
+    const isAirportLocation = (locationAddress: string, locationString?: string): boolean => {
+        if (!locationAddress && !locationString) return false;
+        
+        const addressToCheck = locationAddress || locationString || '';
+        if (!addressToCheck) return false;
+        
+        // Check if the location address matches any airport address or contains airport name
+        return airports.some(airport => {
+            const addressLower = addressToCheck.toLowerCase();
+            const airportNameLower = airport.name.toLowerCase();
+            const airportAddressLower = airport.address.toLowerCase();
+            
+            // Check if location contains airport name or matches airport address
+            return addressLower.includes(airportNameLower) || 
+                   addressLower.includes(airportAddressLower) ||
+                   (addressLower.includes('airport') && 
+                   (airportAddressLower.includes('hamad') || airportAddressLower.includes('doha')));
+        });
+    };
+
     const handleNextButton = () => {
-        // If pickup location is an airport, navigate to ScheduleRideScreen with both locations
+        // Validate that at least one location is an airport
+        // Check both the location data address and the location string
+        const isFromAirport = isAirportLocation(fromLocationData.address, fromLocation);
+        const isToAirport = isAirportLocation(toLocationData.address, toLocation);
 
-        // Default navigation (if needed, adjust as per your flow)
+        if (!isFromAirport && !isToAirport) {
+            Toast.show({
+                type: 'error',
+                text1: 'Validation Error',
+                text2: 'At least one location (from or to) must be an airport for airport transfer.',
+            });
+            return;
+        }
+
+        // If validation passes, navigate to ScheduleRideScreen with both locations
         (navigation as any).navigate('ScheduleRide', {
-
             fromLocation,
             toLocation,
             fromLocationData,
@@ -175,8 +208,12 @@ backgroundColor:'transparent',
               placeholderTextColor: '#8e8e8e',
               value: fromLocation,
               autoCorrect: false,
-              onChange(e) {
-                setFromLocation(e.nativeEvent.target)
+              onFocus: () => {
+                console.log('📍 From input focused');
+                setFocusedInput('from');
+              },
+              onChangeText: (text) => {
+                setFromLocation(text);
               },
             }}
             styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, 
@@ -374,7 +411,6 @@ backgroundColor:'transparent',
                                     <Text style={[styles.airportName, textAlignment]}>{airport.name}</Text>
                                     <Text style={[styles.airportText, textAlignment]}>{airport.address}</Text>
                                 </View>
-                                <Text style={[styles.airportDistance, textAlignment]}>{airport.distance}</Text>
                             </View>
                         </TouchableOpacity>
                     ))}

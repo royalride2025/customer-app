@@ -8,6 +8,7 @@ interface DurationTimerProps {
   durationHours: number;
   bookingId: string;
   onTimerExpired?: () => void;
+  shouldReset?: boolean; // When true, clears timer state (for completed/cancelled rides)
 }
 
 interface TimerState {
@@ -22,9 +23,11 @@ const DurationTimer: React.FC<DurationTimerProps> = ({
   isActive,
   durationHours,
   bookingId,
-  onTimerExpired
+  onTimerExpired,
+  shouldReset = false
 }) => {
   const [timerState, setTimerState] = useState<TimerState | null>(null);
+  const [previousBookingId, setPreviousBookingId] = useState<string | null>(null);
 
   // Debug: Log component mount
   useEffect(() => {
@@ -42,6 +45,30 @@ const DurationTimer: React.FC<DurationTimerProps> = ({
       });
     };
   }, []);
+
+  // Reset timer state when bookingId changes
+  useEffect(() => {
+    if (previousBookingId !== null && previousBookingId !== bookingId) {
+      console.log('🔄 Booking ID changed, resetting timer state:', { 
+        previousBookingId, 
+        newBookingId: bookingId 
+      });
+      // Clear the old timer state immediately
+      setTimerState(null);
+      // Clear old booking's timer from AsyncStorage
+      const clearOldTimer = async () => {
+        try {
+          const oldKey = `durationTimer_${previousBookingId}`;
+          await AsyncStorage.removeItem(oldKey);
+          console.log('🗑️ Cleared old timer from storage for booking:', previousBookingId);
+        } catch (error) {
+          console.error('❌ Failed to clear old timer:', error);
+        }
+      };
+      clearOldTimer();
+    }
+    setPreviousBookingId(bookingId);
+  }, [bookingId, previousBookingId]);
 
   // Format time utility function
   const formatTime = useCallback((milliseconds: number) => {
@@ -125,9 +152,9 @@ const DurationTimer: React.FC<DurationTimerProps> = ({
   }, [bookingId]);
 
   // Start duration timer
-  const startDurationTimer = useCallback(async () => {
-    // Don't start if timer is already active
-    if (timerState?.isActive) {
+  const startDurationTimer = useCallback(async (forceStart = false) => {
+    // Don't start if timer is already active (unless forced for new booking)
+    if (!forceStart && timerState?.isActive) {
       console.log('⏰ Timer already active, not starting new one');
       return;
     }
@@ -148,8 +175,14 @@ const DurationTimer: React.FC<DurationTimerProps> = ({
     // Save timer state to AsyncStorage for persistence
     await saveTimerState(timerData);
     
-    console.log('⏰ Duration timer started:', { durationHours, totalDurationMs, startTime });
-  }, [durationHours, saveTimerState, timerState?.isActive]);
+    console.log('⏰ Duration timer started:', { 
+      bookingId,
+      durationHours, 
+      totalDurationMs, 
+      startTime,
+      forced: forceStart
+    });
+  }, [durationHours, saveTimerState, timerState?.isActive, bookingId]);
 
   // Stop duration timer
   const stopDurationTimer = useCallback(async () => {
@@ -159,29 +192,61 @@ const DurationTimer: React.FC<DurationTimerProps> = ({
     console.log('⏰ Duration timer stopped');
   }, [clearTimerState]);
 
+  // Clear timer when ride is completed or cancelled
+  useEffect(() => {
+    if (shouldReset && timerState) {
+      console.log('🔄 Clearing timer due to ride completion/cancellation');
+      stopDurationTimer();
+    }
+  }, [shouldReset, stopDurationTimer, timerState]);
+
   // Effect to load timer state when component mounts or isActive changes
   useEffect(() => {
-    console.log('⏰ DurationTimer useEffect triggered:', { isActive, hasTimerState: !!timerState });
+    console.log('⏰ DurationTimer useEffect triggered:', { 
+      isActive, 
+      bookingId,
+      durationHours,
+      hasTimerState: !!timerState,
+      previousBookingId 
+    });
     
-    if (isActive) {
-      // First try to load existing timer state
-      loadTimerState().then((hasExistingTimer) => {
-        console.log('⏰ Timer restoration result:', { hasExistingTimer });
-        // Only start a new timer if no existing timer was found
-        if (!hasExistingTimer) {
-          console.log('⏰ Starting new timer - no existing timer found');
-          startDurationTimer();
-        } else {
-          console.log('⏰ Using existing timer - no new timer needed');
-        }
-      });
-    } else if (timerState?.isActive) {
+    // If bookingId changed, always reset and start fresh
+    const bookingChanged = previousBookingId !== null && previousBookingId !== bookingId;
+    
+    if (bookingChanged) {
+      console.log('🔄 Booking ID changed, resetting and starting fresh timer');
+      setTimerState(null);
+    }
+    
+    if (isActive && bookingId) {
+      // If booking changed, always start fresh timer
+      if (bookingChanged) {
+        console.log('⏰ Booking changed - starting fresh timer for new booking:', bookingId);
+        // Small delay to ensure state reset completes
+        const timer = setTimeout(() => {
+          startDurationTimer(true); // Force start for new booking
+        }, 100);
+        return () => clearTimeout(timer);
+      } else {
+        // Booking hasn't changed, try to restore existing timer
+        loadTimerState().then((hasExistingTimer) => {
+          console.log('⏰ Timer restoration result:', { hasExistingTimer, bookingId });
+          // Only start a new timer if no existing timer was found for this bookingId
+          if (!hasExistingTimer) {
+            console.log('⏰ Starting new timer - no existing timer found for bookingId:', bookingId);
+            startDurationTimer();
+          } else {
+            console.log('⏰ Using existing timer for bookingId:', bookingId);
+          }
+        });
+      }
+    } else if (timerState?.isActive && !bookingChanged) {
       // Don't stop the timer completely, just pause it
       // This way the state is preserved in AsyncStorage
       console.log('⏰ Pausing timer - isActive became false (preserving state)');
       // We don't call stopDurationTimer() here to preserve the timer state
     }
-  }, [isActive, loadTimerState, startDurationTimer, stopDurationTimer, timerState?.isActive]);
+  }, [isActive, bookingId, durationHours, loadTimerState, startDurationTimer, stopDurationTimer, timerState?.isActive, previousBookingId]);
 
   // Timer countdown effect - updates every second
   useEffect(() => {

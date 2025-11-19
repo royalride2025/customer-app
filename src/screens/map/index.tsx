@@ -1281,7 +1281,7 @@ const Map = () => {
       return;
     }
 
-    console.log('💾 Setting accepted driver to:', item);
+    console.log('aasss', item);
     setAcceptedDriver(item);
 
     // Emit accept driver event via socket
@@ -1754,9 +1754,10 @@ const Map = () => {
             }}>
               <DurationTimer
                 key={`duration-timer-${currentBooking?.booking_id}`}
-                isActive={bookingStatus === 'driver_on_the_way'}
+                isActive={bookingStatus === 'started'}
                 durationHours={Number(currentBooking.duration_for_rent)}
                 bookingId={currentBooking?.booking_id || 'default'}
+                shouldReset={bookingStatus === 'completed' || bookingStatus === 'cancelled' || currentBooking?.booking?.status === 'completed' || currentBooking?.booking?.status === 'cancelled'}
                 onTimerExpired={() => {
                   console.log('⏰ Duration timer expired!');
                   // Handle timer expiration if needed

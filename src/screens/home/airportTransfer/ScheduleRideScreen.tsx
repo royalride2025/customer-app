@@ -17,6 +17,7 @@ import { API_ENDPOINTS } from '../../../../apiEndpoints';
 import moment from 'moment';
 import TopUpModal from '../../../lib/component/TopUpModal';
 import { setCurrentCharge } from '../../../redux/paymentSlice';
+import { CURRENCY } from '../../../constant/currency';
 
 
 const delayOptions = [
@@ -146,7 +147,7 @@ console.log("fromLocation",fromLocation)
       };
       const chargeData = {
         amount: parseFloat(amount),
-        currency: 'KWD',
+        currency: CURRENCY,
         customer: customerData,
         description: 'Wallet Top-up',
         metadata: { user_id: user?._id },
@@ -167,7 +168,7 @@ console.log("fromLocation",fromLocation)
         (navigation as any).navigate('PaymentWebView', {
           paymentUrl: res.data.transaction.url,
           amount: parseFloat(amount),
-          currency: 'KWD'
+          currency: CURRENCY
         });
       } else {
         Toast.show({ type: 'error', text1: 'Payment Error', text2: 'Failed to initialize payment.' });
@@ -406,7 +407,7 @@ console.log("isAirportDestination",isAirportDestination)
       <TopUpModal
         isVisible={showTopUpModal}
         defaultAmount={topUpAmount}
-        currency="KWD"
+        currency={CURRENCY}
         isRTL={isRTL}
         isLoading={isTopUpLoading}
         onClose={() => setShowTopUpModal(false)}

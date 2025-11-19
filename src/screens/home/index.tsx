@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, Dimensions, StyleSheet, Alert, Text, Platform, Modal, TouchableOpacity, Image, Linking, ActivityIndicator, Modal as RNModal, } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import Svg from '../../lib/svg';
-import { check, locationPin, carIcon, bookingIcon } from '../../../assets/svgAssets';
+import { check, locationPin, carIcon, bookingIcon, carSvg } from '../../../assets/svgAssets';
 import { StyleGuide } from '../../../StyleGuide';
 import { screenHeight } from '../../utils/dimenstions';
 import HomeDashBoard from './components/homeDashBoard';
@@ -917,10 +917,13 @@ const handleDeleteAddress = (addressId: string) => {
       {/* Floating Car Button */}
       {(() => {
        
-        const validBookings = upcomingBookings.filter((booking: any) => {
+       const validBookings = useMemo(() => {
+        const now = new Date();
+        return upcomingBookings.filter((booking: Booking) => {
           const bookingTime = new Date(booking.start_time);
-          return bookingTime >= currentTime;
+          return bookingTime.getTime() >= now.getTime(); // Use .getTime() for safer comparison
         });
+      }, [upcomingBookings]);
         console.log('validBookings========/////////', validBookings);
         if (validBookings.length > 0) {
           return (
@@ -937,7 +940,11 @@ const handleDeleteAddress = (addressId: string) => {
               }}
               activeOpacity={0.8}
             >
-              <Svg xml={bookingIcon} rest={{ height: 24, width: 24 }} />
+              <View style={{flexDirection:'row',alignItems:'center',gap:10}}>
+              <Svg xml={carSvg} rest={{ height: 50, width: 50 }} />
+              <Text style={{fontSize:16,fontWeight:'bold',color:StyleGuide.color.white}}>Let's check the ride</Text>
+              </View>
+              
               {/* Badge */}
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{validBookings.length}</Text>
@@ -1187,12 +1194,12 @@ const styles = StyleSheet.create({
   },
   floatingCarButton: {
     position: 'absolute',
-    bottom: 120, // Position above the bottom content
+    bottom: 60, // Position above the bottom content
     right: 20,
     backgroundColor: StyleGuide.color.primary,
-    width: 56,
+    width: '80%',
     height: 56,
-    borderRadius: 28,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,

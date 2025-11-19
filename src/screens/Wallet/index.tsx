@@ -28,6 +28,7 @@ import { setCurrentCharge } from '../../redux/paymentSlice';
 import { setProfile } from '../../redux/profileSlice';
 import { t } from 'i18next';
 import networkClient from '../../../networkClient';
+import { CURRENCY } from '../../constant/currency';
 import networkClientModule from '../../../networkClient';
 import axios from 'axios';
 import { Linking } from 'react-native';
@@ -77,10 +78,10 @@ console.log('credits-------', credits)
       return 'Amount must be greater than 0';
     }
     if (numValue < 1) {
-      return 'Minimum amount is 1 KWD';
+      return `Minimum amount is 1 ${CURRENCY}`;
     }
     if (numValue > 10000) {
-      return 'Maximum amount is 10,000 KWD';
+      return `Maximum amount is 10,000 ${CURRENCY}`;
     }
     return '';
   };
@@ -121,7 +122,7 @@ console.log('credits-------', credits)
       // Prepare charge data with user input amount
       const chargeData = {
         amount: parseFloat(amount), // Use user input amount
-        currency: 'KWD',
+        currency: CURRENCY,
         customer: customerData,
         description: 'Wallet Top-up',
         metadata: {
@@ -159,7 +160,7 @@ console.log('credits-------', credits)
         (navigation as any).navigate('PaymentWebView', {
           paymentUrl: response.data.transaction.url,
           amount: parseFloat(amount),
-          currency: 'KWD'
+          currency: CURRENCY
         });
       } else {
         console.error('Invalid response structure:', response.data);
@@ -426,7 +427,7 @@ const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
                   onSubmitEditing={handleConfirmAmount}
                 />
                 <Text style={[styles.currencyLabel, {textAlign: isRTL ? 'right' : 'left'}]}>
-                  KWD
+                  {CURRENCY}
                 </Text>
               </View>
               
