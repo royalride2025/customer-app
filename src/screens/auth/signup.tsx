@@ -75,6 +75,8 @@ const { t, i18n } = useTranslation();
     const trimmed = name.trim();
     if (trimmed.length < 3) return 'Username must be at least 3 characters';
     if (/^[0-9]/.test(trimmed)) return 'Username cannot start with a number';
+    // Check for special characters (allow only letters, numbers, underscores, and hyphens)
+    if (/[^a-zA-Z0-9_-]/.test(trimmed)) return 'Username cannot contain special characters';
     return '';
   };
 
@@ -206,10 +208,13 @@ const handleSocialLogin = (platform: string) => {
             setUserNameError(validateUserName(text));
           }}
           secureTextEntry={false}
+          maxLength={30}
+          autoCapitalize="none"
+          autoCorrect={false}
         />
       </View>
       {userNameError ? (
-        <Text style={{ color: 'red', fontSize: 12, marginTop: 4, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
+        <Text style={{ color: 'red', fontSize: 12,  alignSelf: isRTL ? 'flex-end' : 'flex-start',marginBottom:4 }}>
           {userNameError}
         </Text>
       ) : null}
@@ -224,6 +229,7 @@ const handleSocialLogin = (platform: string) => {
             onCountryPress={openCountryModal}
             // flexDirection={flexDirection}
             isRTL={isRTL}
+            
           />
           {phoneError ? (
             <Text style={{ color: 'red', fontSize: 12, marginTop: 4, alignSelf: isRTL ? 'flex-end' : 'flex-start' }}>
@@ -248,6 +254,8 @@ const handleSocialLogin = (platform: string) => {
             setPasswordError(validatePassword(text));
           }}
           secureTextEntry={!showPassword}
+          autoCapitalize="none"
+        autoCorrect={false}
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ alignSelf: 'center', marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }}>
           <Svg xml={showPassword ? eyeOff : eye} rest={{ height: 20, width: 20 }} />

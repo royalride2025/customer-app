@@ -6,7 +6,7 @@ import { StyleGuide } from '../../StyleGuide';
 import Home from '../screens/home';
 import Activities from '../screens/Activities/activities';
 import Svg from '../lib/svg';
-import { activitiesActive, activitiesInactive, homeActive, homeInactive, profile } from '../../assets/svgAssets'; // Import your icons
+import { activitiesActive, activitiesInactive, homeActive, homeInactive, menueIcon, profile } from '../../assets/svgAssets'; // Import your icons
 import { useAppSelector } from '../redux/reduxHooks';
 import i18n from '../../i18n';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -114,7 +114,7 @@ const BottomTabs = ({ navigation }: any) => {
             </Text>
           ),
           tabBarIcon: ({ focused }) => (
-            <Svg xml={profile} rest={{ height: 18, width: 20 }} />
+            <Svg xml={menueIcon} rest={{ height: 18, width: 20 }} />
           ),
           tabBarButton: (props) => (
             <TouchableOpacity

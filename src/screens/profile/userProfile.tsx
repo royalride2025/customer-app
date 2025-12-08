@@ -312,6 +312,7 @@ export default function UserProfile() {
 
   const validate = () => {
     if (!name.trim()) return "Please enter your name.";
+    if (/^[^A-Za-z]/.test(name.trim())) return "Name must start with a letter.";
     if (!address.trim()) return "Please enter your address.";
     if (!dob.trim()) return "Please enter your date of birth (YYYY-MM-DD).";
 
@@ -327,6 +328,24 @@ export default function UserProfile() {
 
     return null;
   };
+
+  const handleNameChange = useCallback((text: string) => {
+    if (!text) {
+      setName("");
+      return;
+    }
+
+    if (!/^[A-Za-z]/.test(text[0])) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid name',
+        text2: 'Name must start with a letter.',
+      });
+      return;
+    }
+
+    setName(text);
+  }, []);
 
   const onSave = useCallback(async () => {
     const err = validate();
@@ -655,14 +674,16 @@ export default function UserProfile() {
           <Text style={styles.label}>Full Name *</Text>
           <TextInput
             value={name}
-            onChangeText={setName}
+            onChangeText={handleNameChange}
             placeholder="Enter your full name"
             placeholderTextColor={StyleGuide.color.grey}
             style={styles.input}
             returnKeyType="next"
-            autoCapitalize="words"
+            autoCapitalize="none"
             autoCorrect={false}
             editable={!isLoading}
+            maxLength={30}
+            
           />
         </View>
 
@@ -884,9 +905,9 @@ export default function UserProfile() {
     <View style={{marginBottom:40}} >
     <TouchableOpacity
           onPress={togglePasswordModal}
-          style={styles.secondaryButton}
+          style={styles.primaryButton}
         >
-          <Text style={styles.secondaryButtonText}>Change Password</Text>
+          <Text style={styles.primaryButtonText}>Change Password</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleDeleteAccount}

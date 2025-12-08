@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, TextInput, Linking, ScrollView, Modal, Alert } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, TextInput, Linking, ScrollView, Modal, Alert, Image, ActivityIndicator } from 'react-native';
 import Svg from '../../../lib/svg';
 import { locationIcon, currentLocationicon, inputCross, swap, airportTransferIcon } from '../../../../assets/svgAssets';
 import { StyleGuide } from '../../../../StyleGuide';
@@ -18,6 +18,42 @@ import moment from 'moment';
 import TopUpModal from '../../../lib/component/TopUpModal';
 import { setCurrentCharge } from '../../../redux/paymentSlice';
 import { CURRENCY } from '../../../constant/currency';
+
+const car = require('../../../../assets/images/car.png')
+
+interface VehicleDetails {
+  _id: string;
+  car_make: string;
+  car_model: string;
+  vehicle_color: string;
+  vehicle_pictures: string[];
+  year?: string;
+  license_plate?: string;
+  capacity?: number;
+}
+
+interface VehicleOwner {
+  _id: string;
+  phone: string;
+  provider?: string | null;
+  provider_id?: string | null;
+  role: string;
+  status: string;
+  is_verified: boolean;
+  access_platforms: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Vehicle {
+  _id: string;
+  vehicle_details: VehicleDetails;
+  owner: VehicleOwner;
+  status?: string;
+  is_available?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 
 
 const delayOptions = [
@@ -54,6 +90,10 @@ const ScheduleRideScreen = () => {
   const dispatch = useAppDispatch();
   const profileData = useAppSelector((state: any) => state.profile.data);
 const [selectedTime, setSelectedTime] = useState(new Date());
+const endOfCurrentYear = useMemo(() => {
+  const now = new Date();
+  return new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+}, []);
 
   
 console.log("fromLocationData",fromLocationData)
@@ -62,6 +102,12 @@ console.log("toLocation",toLocation)
 console.log("fromLocation",fromLocation)
   const [delayAfterFlight, setDelayAfterFlight] = useState(0);
   const [showDelayDropdown, setShowDelayDropdown] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<string>('');
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
+  const [numberOfPersons, setNumberOfPersons] = useState('1');
+  const [luggageWeight, setLuggageWeight] = useState('');
+  const [luggageWeightError, setLuggageWeightError] = useState('');
 
 
   const isRTL = useAppSelector((state) => state.language.isRTL);
@@ -79,11 +125,62 @@ console.log("fromLocation",fromLocation)
   
   const formatDate = (d: Date) => d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric',year:"numeric" });
 
+  const fetchVehicles = async () => {
+    setIsVehiclesLoading(true);
+    try {
+      const response = await networkClient.get(`${API_ENDPOINTS.GET_VEHICLES_WITH_OWNERS}?limit=100`);
+      console.log('Vehicles response:', response.data);
+      
+      if (response.data && response.data.vehicles) {
+        setVehicles(response.data.vehicles);
+        // Set first vehicle as default selected if available
+        if (response?.data?.vehicles.length > 0) {
+          setSelectedVehicle(response.data?.vehicles[0]?.vehicle_details?._id);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching vehicles:', error);
+      Toast.show({ 
+        type: 'error', 
+        text1: 'Failed to load vehicles', 
+        text2: error?.response?.data?.message || 'Please try again later' 
+      });
+    } finally {
+      setIsVehiclesLoading(false);
+    }
+  };
+
+  // Fetch vehicles on component mount
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
   console.log("with",activeTab==="time"?formatDateToYMD(selectedTime):formatDateToYMD(date))
   const handleSubmitButton = async () => {
     // Clear previous validation errors
+    setLuggageWeightError('');
    
-   
+    const now = new Date();
+    const isUsingTimeTab = activeTab === "time";
+    const selectedDateTime = isUsingTimeTab ? selectedTime : date;
+    const endOfYear = endOfCurrentYear;
+
+    if (selectedDateTime < now) {
+      Alert.alert('Invalid Date', 'Please select a future date and time.', [{ text: 'OK', style: 'default' }]);
+      return;
+    }
+
+    if (selectedDateTime > endOfYear) {
+      Alert.alert('Invalid Date', 'Please select a date within the current year.', [{ text: 'OK', style: 'default' }]);
+      return;
+    }
+
+    // Validate luggage weight
+    if (!luggageWeight || luggageWeight.trim() === '' || parseFloat(luggageWeight) < 0) {
+      setLuggageWeightError('Please enter luggage weight');
+      return;
+    }
+
     setIsBookingLoading(true);
     try {
       const payload = {
@@ -102,9 +199,11 @@ console.log("fromLocation",fromLocation)
         address: toLocationData?.address
 
     },
-    flight_number:"",       //optional
-    delay: "",                       //optional
-    selected_vehicle_id:"6856dfb60d8fce10c78b7d8e"
+    flight_number: flightNumber || "",       //optional
+    delay: delayAfterFlight ? String(delayAfterFlight) : "",                       //optional
+    selected_vehicle_id: selectedVehicle || "",
+    number_of_person: numberOfPersons ? parseInt(numberOfPersons) : 1,
+    luggage_weight: luggageWeight ? parseFloat(luggageWeight) : 0
     }
       console.log(payload, "payload======")
       const response = await networkClient.post(API_ENDPOINTS.CREATE_INSTANT_BOOKING, payload);
@@ -191,7 +290,11 @@ console.log("isAirportDestination",isAirportDestination)
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-  
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Date & Time */}
       {
         !isAirportDestination && (
@@ -244,6 +347,8 @@ console.log("isAirportDestination",isAirportDestination)
               onDateChange={setSelectedTime}
               mode="datetime"
               minimumDate={new Date()}
+              maximumDate={endOfCurrentYear}
+              
               locale="en"
               dividerColor={StyleGuide.color.primary}
             />
@@ -334,6 +439,89 @@ console.log("isAirportDestination",isAirportDestination)
           </View>
         </>
       )}
+
+      {/* Number of Persons */}
+      <View style={styles.cardInput}>
+        <Text style={[styles.inputLabel, textAlignment]}>Number of Persons</Text>
+        <TextInput
+          style={[styles.numberInput, textAlignment]}
+          placeholder="Enter number of persons"
+          placeholderTextColor={StyleGuide.color.grey}
+          value={numberOfPersons}
+          onChangeText={setNumberOfPersons}
+          keyboardType="numeric"
+          textAlign={isRTL ? 'right' : 'left'}
+        />
+      </View>
+
+      {/* Luggage Weight */}
+      <View style={styles.cardInput}>
+        <Text style={[styles.inputLabel, textAlignment]}>Luggage Weight (kg)</Text>
+        <TextInput
+          style={[styles.numberInput, textAlignment, luggageWeightError && styles.inputError]}
+          placeholder="Enter luggage weight in kg"
+          placeholderTextColor={StyleGuide.color.grey}
+          value={luggageWeight}
+          onChangeText={(text) => {
+            setLuggageWeight(text);
+            if (luggageWeightError) {
+              setLuggageWeightError('');
+            }
+          }}
+          keyboardType="decimal-pad"
+          textAlign={isRTL ? 'right' : 'left'}
+        />
+        {luggageWeightError ? (
+          <Text style={[styles.errorText, textAlignment]}>{luggageWeightError}</Text>
+        ) : null}
+      </View>
+
+      {/* Vehicle Selection */}
+      <View style={styles.section}>
+        <Text style={[styles.inputLabel, textAlignment]}>{t('select_your_ride')}</Text>
+        {isVehiclesLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={StyleGuide.color.primary} />
+            <Text style={styles.loadingText}>Loading vehicles...</Text>
+          </View>
+        ) : vehicles.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.vehicleScroller}
+          >
+            {vehicles.map((vehicle) => (
+              <TouchableOpacity
+                key={vehicle._id}
+                style={[
+                  styles.vehicleCard,
+                  selectedVehicle === vehicle?.vehicle_details?._id && styles.selectedVehicleCard,
+                ]}
+                onPress={() => setSelectedVehicle(vehicle?.vehicle_details?._id)}
+              >
+                <View style={styles.vehicleImageContainer}>
+                  <Image 
+                    source={vehicle.vehicle_details ? { uri: vehicle?.vehicle_details?.vehicle_pictures[0] } : car} 
+                    style={{ height: 80, width: 80 }} 
+                    resizeMode='contain' 
+                  />
+                </View>
+                <Text style={[styles.vehicleName, selectedVehicle === vehicle?.vehicle_details?._id && styles.selectedVehicleText, textAlignment]}>
+                  {vehicle?.vehicle_details?.car_make}
+                </Text>
+                <Text style={[styles.vehicleModel, textAlignment]}>
+                  ({vehicle?.vehicle_details?.vehicle_color})  {vehicle?.vehicle_details?.car_model}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.noVehiclesContainer}>
+            <Text style={styles.noVehiclesText}>No vehicles available</Text>
+          </View>
+        )}
+      </View>
+
       {/* Drop-off estimate */}
       {isAirportDestination &&(
         <>
@@ -392,6 +580,7 @@ console.log("isAirportDestination",isAirportDestination)
           </View>
         </TouchableOpacity>
       </Modal>
+      </ScrollView>
       {/* Bottom Button */}
       <View style={styles.buttonContainer}>
         <AppButton disabled={!isAirportDestination && activeTab === 'flight' && !flightNumber} 
@@ -420,6 +609,13 @@ console.log("isAirportDestination",isAirportDestination)
 const styles = StyleSheet.create({
   container: {
    ...StyleGuide.layout.container
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 150,
+    paddingHorizontal: 16,
   },
   header: {
     flexDirection: 'row',
@@ -520,8 +716,13 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     padding: 16,
-    backgroundColor: 'transparent',
-    paddingBottom:50
+    backgroundColor: StyleGuide.color.white,
+    paddingBottom: 50,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 5,
   },
   pickerModalOverlay: {
     position: 'absolute',
@@ -631,6 +832,81 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     color: StyleGuide.color.white,
     fontWeight: 'bold',
+  },
+  numberInput: {
+    fontSize: 16,
+    color: StyleGuide.color.black,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    padding: 0,
+    marginTop: 4,
+  },
+  section: {
+    marginVertical: 12,
+    marginBottom: 16,
+  },
+  vehicleScroller: {
+    marginTop: 10,
+  },
+  vehicleCard: {
+    backgroundColor: StyleGuide.color.white,
+    borderRadius: 12,
+    padding: 15,
+    marginRight: 15,
+    alignItems: 'center',
+    minWidth: 120,
+    borderWidth: 2,
+    borderColor: StyleGuide.color.border,
+  },
+  selectedVehicleCard: {
+    backgroundColor: StyleGuide.color.primary,
+    borderColor: StyleGuide.color.primary,
+  },
+  selectedVehicleText: {
+    color: StyleGuide.color.white
+  },
+  vehicleImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  vehicleName: {
+    fontSize: 16,
+    fontFamily: StyleGuide.fontFamily.semiBold,
+    color: StyleGuide.color.primary,
+    marginBottom: 4,
+  },
+  vehicleModel: {
+    fontSize: 12,
+    fontFamily: StyleGuide.fontFamily.regular,
+    color: StyleGuide.color.black,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 10,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.blackishGrey,
+  },
+  noVehiclesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noVehiclesText: {
+    fontSize: 14,
+    fontFamily: StyleGuide.fontFamily.medium,
+    color: StyleGuide.color.blackishGrey,
   },
 });
 

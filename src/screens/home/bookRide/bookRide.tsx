@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -72,6 +72,10 @@ interface Vehicle {
 
 const BookRide = () => {
   const [selectedTime, setSelectedTime] = useState(new Date());
+  const endOfCurrentYear = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+  }, []);
   const [pickupLocation, setPickupLocation] = useState('');
   const [pickupLocationData, setPickupLocationData] = useState<any>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
@@ -133,6 +137,11 @@ const BookRide = () => {
       setTimeValidationError('Please select a future date and time for your ride booking.');
       return false;
     }
+
+    if (selectedDateTime > endOfCurrentYear) {
+      setTimeValidationError('Bookings are limited to the current calendar year.');
+      return false;
+    }
     
     if (isToday) {
       const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
@@ -189,6 +198,11 @@ const BookRide = () => {
         setTimeValidationError('Your booking must be scheduled at least 30 minutes in advance. Please select a later time.');
         return;
       }
+    }
+
+    if (selectedDateTime > endOfCurrentYear) {
+      setTimeValidationError('Bookings are limited to the current calendar year.');
+      return;
     }
 
     setIsBookingLoading(true);
@@ -407,6 +421,7 @@ const BookRide = () => {
               mode="datetime"
               locale="en"
               minimumDate={new Date()}
+            maximumDate={endOfCurrentYear}
               dividerColor={StyleGuide.color.primary}
             />
           </View>

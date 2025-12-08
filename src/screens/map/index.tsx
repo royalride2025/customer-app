@@ -1773,6 +1773,8 @@ const Map = () => {
       {/* {from === 'plan' && ( */}
       {currentBooking && (
         <RideInfoCard
+          price={currentBooking?.booking?.price || currentBooking?.price}
+          currency={currentBooking?.booking?.currency || currentBooking?.currency}
           driverName={currentBooking?.driver?.vehicle?.make || currentBooking?.driver_active_vehicle
             ?.car_make || "Unknown Driver"}
           driverRating={acceptedDriver?.driverRating || 4.5}

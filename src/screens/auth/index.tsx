@@ -219,6 +219,8 @@ const Login = () => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ alignSelf: 'center', marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }}>
               <Svg xml={showPassword ? eyeOff : eye} rest={{ height: 20, width: 20 }} />

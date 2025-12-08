@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import { StyleGuide } from '../../../../StyleGuide';
 import Svg from '../../../lib/svg';
@@ -40,6 +41,8 @@ const MakeTripc = () => {
   const [focusedInput, setFocusedInput] = useState('from');
   const [addresses, setAddresses] = useState<any[]>([]); // Stores fetched addresses
   const [addressLoading, setAddressLoading] = useState<boolean>(false);
+  const [isGettingCurrentLocation, setIsGettingCurrentLocation] = useState(false);
+  const [fromLocationSelection, setFromLocationSelection] = useState<{start: number, end: number} | null>(null);
   const [fromLocationData, setFromLocationData] = useState({
     address: '',
     latitude: null,
@@ -98,6 +101,18 @@ const MakeTripc = () => {
     fetchAddress();  // Call the function to fetch addresses when the component mounts
   }, []);
 
+  // Removed auto-fetch - location will only be fetched when user clicks the icon
+
+  // Reset selection state after it's been applied
+  useEffect(() => {
+    if (fromLocationSelection) {
+      const timer = setTimeout(() => {
+        setFromLocationSelection(null);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [fromLocationSelection]);
+
   // Refresh addresses whenever the screen gains focus
   useFocusEffect(
     React.useCallback(() => {
@@ -125,6 +140,8 @@ console.log('addressState',addresses)
   const handleAddressSelect = (e: any) => {
     if (focusedInput === 'from') {
         setFromLocation(e.address);
+        // Set cursor to start (position 0)
+        setFromLocationSelection({ start: 0, end: 0 });
         // Set coordinates for from location
         setFromLocationData({
             address: e.address,
@@ -140,6 +157,157 @@ console.log('addressState',addresses)
             longitude: e.longitude,
         });
     }
+};
+
+  const handleGetCurrentLocation = (retryCount = 0) => {
+    setIsGettingCurrentLocation(true);
+    console.log('📍 Starting to get current location... (attempt:', retryCount + 1, ')');
+    
+    // First try with high accuracy, if it fails, try with lower accuracy
+    const isHighAccuracy = retryCount === 0;
+    
+    Geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const accuracy = position.coords.accuracy || 'unknown';
+          console.log('📍 Got coordinates:', { latitude, longitude, accuracy });
+          
+          // Set flag to prevent onChangeText from interfering
+          isSettingLocationProgrammatically.current = true;
+          
+          // Set coordinates immediately (user doesn't wait)
+          const fallbackAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          
+          // Set the location data immediately with coordinates
+          setFromLocationData({
+            address: fallbackAddress,
+            latitude: latitude,
+            longitude: longitude,
+          });
+          
+          // Set the state value immediately
+          setFromLocation(fallbackAddress);
+          
+          // Use ref to set the value immediately
+          setTimeout(() => {
+            if (googlePlaceAutoCompleteRef.current) {
+              googlePlaceAutoCompleteRef.current.setAddressText(fallbackAddress);
+            }
+            setFromLocationSelection({ start: 0, end: 0 });
+          }, 100);
+          
+          // Now geocode in the background (user doesn't wait)
+          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ`;
+          console.log('📍 Calling geocoding API in background...');
+          
+          fetch(geocodeUrl)
+            .then(response => response.json())
+            .then(data => {
+              console.log('📍 Geocoding response status:', data.status);
+              
+              if (data.status === 'OK' && data.results && data.results.length > 0) {
+                const address = data.results[0].formatted_address;
+                console.log('📍 Got address:', address);
+                
+                // Update with the actual address
+                setFromLocationData({
+                  address: address,
+                  latitude: latitude,
+                  longitude: longitude,
+                });
+                
+                setFromLocation(address);
+                
+                // Update the GooglePlacesAutocomplete component
+                setTimeout(() => {
+                  if (googlePlaceAutoCompleteRef.current) {
+                    googlePlaceAutoCompleteRef.current.setAddressText(address);
+                  }
+                  setFromLocationSelection({ start: 0, end: 0 });
+                  
+                  // Show success toast
+                  Toast.show({
+                    type: 'success',
+                    text1: 'Location Set',
+                    text2: 'Current location has been set successfully',
+                  });
+                  
+                  // Reset flag after showing toast
+                  setTimeout(() => {
+                    isSettingLocationProgrammatically.current = false;
+                  }, 1000);
+                }, 100);
+              } else {
+                console.error('📍 Geocoding failed. Status:', data.status);
+                // Keep the coordinates that were already set
+                Toast.show({
+                  type: 'info',
+                  text1: 'Location Set',
+                  text2: 'Coordinates set. Address lookup failed.',
+                });
+                
+                setTimeout(() => {
+                  isSettingLocationProgrammatically.current = false;
+                }, 1000);
+              }
+            })
+            .catch(error => {
+              console.error('📍 Error reverse geocoding:', error);
+              // Keep the coordinates that were already set
+              setTimeout(() => {
+                isSettingLocationProgrammatically.current = false;
+              }, 1000);
+            });
+          
+        } catch (error: any) {
+          console.error('📍 Error processing location:', error);
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: error?.message || 'Failed to process current location',
+          });
+        } finally {
+          // Reset loading state immediately since we set coordinates already
+          setIsGettingCurrentLocation(false);
+        }
+      },
+      (error) => {
+        console.error('📍 Location error code:', error.code);
+        console.error('📍 Location error message:', error.message);
+        
+        // If timeout with high accuracy, retry with lower accuracy
+        if (error.code === 3 && retryCount === 0 && isHighAccuracy) {
+          console.log('📍 Retrying with lower accuracy...');
+          setTimeout(() => {
+            handleGetCurrentLocation(1);
+          }, 1000);
+          return;
+        }
+        
+        setIsGettingCurrentLocation(false);
+        
+        let errorMessage = 'Failed to get current location. Please check your location permissions.';
+        if (error.code === 1) {
+          errorMessage = 'Location permission denied. Please enable location access in settings.';
+        } else if (error.code === 2) {
+          errorMessage = 'Location unavailable. Please check your GPS settings and ensure location services are enabled.';
+        } else if (error.code === 3) {
+          errorMessage = 'Location request timed out. Please ensure GPS is enabled and try again.';
+        }
+        
+        Toast.show({
+          type: 'error',
+          text1: 'Location Error',
+          text2: errorMessage,
+        });
+      },
+      {
+        enableHighAccuracy: isHighAccuracy,
+        timeout: isHighAccuracy ? 20000 : 30000, // Longer timeout for low accuracy
+        maximumAge: 60000, // Accept locations up to 1 minute old
+      }
+    );
 };
 
 
@@ -251,6 +419,7 @@ console.log('addressState',addresses)
   };
   const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
   const toLocationRef = useRef<GooglePlacesAutocompleteRef>(null);
+  const isSettingLocationProgrammatically = useRef(false);
   console.log(fromLocation, "fromLocation")
 
   return (
@@ -298,21 +467,31 @@ console.log('addressState',addresses)
             ref={googlePlaceAutoCompleteRef}
             placeholder={t('from')}
             textInputProps={{
-
               placeholderTextColor: '#8e8e8e',
               value: fromLocation,
               autoCorrect: false,
+              selection: fromLocationSelection || undefined,
               onFocus: () => {
                 console.log('📍 Pickup input focused');
                 setFocusedInput('from');
             },
-              onChange(e) {
-                setFromLocation(e.nativeEvent.target)
+              onChangeText: (text) => {
+                // Don't clear the value if we're setting it programmatically
+                if (isSettingLocationProgrammatically.current && !text) {
+                  console.log('📍 Preventing clear of programmatically set location');
+                  return;
+                }
+                setFromLocation(text);
+                // Clear selection when user types
+                setFromLocationSelection(null);
               },
             }}
             styles={{ textInput: { fontSize: 16, color: 'black', height: 50,textAlign: isRTL ? 'right' : 'left' }, listView: { position: 'absolute', top: screenWidth * 0.3,color: 'black' }, description: { color: 'black', fontSize: 16 },  // suggestion text -> green
             predefinedPlacesDescription: { color: 'black' }  }}
-            onPress={(data, details = null) => {setFromLocation(data.description)
+            onPress={(data, details = null) => {
+              setFromLocation(data.description);
+              // Set cursor to start (position 0)
+              setFromLocationSelection({ start: 0, end: 0 });
               if (details) {
                 const { lat, lng } = details.geometry.location;
                 const address = data.description;
@@ -326,8 +505,7 @@ console.log('addressState',addresses)
             
                 console.log('Selected:', { address, lat, lng });
               }
-            }
-            }
+            }}
 
 
             query={{
@@ -351,18 +529,38 @@ console.log('addressState',addresses)
                 />
               </View>
             )}
-            renderRightButton={() =>
-              fromLocation &&Platform.OS === 'android' ? (
+            renderRightButton={() => (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {!fromLocation && (
+                  <TouchableOpacity
+                    onPress={() => handleGetCurrentLocation()}
+                    disabled={isGettingCurrentLocation}
+                    style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {isGettingCurrentLocation ? (
+                      <ActivityIndicator size="small" color={StyleGuide.color.primary} />
+                    ) : (
+                      <Svg xml={currentLocationicon} rest={{ height: 20, width: 20 }} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                {fromLocation && Platform.OS === 'android' && (
                 <TouchableOpacity
                   onPress={() => {
                     setFromLocation('');
+                      setFromLocationData({
+                        address: '',
+                        latitude: null,
+                        longitude: null,
+                      });
                   }}
                   style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
                 </TouchableOpacity>
-              ) : null
-            }
+                )}
+              </View>
+            )}
             predefinedPlaces={[]}
             autoFillOnNotFound={false}
             currentLocation={false}

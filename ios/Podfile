@@ -58,15 +58,30 @@ target 'Royal_ride' do
         # === NEW FIXES FOR XCODE 16.1 + iOS 18.1 SDK ===
         # Fix for DarwinFoundation module compilation issues
         config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
-        config.build_settings['CLANG_MODULES_AUTOLINK'] = 'NO'
         config.build_settings['CLANG_ENABLE_MODULE_DEBUGGING'] = 'NO'
+        
+        # Fix for react_runtime module redefinition errors with Xcode 16.1
+        # This is a known issue with React Native 0.79.x and Xcode 16.1
+        # The solution is to disable module autolinking for React-RuntimeHermes
+        if target.name == 'React-RuntimeHermes'
+          config.build_settings['CLANG_MODULES_AUTOLINK'] = 'NO'
+          config.build_settings['DEFINES_MODULE'] = 'YES'
+          # Add compiler flags to handle module conflicts
+          config.build_settings['OTHER_CFLAGS'] = (config.build_settings['OTHER_CFLAGS'] || '$(inherited)') + ' -fmodule-map-file-home-is-cwd'
+        else
+          config.build_settings['CLANG_MODULES_AUTOLINK'] = 'YES'
+        end
         
         # C++ standard fixes - UPDATED TO C++20
         config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
         config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
         
-        # Deployment target fixes
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        # Deployment target fixes - ensure minimum 12.0 for all pods
+        deployment_target = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if deployment_target.nil? || Gem::Version.new(deployment_target) < Gem::Version.new('12.0')
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+        end
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1' if target.name == 'Royal_ride'
         config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.15'
         
         # Architecture and build optimizations
@@ -79,7 +94,7 @@ target 'Royal_ride' do
         config.build_settings['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -Wno-error=non-modular-include-in-framework-module'
         
         # Code signing
-        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+        
       end
       
       # Force Hermes script phase to use NODE_BINARY explicitly

@@ -83,7 +83,7 @@ const profileData = useAppSelector((state: RootState) => state.profile.data);
       {/* User Greeting */}
       <View style={[styles.greetingContainer,flexDirection]}>
         <View style={[styles.userInfo,flexDirection]}>
-          <TouchableOpacity onPress={onProfilePress} style={[styles.avatar,marginRightOrLeft]}>
+          <TouchableOpacity disabled={true} onPress={onProfilePress} style={[styles.avatar,marginRightOrLeft]}>
             {(() => {
               // Check if there's a valid image in profile data
               const profile = profileData?.profile as any;

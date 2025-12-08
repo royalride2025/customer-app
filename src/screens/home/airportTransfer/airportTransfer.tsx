@@ -67,6 +67,7 @@ const AirportTransfer = () => {
 
     const navigation = useNavigation();
     const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
+   
     const toLocationRef = useRef<GooglePlacesAutocompleteRef>(null);
 
     console.log("fromLocationData", fromLocationData)
@@ -212,9 +213,12 @@ backgroundColor:'transparent',
                 console.log('📍 From input focused');
                 setFocusedInput('from');
               },
-              onChangeText: (text) => {
-                setFromLocation(text);
-              },
+            //   onChangeText: (text) => {
+            //     setFromLocation(text);
+            //   },
+              onChange(e) {
+                setFromLocation(e.nativeEvent.text);
+            },
             }}
             styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, 
             listView: { position: 'absolute', top: screenWidth * 0.28 ,elevation:1,backgroundColor:StyleGuide.color.grey },
@@ -291,7 +295,7 @@ backgroundColor:'transparent',
                         </View>
                         <View style={[styles.airportInputField, { marginBottom: 0 }]}>
                             <GooglePlacesAutocomplete
-                                ref={googlePlaceAutoCompleteRef}
+                                ref={toLocationRef}
                                 placeholder={t('to')}
                                 textInputProps={{
                                     backgroundColor:'transparent',

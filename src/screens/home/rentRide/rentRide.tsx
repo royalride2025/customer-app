@@ -1,4 +1,4 @@
-import React, { cloneElement, useEffect, useRef, useState } from 'react';
+import React, { cloneElement, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -93,6 +93,10 @@ interface Vehicle {
 }
 const RentARide = () => {
   const [selectedTime, setSelectedTime] = useState(new Date());
+  const endOfCurrentYear = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+  }, []);
   const [selectedHours, setSelectedHours] = useState(1);
   const [pickupLocation, setPickupLocation] = useState('');
   const [pickupLocationData, setPickupLocationData] = useState({
@@ -155,6 +159,15 @@ const RentARide = () => {
       Alert.alert(
         'Missing Location',
         'Please select a pickup location before proceeding.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
+    if (selectedTime > endOfCurrentYear) {
+      Alert.alert(
+        'Invalid Date',
+        'Please select a date within the current year.',
         [{ text: 'OK', style: 'default' }]
       );
       return;
@@ -384,8 +397,10 @@ const RentARide = () => {
               onDateChange={setSelectedTime}
               mode="datetime"
               minimumDate={new Date()}
+              maximumDate={endOfCurrentYear}
               locale="en"
               dividerColor={StyleGuide.color.primary}
+              
             />
           </View>
         </View>
@@ -710,11 +725,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   buttonContainer: {
-    marginBottom: 20,
     position: 'absolute',
-    bottom: 20,
-    alignSelf: 'center',
-    width: '100%',
+    bottom: 0,
+    right: 0,
+    left: 0,
+   
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: StyleGuide.color.white,
+    // borderTopLeftRadius: 20,
+    // borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 8,
   },
   loadingContainer: {
     flex: 1,

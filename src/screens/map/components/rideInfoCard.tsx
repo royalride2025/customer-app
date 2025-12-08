@@ -48,6 +48,8 @@ interface RideInfoCardProps {
     profileImage?: string;
     carDriverName?: string;
     chatId?: string;
+    price?: number | string;
+    currency?: string;
 }
 
 const car = require('../../../../assets/images/car1.png');
@@ -64,6 +66,8 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
     officeLocation = "Zone 55 House 25 Street 873 South Muajther Doha",
     distance = "2.7km",
     estimatedTime = "1 Hour",
+    price = "",
+    currency = "QAR",
     booking_type,
     onCallPress,
     onMessagePress,
@@ -105,6 +109,21 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
     };
 
     const navigation = useNavigation();
+    const getRoundedValue = (value?: string | number) => {
+        if (value === undefined || value === null || value === '') {
+            return value;
+        }
+
+        const numericValue =
+            typeof value === 'number' ? value : parseFloat(value);
+
+        return Number.isFinite(numericValue)
+            ? numericValue.toFixed(2)
+            : value;
+    };
+
+    const roundedPrice = getRoundedValue(price);
+    const roundedDistance = getRoundedValue(distance);
 
     const expandedHeight = animation.interpolate({
         inputRange: [0, 1],
@@ -148,20 +167,23 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                             {driverRating} 
                             <Text style={styles.starIcon}> ⭐</Text>
                         </Text>
+                       <Text style={styles.price}>{roundedPrice}</Text>
+                       <Text style={styles.currency}>{currency}</Text>
                     </View>
                    
                     <Text style={[styles.carDetails,{textAlign:isRTL?'right':'left'}]} numberOfLines={1}>
                      { carModel } {carColor}  { licensePlate }
                     </Text>
-                    
+                   
                     <View style={[styles.bottomRow,flexDirection]}>
                         <View style={[styles.driverDetailsRow,flexDirection]}>
                             <Text style={[styles.driverImageName,isRTL?{marginLeft:getResponsiveSize(8),textAlign:'right'}:{marginRight: getResponsiveSize(8),textAlign:'left'}]} numberOfLines={1}>
                             {carDriverName}
                             </Text>
-                            <Text style={[styles.driverRating]}>
+                            {/* <Text style={[styles.driverRating]}>
                                 4.5 <Text style={styles.starIcon}>⭐</Text>
-                            </Text>
+                            </Text> */}
+                            
                         </View>
                     
                         <View style={[styles.actionButtons,flexDirection,isRTL?{marginRight:5}:{marginLeft:0}]}>
@@ -254,7 +276,7 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                                     </Text>
                                 </View>
                                 <View style={styles.distanceContainer}>
-                                    <Text style={styles.distance}>{distance} km</Text>
+                                    <Text style={styles.distance}>{roundedDistance} km</Text>
                                     <Text style={styles.estimatedTime}>{estimatedTime} hr</Text>
                                 </View>
                             </View>
@@ -465,6 +487,18 @@ const createStyles = (isExpanded = false, booking_type?: string) => StyleSheet.c
         fontSize: getResponsiveFontSize(12),
         color: StyleGuide.color.white,
         fontFamily: StyleGuide.fontFamily.medium,
+    },
+    price: {
+        fontSize: getResponsiveFontSize(12),
+        color: StyleGuide.color.grey,
+        fontFamily: StyleGuide.fontFamily.medium,
+        marginLeft: getResponsiveSize(4),
+    },
+    currency: {
+        fontSize: getResponsiveFontSize(12),
+        color: StyleGuide.color.primary,
+        fontFamily: StyleGuide.fontFamily.medium,
+        marginLeft: getResponsiveSize(4),
     },
 });
 
