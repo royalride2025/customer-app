@@ -161,7 +161,7 @@ const RideInfoCard: React.FC<RideInfoCardProps> = ({
                 <View style={styles.driverInfo}>
                     <View style={[styles.driverNameRow,flexDirection]}>
                         <Text style={[styles.driverName,isRTL?{marginLeft:getResponsiveSize(10),textAlign:'right'}:{marginRight:getResponsiveSize(8),textAlign:'left'}]} numberOfLines={1}>
-                        {driverName}
+                        {driverName}hkdja
                         </Text>
                         <Text style={styles.rating}>
                             {driverRating} 

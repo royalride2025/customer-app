@@ -344,111 +344,139 @@ const Map = () => {
     }
 
     setIsLoading(true);
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
+    
+    // Helper function to process location and update state
+    const processLocation = (position: any) => {
+      const { latitude, longitude } = position.coords;
 
-        // Validate coordinates before setting them
-        if (typeof latitude === 'number' &&
-          typeof longitude === 'number' &&
-          !isNaN(latitude) &&
-          !isNaN(longitude) &&
-          latitude >= -90 && latitude <= 90 &&
-          longitude >= -180 && longitude <= 180) {
+      // Validate coordinates before setting them
+      if (typeof latitude === 'number' &&
+        typeof longitude === 'number' &&
+        !isNaN(latitude) &&
+        !isNaN(longitude) &&
+        latitude >= -90 && latitude <= 90 &&
+        longitude >= -180 && longitude <= 180) {
 
-          const newLocation = { latitude, longitude };
-          const newRegion = {
-            latitude,
-            longitude,
-            latitudeDelta: 0.18,
-            longitudeDelta: 0.18,
-          };
+        const newLocation = { latitude, longitude };
+        const newRegion = {
+          latitude,
+          longitude,
+          latitudeDelta: 0.18,
+          longitudeDelta: 0.18,
+        };
 
-          setCurrentLocation(newLocation);
-          // When user manually requests location, center map on current location
-          setRegion(newRegion);
-          setLocationPermissionGranted(true);
-          setIsLoading(false);
-          console.log('📍 Current location obtained and map centered:', newLocation);
+        setCurrentLocation(newLocation);
+        // When user manually requests location, center map on current location
+        setRegion(newRegion);
+        setLocationPermissionGranted(true);
+        setIsLoading(false);
+        console.log('📍 Current location obtained and map centered:', newLocation);
 
-          // If we also have a pickup location, fit both markers into view
-          const pickupCoordsFromRoute = booking?.booking?.pickup_location?.coordinates;
-          const pickupCoordsFromRedux = currentBooking?.pickup_location?.coordinates || currentBooking?.booking?.pickup_location?.coordinates as any;
-          const pickupCoords = pickupCoordsFromRoute || pickupCoordsFromRedux;
+        // If we also have a pickup location, fit both markers into view
+        const pickupCoordsFromRoute = booking?.booking?.pickup_location?.coordinates;
+        const pickupCoordsFromRedux = currentBooking?.pickup_location?.coordinates || currentBooking?.booking?.pickup_location?.coordinates as any;
+        const pickupCoords = pickupCoordsFromRoute || pickupCoordsFromRedux;
 
-          if (pickupCoords && mapRef.current) {
-            // Coordinate order in app: [0] => latitude, [1] => longitude
-            const pickupLat = Number(pickupCoords[0]);
-            const pickupLng = Number(pickupCoords[1]);
+        if (pickupCoords && mapRef.current) {
+          // Coordinate order in app: [0] => latitude, [1] => longitude
+          const pickupLat = Number(pickupCoords[0]);
+          const pickupLng = Number(pickupCoords[1]);
 
-            if (!isNaN(pickupLat) && !isNaN(pickupLng)) {
-              const points = [
-                { latitude, longitude },
-                { latitude: pickupLat, longitude: pickupLng }
-              ];
-              const edgePadding = { top: 120, right: 60, bottom: Math.max(120, insets.bottom + 80), left: 60 } as any;
-              try {
-                mapRef.current.fitToCoordinates(points, { edgePadding, animated: true });
-                console.log('🗺️ Fitting map to current and pickup points:', points);
-              } catch (e) {
-                console.log('⚠️ fitToCoordinates error:', e);
-              }
+          if (!isNaN(pickupLat) && !isNaN(pickupLng)) {
+            const points = [
+              { latitude, longitude },
+              { latitude: pickupLat, longitude: pickupLng }
+            ];
+            const edgePadding = { top: 120, right: 60, bottom: Math.max(120, insets.bottom + 80), left: 60 } as any;
+            try {
+              mapRef.current.fitToCoordinates(points, { edgePadding, animated: true });
+              console.log('🗺️ Fitting map to current and pickup points:', points);
+            } catch (e) {
+              console.log('⚠️ fitToCoordinates error:', e);
             }
           }
-        } else {
-          console.log('❌ Invalid coordinates received from GPS:', { latitude, longitude });
-          setIsLoading(false);
-          // Alert.alert(
-          //   'Invalid Location Data',
-          //   'Received invalid coordinates from GPS. Please try again.',
-          //   [{ text: 'OK' }]
-          // );
         }
+        return true;
+      } else {
+        console.log('❌ Invalid coordinates received from GPS:', { latitude, longitude });
+        return false;
+      }
+    };
+
+    // Helper function to handle location errors
+    const handleLocationError = (error: any, attemptType: string) => {
+      console.log(`Location error (${attemptType}):`, error);
+      
+      // Show specific error messages based on error code
+      let errorMessage = 'Unable to fetch your current location.';
+      if (error.code === 1) {
+        errorMessage = 'Location permission denied. Please enable location services.';
+      } else if (error.code === 2) {
+        errorMessage = 'Location unavailable. Please check your device settings.';
+      }
+      
+      return errorMessage;
+    };
+
+    // Step 1: Try high accuracy first (faster timeout)
+    console.log('📍 Attempting high accuracy location...');
+    Geolocation.getCurrentPosition(
+      (position) => {
+        console.log('✅ High accuracy location success:', position);
+        processLocation(position);
       },
       (error) => {
-        console.log('Location error:', error);
-        setIsLoading(false);
-        // Show specific error messages based on error code
-        let errorMessage = 'Unable to fetch your current location.';
-        if (error.code === 1) {
-          errorMessage = 'Location permission denied. Please enable location services.';
-        } else if (error.code === 2) {
-          errorMessage = 'Location unavailable. Please check your device settings.';
-        }
-
-        // Alert.alert(
-        //   'Location Error', 
-        //   errorMessage,
-        //   [
-        //     {
-        //       text: 'Settings',
-        //       onPress: () => {
-        //         if (Platform.OS === 'ios') {
-        //           Linking.openURL('app-settings:');
-        //         } else {
-        //           Linking.openURL('package:' + 'com.royal_ride');
-        //         }
-        //       }
-        //     },
-        //     {
-        //       text: 'Retry',
-        //       onPress: () => getCurrentLocation()
-        //     },
-        //     {
-        //       text: 'Cancel',
-        //       style: 'cancel'
-        //     }
-        //   ]
-        // );
+        console.log('⚠️ High accuracy failed, trying low accuracy...', error);
+        
+        // Step 2: Fallback to low accuracy (network-based, faster)
+        Geolocation.getCurrentPosition(
+          (position) => {
+            console.log('✅ Low accuracy location success:', position);
+            processLocation(position);
+          },
+          (error) => {
+            console.log('⚠️ Low accuracy failed, trying cached location...', error);
+            
+            // Step 3: Fallback to cached location (accept older cached data)
+            Geolocation.getCurrentPosition(
+              (position) => {
+                console.log('✅ Cached location success:', position);
+                processLocation(position);
+              },
+              (error) => {
+                console.log('❌ All location attempts failed:', error);
+                setIsLoading(false);
+                const errorMessage = handleLocationError(error, 'cached');
+                
+                Toast.show({
+                  type: 'error',
+                  text1: 'Location Error',
+                  text2: errorMessage,
+                  position: 'top',
+                  visibilityTime: 4000,
+                });
+              },
+              {
+                enableHighAccuracy: false,
+                timeout: 5000,
+                maximumAge: 300000, // Accept cached locations up to 5 minutes old
+              }
+            );
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 10000,
+            maximumAge: 60000, // Accept cached locations up to 1 minute old
+          }
+        );
       },
       {
         enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 1000,
-        distanceFilter: 10,
+        timeout: 10000, // Reduced from 20000 to 10 seconds
+        maximumAge: 30000, // Increased from 1000 to 30 seconds to allow cached locations
       }
     );
-  }, [requestLocationPermission, booking, currentBooking]);
+  }, [requestLocationPermission, booking, currentBooking, insets.bottom]);
 
   // Don't start continuous location tracking - only when button is pressed
   // const startLocationTracking = useCallback(() => {
@@ -1782,9 +1810,31 @@ const Map = () => {
           carModel={currentBooking?.driver?.vehicle?.model || currentBooking?.driver_active_vehicle?.car_model || "Unknown"}
           licensePlate={currentBooking?.driver?.vehicle?.license_plate || currentBooking?.driver_active_vehicle?.license_plate || "Unknown"}
           onCallPress={() => {
-            const emergencyNumber = "";  // Example emergency number, change if needed
-            Linking.openURL(`tel:${emergencyNumber}`)
-              .catch(err => console.error("Failed to open dialer", err));
+            // Get phone number from multiple possible sources
+            const driverPhone = 
+            currentBooking?.driverUser?.phone            ;
+            
+            if (driverPhone) {
+              Linking.openURL(`tel:${driverPhone}`)
+                .catch(err => {
+                  console.error("Failed to open dialer", err);
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Unable to open dialer. Please check the phone number.',
+                    position: 'top',
+                    visibilityTime: 3000,
+                  });
+                });
+            } else {
+              Toast.show({
+                type: 'info',
+                text1: 'Phone Number Not Available',
+                text2: 'Driver phone number is not available.',
+                position: 'top',
+                visibilityTime: 3000,
+              });
+            }
           }}
           onMessagePress={handleChat}
           onShowDetailsPress={() => console.log('Show details pressed for:', acceptedDriver?.driverName)}
@@ -1907,7 +1957,32 @@ const Map = () => {
             driverRating={5.5}
             carColor="White"
             licensePlate="CF 21536"
-            onCallPress={() => console.log('Call pressed')}
+            onCallPress={() => {
+              // Get phone number from multiple possible sources
+              const driverPhone = currentBooking?.driverUser?.phone;
+              
+              if (driverPhone) {
+                Linking.openURL(`tel:${driverPhone}`)
+                  .catch(err => {
+                    console.error("Failed to open dialer", err);
+                    Toast.show({
+                      type: 'error',
+                      text1: 'Error',
+                      text2: 'Unable to open dialer. Please check the phone number.',
+                      position: 'top',
+                      visibilityTime: 3000,
+                    });
+                  });
+              } else {
+                Toast.show({
+                  type: 'info',
+                  text1: 'Phone Number Not Available',
+                  text2: 'Driver phone number is not available.',
+                  position: 'top',
+                  visibilityTime: 3000,
+                });
+              }
+            }}
             onMessagePress={handleChat}
             onShowDetailsPress={() => console.log('Show details pressed')}
             style={{
@@ -1933,18 +2008,20 @@ const Map = () => {
 
 
 
-      {/* Cancel Ride Button */}
-      <AppButton
-        style={{
-          ...styles.cancelButton,
-          bottom: Math.max(20, insets.bottom + 10), // Back to original position
-        }}
-        variant="secondary"
-        title={t('cancel_ride')}
-        onPress={handleCancelRide}
-        loading={isLoading}
-        disabled={isCancelling}
-      />
+      {/* Cancel Ride Button - Hidden when ride starts */}
+      {bookingStatus !== 'started' && bookingStatus !== 'completed' && (
+        <AppButton
+          style={{
+            ...styles.cancelButton,
+            bottom: Math.max(20, insets.bottom + 10), // Back to original position
+          }}
+          variant="secondary"
+          title={t('cancel_ride')}
+          onPress={handleCancelRide}
+          loading={isLoading}
+          disabled={isCancelling}
+        />
+      )}
 
       {/* Toast Component for notifications */}
       <Toast />
