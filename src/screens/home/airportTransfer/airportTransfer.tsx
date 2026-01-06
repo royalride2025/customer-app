@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,6 +6,7 @@ import {
     StyleSheet,
     StatusBar,
     ScrollView,
+    Platform,
 } from 'react-native';
 import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import Toast from 'react-native-toast-message';
@@ -13,7 +14,9 @@ import { StyleGuide } from '../../../../StyleGuide';
 import Svg from '../../../lib/svg';
 import { currentLocationicon, inputCross, locationBlackIcon, locationIcon, swap } from '../../../../assets/svgAssets';
 import AppButton from '../../../lib/component/AppButton';
+import CurrentLocationButton from '../../../lib/component/CurrentLocationButton';
 import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
+import { useCurrentLocation } from '../../../lib/hooks/useCurrentLocation';
 import { useNavigation } from '@react-navigation/native';
 import useTranslationStyles from '../../../../locales/useTranslationStyles';
 import { useAppSelector } from '../../../redux/reduxHooks';
@@ -30,8 +33,8 @@ const airports = [
         name: 'Hamad International Airport',
         address: 'Hamad International Airport, Doha, Qatar',
         // distance: '15.2 km',
-        latitude: 25.2730,  // Add actual coordinates
-        longitude: 51.6081,
+        latitude: Number(25.2730),  // Add actual coordinates
+        longitude: Number(51.6081),
     }
     // {
     //     id: 2,
@@ -48,7 +51,7 @@ const airports = [
 const AirportTransfer = () => {
     const [fromLocation, setFromLocation] = useState('');
     const [toLocation, setToLocation] = useState('');
-    const [isGettingLocation, setIsGettingLocation] = useState(false);
+    const [fromLocationSelection, setFromLocationSelection] = useState<{start: number, end: number} | null>(null);
     const [fromLocationData, setFromLocationData] = useState({
         address: '',
         latitude: null as number | null,
@@ -61,6 +64,7 @@ const AirportTransfer = () => {
     });
     console.log("fromLocationlllll", fromLocation)
     const [focusedInput, setFocusedInput] = useState('from'); // Track which input is focused
+    const isSettingLocationProgrammatically = useRef(false);
     const { flexDirection, textAlignment } = useTranslationStyles();
     const isRTL = useAppSelector((state: RootState) => state.language.isRTL);
  
@@ -69,6 +73,55 @@ const AirportTransfer = () => {
     const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
    
     const toLocationRef = useRef<GooglePlacesAutocompleteRef>(null);
+
+    // Use the reusable current location hook
+    const {
+        getCurrentLocation: getCurrentLocationFromHook,
+        isLoading: isGettingCurrentLocation,
+    } = useCurrentLocation({
+        enableGeocoding: true,
+        geocodingApiKey: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
+        onSuccess: (locationData) => {
+            // Set flag to prevent onChangeText from interfering
+            isSettingLocationProgrammatically.current = true;
+            
+            // Get the address (use address if available, otherwise use coordinates)
+            const address = locationData.address || `${locationData.latitude.toFixed(6)}, ${locationData.longitude.toFixed(6)}`;
+            
+            // Clear previous address first to prevent merging
+            setFromLocation('');
+            
+            // Set the location data
+            setFromLocationData({
+                address: address,
+                latitude: locationData.latitude,
+                longitude: locationData.longitude,
+            });
+            
+            // Set the state value
+            setFromLocation(address);
+            
+            // Update GooglePlacesAutocomplete component
+            setTimeout(() => {
+                if (googlePlaceAutoCompleteRef.current) {
+                    // Clear and set in one operation to prevent merging
+                    googlePlaceAutoCompleteRef.current.setAddressText(address);
+                }
+                setFromLocationSelection({ start: 0, end: 0 });
+                
+                // Reset flag after a delay
+                setTimeout(() => {
+                    isSettingLocationProgrammatically.current = false;
+                }, 1000);
+            }, 100);
+        },
+        showToast: true,
+    });
+
+    // Wrapper function to use the hook's getCurrentLocation
+    const handleGetCurrentLocation = () => {
+        getCurrentLocationFromHook();
+    };
 
     console.log("fromLocationData", fromLocationData)
     console.log("toLocationData", toLocationData)
@@ -95,14 +148,6 @@ const AirportTransfer = () => {
                 longitude: airport.longitude,
             });
         }
-    };
-
-    const handleCurrentLocation = () => {
-        setIsGettingLocation(true);
-        setTimeout(() => {
-            setFromLocation('Current Location - Zone 45 Street 923 Doha, Qatar');
-            setIsGettingLocation(false);
-        }, 1500);
     };
 
     const handleClearLocation = (type: any) => {
@@ -139,6 +184,16 @@ const AirportTransfer = () => {
     useScreenHeader({
         title: t('airport_transfer'),
     });
+
+    // Reset selection state after it's been applied
+    useEffect(() => {
+        if (fromLocationSelection) {
+            const timer = setTimeout(() => {
+                setFromLocationSelection(null);
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [fromLocationSelection]);
 
     console.log("from", fromLocation)
     console.log(",to", toLocation)
@@ -205,38 +260,46 @@ const AirportTransfer = () => {
             ref={googlePlaceAutoCompleteRef}
             placeholder={t('from')}
             textInputProps={{
-backgroundColor:'transparent',
-              placeholderTextColor: '#8e8e8e',
-              value: fromLocation,
-              autoCorrect: false,
-              onFocus: () => {
-                console.log('📍 From input focused');
-                setFocusedInput('from');
-              },
-            //   onChangeText: (text) => {
-            //     setFromLocation(text);
-            //   },
-              onChange(e) {
-                setFromLocation(e.nativeEvent.text);
-            },
+                backgroundColor:'transparent',
+                placeholderTextColor: '#8e8e8e',
+                value: fromLocation,
+                autoCorrect: false,
+                selection: fromLocationSelection || undefined,
+                onFocus: () => {
+                    console.log('📍 From input focused');
+                    setFocusedInput('from');
+                },
+                onChange(text) {
+                    // Don't clear the value if we're setting it programmatically
+                    if (isSettingLocationProgrammatically.current && !text) {
+                        console.log('📍 Preventing clear of programmatically set location');
+                        return;
+                    }
+                    setFromLocation(text.nativeEvent.text);
+                    // Clear selection when user types
+                    setFromLocationSelection(null);
+                },
             }}
             styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, 
             listView: { position: 'absolute', top: screenWidth * 0.28 ,elevation:1,backgroundColor:StyleGuide.color.grey },
             description: { color: 'black', fontSize: 16 } }}
-            onPress={(data, details = null) => {setFromLocation(data.description)
-              if (details) {
-                const { lat, lng } = details.geometry.location;
-                const address = data.description;
-            
-                // Save to state
-                setFromLocationData({
-                  address,
-                  latitude: lat,
-                  longitude: lng,
-                });
-            
-                console.log('Selected:', { address, lat, lng });
-              }
+            onPress={(data, details = null) => {
+                setFromLocation(data.description);
+                // Set cursor to start (position 0)
+                setFromLocationSelection({ start: 0, end: 0 });
+                if (details) {
+                    const { lat, lng } = details.geometry.location;
+                    const address = data.description;
+                
+                    // Save to state
+                    setFromLocationData({
+                        address,
+                        latitude: lat,
+                        longitude: lng,
+                    });
+                
+                    console.log('Selected:', { address, lat, lng });
+                }
             }
             }
 
@@ -244,6 +307,7 @@ backgroundColor:'transparent',
             query={{
               key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
               language: 'en',
+              components: 'country:pk|country:qa',
             }}
             enablePoweredByContainer={false}
             renderLeftButton={() => (
@@ -262,18 +326,31 @@ backgroundColor:'transparent',
                 />
               </View>
             )}
-            renderRightButton={() =>
-              fromLocation ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    setFromLocation('');
-                  }}
-                  style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
-                </TouchableOpacity>
-              ) : null
-            }
+            renderRightButton={() => (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <CurrentLocationButton
+                        onPress={handleGetCurrentLocation}
+                        isLoading={isGettingCurrentLocation}
+                        showWhenEmpty={true}
+                        isEmpty={!fromLocation}
+                    />
+                    {fromLocation && Platform.OS === 'android' && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                setFromLocation('');
+                                setFromLocationData({
+                                    address: '',
+                                    latitude: null,
+                                    longitude: null,
+                                });
+                            }}
+                            style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
             predefinedPlaces={[]}
             autoFillOnNotFound={false}
             currentLocation={false}
@@ -337,6 +414,7 @@ backgroundColor:'transparent',
                                 query={{
                                     key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
                                     language: 'en',
+                                    components: 'country:pk|country:qa',
                                 }}
                                 enablePoweredByContainer={false}
                                 renderLeftButton={() => (

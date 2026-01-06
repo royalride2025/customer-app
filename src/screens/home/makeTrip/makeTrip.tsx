@@ -408,6 +408,7 @@ console.log('addressState',addresses)
             query={{
               key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
               language: 'en',
+              components: 'country:pk|country:qa',
             }}
             enablePoweredByContainer={false}
             renderLeftButton={() => (
@@ -530,6 +531,7 @@ console.log('addressState',addresses)
             query={{
               key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
               language: 'en',
+              components: 'country:pk|country:qa',
             }}
             enablePoweredByContainer={false}
             renderLeftButton={() => (

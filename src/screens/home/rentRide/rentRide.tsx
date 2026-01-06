@@ -11,13 +11,16 @@ import {
   Appearance,
   Dimensions,
   Alert,
+  Platform,
 } from 'react-native';
 import DatePicker from 'react-native-date-picker';
 import Slider from '@react-native-community/slider';
 import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-native-google-places-autocomplete';
 import { StyleGuide } from '../../../../StyleGuide';
 import AppButton from '../../../lib/component/AppButton';
+import CurrentLocationButton from '../../../lib/component/CurrentLocationButton';
 import { useScreenHeader } from '../../../lib/hooks/useScreenHeader';
+import { useCurrentLocation } from '../../../lib/hooks/useCurrentLocation';
 import useTranslationStyles from '../../../../locales/useTranslationStyles';
 import { useAppSelector, useAppDispatch } from '../../../redux/reduxHooks';
 import { RootState } from '../../../redux/store';
@@ -104,7 +107,9 @@ const RentARide = () => {
     latitude: null as number | null,
     longitude: null as number | null,
   });
+  const [pickupLocationSelection, setPickupLocationSelection] = useState<{start: number, end: number} | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
+  const isSettingLocationProgrammatically = useRef(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
   const [isBookingLoading, setIsBookingLoading] = useState(false);
@@ -113,6 +118,55 @@ const RentARide = () => {
   const [isTopUpLoading, setIsTopUpLoading] = useState(false);
   const dispatch = useAppDispatch();
   const profileData = useAppSelector((state: RootState) => state.profile.data);
+
+  // Use the reusable current location hook
+  const {
+    getCurrentLocation: getCurrentLocationFromHook,
+    isLoading: isGettingCurrentLocation,
+  } = useCurrentLocation({
+    enableGeocoding: true,
+    geocodingApiKey: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
+    onSuccess: (locationData) => {
+      // Set flag to prevent onChangeText from interfering
+      isSettingLocationProgrammatically.current = true;
+      
+      // Get the address (use address if available, otherwise use coordinates)
+      const address = locationData.address || `${locationData.latitude.toFixed(6)}, ${locationData.longitude.toFixed(6)}`;
+      
+      // Clear previous address first to prevent merging
+      setPickupLocation('');
+      
+      // Set the location data
+      setPickupLocationData({
+        address: address,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+      });
+      
+      // Set the state value
+      setPickupLocation(address);
+      
+      // Update GooglePlacesAutocomplete component
+      setTimeout(() => {
+        if (googlePlaceAutoCompleteRef.current) {
+          // Clear and set in one operation to prevent merging
+          googlePlaceAutoCompleteRef.current.setAddressText(address);
+        }
+        setPickupLocationSelection({ start: 0, end: 0 });
+        
+        // Reset flag after a delay
+        setTimeout(() => {
+          isSettingLocationProgrammatically.current = false;
+        }, 1000);
+      }, 100);
+    },
+    showToast: true,
+  });
+
+  // Wrapper function to use the hook's getCurrentLocation
+  const handleGetCurrentLocation = () => {
+    getCurrentLocationFromHook();
+  };
 
   const fetchVehicles = async () => {
     setIsVehiclesLoading(true);
@@ -143,6 +197,17 @@ const RentARide = () => {
   useEffect(() => {
     fetchVehicles();
   }, []);
+
+  // Reset selection state after it's been applied
+  useEffect(() => {
+    if (pickupLocationSelection) {
+      const timer = setTimeout(() => {
+        setPickupLocationSelection(null);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [pickupLocationSelection]);
+
   console.log("pickupLocation", pickupLocationData)
 
   useScreenHeader({
@@ -293,17 +358,26 @@ const RentARide = () => {
           ref={googlePlaceAutoCompleteRef}
           placeholder={t('from')}
           textInputProps={{
-
             placeholderTextColor: '#8e8e8e',
             value: pickupLocation,
             autoCorrect: false,
-            onChange(e) {
-              setPickupLocation(e.nativeEvent.target)
+            selection: pickupLocationSelection || undefined,
+            onChange(text) {
+              // Don't clear the value if we're setting it programmatically
+              if (isSettingLocationProgrammatically.current && !text) {
+                console.log('📍 Preventing clear of programmatically set location');
+                return;
+              }
+              setPickupLocation(text.nativeEvent.target);
+              // Clear selection when user types
+              setPickupLocationSelection(null);
             },
           }}
           styles={{ textInput: { fontSize: 16, color: 'black', height: 50 }, listView: { position: 'absolute', top: screenWidth * 0.28,elevation:1 },description: { color: 'black', fontSize: 16 } }}
           onPress={(data, details = null) => {
-            setPickupLocation(data.description)
+            setPickupLocation(data.description);
+            // Set cursor to start (position 0)
+            setPickupLocationSelection({ start: 0, end: 0 });
             if (details) {
               const { lat, lng } = details.geometry.location;
               const address = data.description;
@@ -322,6 +396,7 @@ const RentARide = () => {
           query={{
             key: 'AIzaSyDW6Ognz7Or3dGg6FauPwfHdGYazmMdhDQ',
             language: 'en',
+            components: 'country:pk|country:qa',
           }}
           enablePoweredByContainer={false}
           renderLeftButton={() => (
@@ -338,29 +413,33 @@ const RentARide = () => {
                 }}
                 xml={locationBlackIcon}
               />
-      <TopUpModal
-        isVisible={showTopUpModal}
-        defaultAmount={topUpAmount}
-        currency={CURRENCY}
-        isRTL={isRTL}
-        isLoading={isTopUpLoading}
-        onClose={() => setShowTopUpModal(false)}
-        onConfirm={handleConfirmTopUp}
-      />
             </View>
           )}
-          renderRightButton={() =>
-            pickupLocation ? (
-              <TouchableOpacity
-                onPress={() => {
-                  setPickupLocation('');
-                }}
-                style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
-              </TouchableOpacity>
-            ) : null
-          }
+          renderRightButton={() => (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <CurrentLocationButton
+                onPress={handleGetCurrentLocation}
+                isLoading={isGettingCurrentLocation}
+                showWhenEmpty={true}
+                isEmpty={!pickupLocation}
+              />
+              {pickupLocation && Platform.OS === 'android' && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setPickupLocation('');
+                    setPickupLocationData({
+                      address: '',
+                      latitude: null,
+                      longitude: null,
+                    });
+                  }}
+                  style={{ padding: 8, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Svg xml={inputCross} rest={{ height: 16, width: 16 }} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
           predefinedPlaces={[]}
           autoFillOnNotFound={false}
           currentLocation={false}
@@ -448,7 +527,7 @@ const RentARide = () => {
           </View>
 
           <Text style={styles.hoursNote}>
-            Note: Minimum 2 hours, Maximum 24 hours
+            Note: Minimum 1 hours, Maximum 24 hours
           </Text>
         </View>
 
@@ -508,6 +587,15 @@ const RentARide = () => {
       <View style={styles.buttonContainer}>
         <AppButton loading={isBookingLoading} title={t("submit")} onPress={handleNextButton} />
       </View>
+      <TopUpModal
+        isVisible={showTopUpModal}
+        defaultAmount={topUpAmount}
+        currency={CURRENCY}
+        isRTL={isRTL}
+        isLoading={isTopUpLoading}
+        onClose={() => setShowTopUpModal(false)}
+        onConfirm={handleConfirmTopUp}
+      />
     </SafeAreaView>
   );
 };

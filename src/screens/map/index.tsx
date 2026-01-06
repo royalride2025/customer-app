@@ -1799,6 +1799,15 @@ const Map = () => {
 
       {/* Plan Trip Cards */}
       {/* {from === 'plan' && ( */}
+
+      {
+        drivers.length < 1 && (
+          <View style={{ position: 'absolute', top: 100, left: 0, right: 0, zIndex: 1000,justifyContent:'center',alignItems:'center' }}>
+            <Text style={{ fontSize: 16, fontFamily: StyleGuide.fontFamily.bold,color:'#fff' }}>Searching for available drivers.</Text>
+            
+          </View>
+        )
+      }
       {currentBooking && (
         <RideInfoCard
           price={currentBooking?.booking?.price || currentBooking?.price}
